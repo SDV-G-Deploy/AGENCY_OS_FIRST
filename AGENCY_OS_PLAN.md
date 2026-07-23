@@ -960,3 +960,60 @@ Still missing:
 Next safest step:
 - Add a narrow local command or API endpoint that calls the writer, then use the
   existing derived-state path to show its result.
+
+## PLAN FIRST - 2026-07-23 Human-Only Local Command
+
+Block: Add the first human-only write surface.
+
+Goal:
+- Prove a bounded user-facing workflow can validate input, append a safe event
+  and confirm replay-derived state.
+
+In scope:
+- Local command wrapper for `project.next_action_updated`.
+- Runtime input validation.
+- Person-only actor gate.
+- Writer invocation.
+- Replay-derived confirmation after append.
+- Tests for success, blocked agent actor and invalid input.
+
+Out of scope:
+- Browser UI.
+- HTTP API.
+- External integrations.
+- Agent autonomy.
+- Broad schema framework.
+
+Done criteria:
+- Human command writes a next-action event and confirms derived state.
+- Agent actor cannot use the human-only command.
+- Invalid input is rejected before writer execution.
+- `npm run verify` passes.
+
+Evidence:
+- `app/local-command.ts`.
+- `tests/ledger.test.mjs` command tests.
+
+## PLAN UPDATE - 2026-07-23 Human-Only Local Command
+
+Changed:
+- Added `runProjectNextActionCommand()`.
+- Command validates actor, project, next action, idempotency key and timestamp.
+- Command calls the guarded writer and confirms the result through replay-derived
+  state.
+- Added tests for successful human command, blocked agent actor and invalid
+  input.
+
+Verified:
+- `npm run verify` passes: lint, typecheck, build and 38 tests.
+
+Still missing:
+- No browser UI or HTTP API surface.
+- No redaction scanner/import fixtures.
+- Reducer coverage remains intentionally narrow.
+- Production audit remains blocked by Next/PostCSS/sharp advisories.
+
+Next safest step:
+- Ask independent critic whether the remaining work is still useful without a
+  human product choice. If yes, likely add minimal runtime schema validation or
+  redaction fixtures; if no, stop and ask which visible surface should be first.

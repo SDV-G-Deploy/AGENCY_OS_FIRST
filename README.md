@@ -24,10 +24,11 @@ chat workspace and not a full task manager. Its job is to keep state honest.
 2. Add event schema validation, sequence/idempotency and hash-chain checks.
 3. Add one local phone review action that appends an event.
 4. Add approval linkage for scoped writes and external actions.
-5. Add GitHub importer fixtures for commits, pull requests, checks and deploy
+5. Add runtime schema validation and redaction/import fixtures.
+6. Add GitHub importer fixtures for commits, pull requests, checks and deploy
    URLs.
-6. Add an OpenClaw event endpoint for `agent_run.created`.
-7. Add a Telegram action surface for approve, block, verify and capture.
+7. Add an OpenClaw event endpoint for `agent_run.created`.
+8. Add a Telegram action surface for approve, block, verify and capture.
 
 ## Run
 
@@ -58,6 +59,11 @@ Durable planning artifacts start in
 The first local data skeleton lives in `data/` and uses stable IDs. Dashboard
 event history now loads from append-only-oriented `data/events.jsonl`; reducer
 replay and write enforcement are the next product layer.
+
+Current branch adds the first guarded local write path:
+- `app/ledger-writer.ts` appends one `project.next_action_updated` event type;
+- `app/local-command.ts` exposes a human-only command wrapper;
+- dashboard-facing state is derived by replaying events over snapshots.
 
 `npm run verify` is the local quality gate. `npm run audit:prod` is kept
 separate because current production dependency audit advisories remain visible

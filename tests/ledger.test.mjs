@@ -34,6 +34,7 @@ async function transpileModule(sourcePath, targetPath, rewriteImports = false) {
       'from "./events-jsonl.js"',
     );
     source = source.replace('from "./ledger"', 'from "./ledger.js"');
+    source = source.replace('from "./ledger-writer"', 'from "./ledger-writer.js"');
   }
   const output = ts.transpileModule(source, {
     compilerOptions: {
@@ -129,6 +130,22 @@ async function loadLedgerWithWriter() {
     eventsPath: join(moduleDir, "events.jsonl"),
     ledger,
     writer,
+  };
+}
+
+async function loadLocalCommand() {
+  const loaded = await loadLedgerWithWriter();
+  const moduleDir = loaded.eventsPath.replace(/\\events\.jsonl$/, "").replace(/\/events\.jsonl$/, "");
+
+  await transpileModule(
+    new URL("../app/local-command.ts", import.meta.url),
+    join(moduleDir, "local-command.js"),
+    true,
+  );
+
+  return {
+    ...loaded,
+    command: await import(pathToFileURL(join(moduleDir, "local-command.js")).href),
   };
 }
 
@@ -837,4 +854,66 @@ test("writer serializes parallel appends through the event log lock", async () =
     [beforeEvents.length + 1, beforeEvents.length + 2],
   );
   assert.equal(afterEvents.at(-1).previousEventHash, afterEvents.at(-2).eventHash);
+});
+
+test("local command writes a human next action and confirms derived state", async () => {
+  const { command, eventsPath, ledger } = await loadLocalCommand();
+  const beforeEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+
+  const result = await command.runProjectNextActionCommand({
+    ledger: ledger.stateLedger,
+    eventsPath,
+    actorId: "person-serj",
+    projectId: "project-agency-os",
+    nextAction: "Command layer confirmed replay-derived state.",
+    idempotencyKey: "test-command-human-next-action",
+    timestamp: "2026-07-23T11:00:00Z",
+  });
+  const afterEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+
+  assert.equal(result.ok, true);
+  assert.equal(result.appended, true);
+  assert.equal(result.projectNextAction, "Command layer confirmed replay-derived state.");
+  assert.equal(afterEvents.length, beforeEvents.length + 1);
+});
+
+test("local command rejects agent actors before writer execution", async () => {
+  const { command, eventsPath, ledger } = await loadLocalCommand();
+  const beforeEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+
+  const result = await command.runProjectNextActionCommand({
+    ledger: ledger.stateLedger,
+    eventsPath,
+    actorId: "agent-codex",
+    projectId: "project-agency-os",
+    nextAction: "Agent should not use human-only command.",
+    idempotencyKey: "test-command-agent-blocked",
+    timestamp: "2026-07-23T11:00:00Z",
+  });
+  const afterEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.some((error) => error.includes("human-only")));
+  assert.equal(afterEvents.length, beforeEvents.length);
+});
+
+test("local command rejects invalid input before writer execution", async () => {
+  const { command, eventsPath, ledger } = await loadLocalCommand();
+  const beforeEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+
+  const result = await command.runProjectNextActionCommand({
+    ledger: ledger.stateLedger,
+    eventsPath,
+    actorId: "person-serj",
+    projectId: "project-agency-os",
+    nextAction: " ",
+    idempotencyKey: "test-command-invalid",
+    timestamp: "not-a-date",
+  });
+  const afterEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.some((error) => error.includes("nextAction is required")));
+  assert.ok(result.errors.some((error) => error.includes("timestamp must be a valid date")));
+  assert.equal(afterEvents.length, beforeEvents.length);
 });

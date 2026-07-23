@@ -42,7 +42,7 @@ Evidence:
   - ledger rule tests
 
 Observed test result:
-- 35 tests passed.
+- 38 tests passed.
 
 Strength: strong for current static/local code quality.
 
@@ -249,6 +249,22 @@ Evidence:
 Strength: strong for local replay-derived display state. It does not yet prove
 a visible UI/API write action.
 
+### Claim 17: The first human-only local write command exists
+
+Evidence:
+- `app/local-command.ts` exports `runProjectNextActionCommand()`.
+- The command validates actor, project, next action, idempotency key and
+  timestamp.
+- The command is person-only and rejects agent actors before writer execution.
+- The command appends via `appendProjectNextActionEvent()` and confirms the
+  result through replay-derived state.
+- `tests/ledger.test.mjs` covers success, blocked agent actor and invalid
+  input.
+- `npm run verify` passes with 38 tests.
+
+Strength: strong for a local command surface. It does not yet prove browser UI,
+HTTP API or external integrations.
+
 ## Files Changed For Honesty Closure
 
 - `package.json`: added `typecheck`, `audit:prod`, `verify`; moved Next to
@@ -281,6 +297,7 @@ a visible UI/API write action.
 - `data/approvals.json`: aligned scoped-write permission with runtime action
   scope.
 - `app/ledger.ts`: dashboard-facing exports now derive state through replay.
+- `app/local-command.ts`: first human-only local command surface.
 
 ## Known Gaps
 
@@ -289,7 +306,8 @@ a visible UI/API write action.
 - State now comes from local JSON ledger files and events load from JSONL. A
   first pure replay path and append writer exist for one action, but there is no
   visible UI/API action or full reducer coverage yet. Dashboard-facing state now
-  uses replay-derived state.
+  uses replay-derived state. A local human-only command exists, but no browser
+  UI or HTTP API uses it yet.
 - Writer has lock and idempotency conflict checks, but no durable
   `approval.rejected` lifecycle event yet.
 - Dependency audit blocks production deployment.

@@ -62,6 +62,8 @@ Current status:
   for the first agent write path, including durable `approval.approved` and
   `approval.used` events with basic approval-event authorization;
 - dashboard-facing state derives from replayed events over snapshots;
+- first human-only local command writes through the guarded writer and confirms
+  replay-derived state;
 - redaction is documented but not enforced.
 
 ## Integration Gate
