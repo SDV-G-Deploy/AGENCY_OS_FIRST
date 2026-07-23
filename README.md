@@ -38,20 +38,22 @@ Future Codex work should start from this canonical local repo.
 - First local browser form/API for updating one project's next action.
 - First `capture.note_created` data/reducer slice with quarantine-safe capture
   summaries.
+- Local writer/command/API for `capture.note_created`.
+- Minimal phone-first capture form that writes through the local capture API.
+- Safe local capture smoke command that uses a temporary event log.
 - Product DNA and v0.3 phone-first capture plan.
 
 ## Next useful layer
 
-1. Add a local writer/command/API for `capture.note_created`.
-2. Add a minimal phone-first capture form.
-3. Add approval rejection and expiry UI.
-4. Add runtime schema validation and redaction/import fixtures.
-5. Add export, backup and restore for the local ledger.
-6. Add GitHub importer fixtures for commits, pull requests, checks and deploy
+1. Propose the first capture triage contract without implementing conversion.
+2. Add approval rejection and expiry UI.
+3. Add runtime schema validation and redaction/import fixtures.
+4. Add export, backup and restore for the local ledger.
+5. Add GitHub importer fixtures for commits, pull requests, checks and deploy
    URLs.
-7. Add an OpenClaw event endpoint for `agent_run.created`.
-8. Add a Telegram action surface for approve, block, verify and capture.
-9. Add agent lifecycle and cost-spend warnings.
+6. Add an OpenClaw event endpoint for `agent_run.created`.
+7. Add a Telegram action surface for approve, block, verify and capture.
+8. Add agent lifecycle and cost-spend warnings.
 
 ## Run
 
@@ -60,8 +62,13 @@ npm run dev
 npm run build
 npm test
 npm run verify
+npm run smoke:capture
 npm run audit:prod
 ```
+
+`npm run smoke:capture` writes a sample `capture.note_created` event to a
+temporary copied event log and checks that the real `data/events.jsonl` file is
+unchanged.
 
 ## Architecture And Evidence
 

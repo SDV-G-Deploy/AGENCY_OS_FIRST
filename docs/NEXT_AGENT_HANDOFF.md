@@ -6,7 +6,7 @@ Last updated: 2026-07-24
 ## Handoff Freshness
 
 Branch:
-- `feature/mobile-capture-placement`
+- `feature/local-capture-smoke-test`
 
 Commit:
 - this handoff is included in the current slice commit; run
@@ -17,7 +17,7 @@ Working tree state after this handoff checkpoint:
 
 Last verified command/result:
 - `npm run verify`
-- pass: lint, typecheck, build and 54 tests.
+- pass: lint, typecheck, build and 55 tests.
 
 Conflict rule:
 - if this handoff conflicts with current code/tests, trust code/tests, inspect
@@ -29,9 +29,10 @@ Agency OS now has a canonical local repo and GitHub remote:
 - local: `C:\Agency_os_first\AGENCY_OS_FIRST`;
 - GitHub: `https://github.com/SDV-G-Deploy/AGENCY_OS_FIRST`.
 
-Agency OS is on the supervised mobile capture placement branch. The prior
-mobile capture form slice has been merged to `main`, and this branch makes the
-phone-mode panel capture-first on mobile.
+Agency OS is on the supervised local capture smoke-test branch. The prior
+mobile capture placement slice has been fast-forwarded into local `main`, and
+this branch adds a safe manual capture smoke path that does not pollute the
+real event log.
 
 The next branch or continuation should stay inside the v0.3 phone-first capture
 path, starting from the contracts already written in:
@@ -130,6 +131,22 @@ Changed files in this slice:
 - `tests/ledger.test.mjs`
 - `docs/NEXT_AGENT_HANDOFF.md`
 
+Local capture smoke checkpoint:
+- `npm run smoke:capture` exercises `runCaptureNoteCommand()` against a
+  temporary copied event log.
+- The smoke script appends one `capture.note_created` event to the temp log and
+  asserts the real `data/events.jsonl` is byte-for-byte unchanged.
+- `npm test` now includes `tests/capture-smoke.test.mjs`, which runs the smoke
+  command and checks the same non-mutation invariant.
+- `README.md` documents the smoke command.
+
+Changed files in this slice:
+- `scripts/smoke-capture-note.mjs`
+- `tests/capture-smoke.test.mjs`
+- `package.json`
+- `README.md`
+- `docs/NEXT_AGENT_HANDOFF.md`
+
 Organizational checkpoint:
 - canonical repo moved to `C:\Agency_os_first\AGENCY_OS_FIRST`;
 - GitHub `main` was updated without force-push;
@@ -141,15 +158,15 @@ Organizational checkpoint:
 
 ## Next Chewable Step
 
-Add a safe manual local capture smoke test path or documented test command that
-does not pollute real `data/events.jsonl`.
+Propose the next capture triage contract without implementing conversion yet.
 
 Recommended scope:
-- use a temporary copied event log or existing test harness pattern;
-- exercise `/api/local/capture-note` or `runCaptureNoteCommand()`;
-- prove the real `data/events.jsonl` stays unchanged;
-- document the command in a developer-facing place;
-- keep conversion to evidence/blocker/decision/task out of scope.
+- define the first supported capture review/triage event action name;
+- specify actor, allowed state transition, required fields and redaction
+  invariants;
+- decide how a capture becomes an evidence/blocker/decision/task candidate
+  without performing conversion in code;
+- update docs only unless the next implementation slice is explicitly approved.
 
 Out of scope:
 - Telegram;
@@ -180,7 +197,9 @@ Out of scope:
 - `app/CaptureNoteForm.tsx`
 - `app/page.tsx`
 - `app/ledger.ts`
+- `scripts/smoke-capture-note.mjs`
 - `tests/ledger.test.mjs`
+- `tests/capture-smoke.test.mjs`
 - `tests/rendered-html.test.mjs`
 
 ## Usually Skip Unless Needed
