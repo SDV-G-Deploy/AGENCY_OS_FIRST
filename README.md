@@ -20,12 +20,14 @@ chat workspace and not a full task manager. Its job is to keep state honest.
 
 ## Next useful layer
 
-1. Replace `app/seed.ts` with the real current portfolio.
-2. Add local persistence for projects, evidence and agent runs.
-3. Add local persistence for phone review actions and captured decisions.
-4. Add a GitHub importer for commits, pull requests, checks and deploy URLs.
-5. Add an OpenClaw event endpoint for `agent_run.created`.
-6. Add a Telegram action surface for approve, block, verify and capture.
+1. Implement reducer replay over `data/events.jsonl`.
+2. Add event schema validation, sequence/idempotency and hash-chain checks.
+3. Add one local phone review action that appends an event.
+4. Add approval linkage for scoped writes and external actions.
+5. Add GitHub importer fixtures for commits, pull requests, checks and deploy
+   URLs.
+6. Add an OpenClaw event endpoint for `agent_run.created`.
+7. Add a Telegram action surface for approve, block, verify and capture.
 
 ## Run
 
@@ -45,12 +47,17 @@ npm run audit:prod
 - [Current Evidence Log](docs/CURRENT_EVIDENCE.md)
 - [Data Model And Invariants](docs/DATA_MODEL_AND_INVARIANTS.md)
 - [Security And Approval Model](docs/SECURITY_AND_APPROVALS.md)
+- [Event Log Integrity](docs/EVENT_LOG_INTEGRITY.md)
+- [Approval Policy Matrix](docs/APPROVAL_POLICY_MATRIX.md)
+- [Redaction And Import Boundaries](docs/REDACTION_AND_IMPORT_BOUNDARIES.md)
+- [Release Gates](docs/RELEASE_GATES.md)
 
 Durable planning artifacts start in
 `tasks/log/2026-07-23-agency-os-v0-2-honesty-closure/`.
 
-The first local data skeleton lives in `data/` and uses stable IDs plus
-append-only `events.jsonl` as the direction for the future reducer.
+The first local data skeleton lives in `data/` and uses stable IDs. Dashboard
+event history now loads from append-only-oriented `data/events.jsonl`; reducer
+replay and write enforcement are the next product layer.
 
 `npm run verify` is the local quality gate. `npm run audit:prod` is kept
 separate because current production dependency audit advisories remain visible

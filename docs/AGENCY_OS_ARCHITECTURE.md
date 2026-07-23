@@ -1,6 +1,6 @@
 # Agency OS Architecture
 
-Status: draft v0.3 planning baseline  
+Status: draft v0.4 planning baseline  
 Last updated: 2026-07-23
 
 ## Product Spine
@@ -476,6 +476,8 @@ M2: Local capture ledger
 - stable IDs replace display-name relationships;
 - reducer derives current state from events and records;
 - schema validation rejects malformed or duplicate writes.
+- event integrity contract covers schema version, idempotency, trace linkage,
+  approval linkage, redaction status and hash-chain direction.
 
 M3: Actionable phone review
 - approve/reject/verify/capture writes local events;

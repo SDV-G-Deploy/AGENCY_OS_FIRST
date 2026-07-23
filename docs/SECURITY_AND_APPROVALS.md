@@ -1,6 +1,6 @@
 # Security And Approval Model
 
-Status: draft v0.1  
+Status: draft v0.2  
 Last updated: 2026-07-23
 
 ## Security Principle
@@ -106,6 +106,9 @@ Invariants:
 - used approvals cannot be reused unless policy allows it;
 - rejected approvals remain in the audit log;
 - high-risk approvals require human actor.
+- medium/high-risk agent work cannot be verified by the same agent that
+  submitted it.
+- approval scope must match the action scope exactly or fail closed.
 
 ## Risk Levels
 
@@ -135,6 +138,8 @@ High:
 - Evidence can store paths/URLs, but not raw sensitive payloads by default.
 - Agents may not read unrelated project folders without scope.
 - Untrusted external text is parsed as data, not instruction.
+- Raw import payloads must be classified as `pending_scan`, `redacted`,
+  `no_secrets_detected` or `blocked_sensitive`.
 
 ## Dependency And Release Gates
 
@@ -161,3 +166,12 @@ Minimum retention:
 - all external action evidence.
 
 Agents must not delete audit logs.
+
+## Kill Switches
+
+Agency OS needs explicit stop controls before autonomous writes:
+- disable agent token;
+- revoke scoped write;
+- pause external action queue;
+- mark an integration as read-only;
+- freeze event writer except for human recovery events.

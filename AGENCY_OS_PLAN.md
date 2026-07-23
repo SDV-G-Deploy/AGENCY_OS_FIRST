@@ -410,3 +410,60 @@ Next safest step:
 - Document and then implement the minimal event integrity contract:
   schemaVersion, sequence, previous hash, current hash, reducer replay,
   approval linkage and redaction boundaries.
+
+## PLAN FIRST - 2026-07-23 Integrity Contracts
+
+Block: Convert critic feedback into explicit architecture contracts.
+
+Goal:
+- Make the next reducer/writer implementation bounded by written rules rather
+  than chat memory.
+
+In scope:
+- Event log integrity contract.
+- Approval policy matrix.
+- Redaction and import boundaries.
+- Release gates.
+- Updates to core invariants and evidence protocol.
+
+Out of scope:
+- Implementing reducer/writer.
+- Wiring UI buttons.
+- External integrations.
+- Deployment.
+
+Done criteria:
+- New docs cover what is stored, where, how work is proven, and what blocks
+  release or agentic writes.
+- README points to the new contracts.
+- `npm run verify` passes.
+
+Evidence:
+- `docs/EVENT_LOG_INTEGRITY.md`.
+- `docs/APPROVAL_POLICY_MATRIX.md`.
+- `docs/REDACTION_AND_IMPORT_BOUNDARIES.md`.
+- `docs/RELEASE_GATES.md`.
+- `README.md` architecture links.
+
+## PLAN UPDATE - 2026-07-23 Integrity Contracts
+
+Changed:
+- Added event integrity, approval matrix, redaction/import boundary and release
+  gate docs.
+- Updated data invariants, security model, evidence protocol and architecture
+  milestones with critic-requested fields and stop rules.
+- Updated README so the new contracts are discoverable.
+
+Verified:
+- `npm run verify` passes: lint, typecheck, build and 11 tests.
+
+Still missing:
+- Runtime schema validation.
+- Hash-chain implementation.
+- Reducer replay.
+- Phone action event writer.
+
+Next safest step:
+- Ask independent critics to re-score the architecture after this contract pass;
+  if they still score below 95, implement the highest-risk missing runtime rule
+  first.

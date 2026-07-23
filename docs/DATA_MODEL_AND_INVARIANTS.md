@@ -1,6 +1,6 @@
 # Data Model And Invariants
 
-Status: draft v0.1  
+Status: draft v0.2  
 Last updated: 2026-07-23
 
 ## Source Of Truth
@@ -21,6 +21,11 @@ Agency OS uses two layers:
 
 During early local development, current state files may be hand-edited, but the
 architecture target is event-derived state.
+
+Current implementation status:
+- dashboard event history loads from `data/events.jsonl`;
+- current entity records still come from `data/*.json`;
+- reducer replay and event writer are not implemented yet.
 
 ## Identity
 
@@ -123,6 +128,8 @@ Invariant:
 ### Event
 
 Required fields:
+- `schemaVersion` (target);
+- `sequence` (target);
 - `id`;
 - `timestamp`;
 - `actorId`;
@@ -132,14 +139,22 @@ Required fields:
 - `before`;
 - `after`;
 - `evidenceIds`;
+- `approvalIds` (target);
+- `traceId` (target);
 - `source`;
 - `idempotencyKey`.
+- `redactionStatus` (target);
+- `retentionClass` (target);
+- `previousEventHash` (target);
+- `eventHash` (target).
 
 Invariant:
 - duplicate `idempotencyKey` is ignored or treated as the same event;
 - events are append-only;
 - every state-changing event must name an actor and entity;
 - deletion is represented as an event, not filesystem erasure.
+- once reducer migration lands, direct current-state mutation is forbidden
+  outside explicit migrations.
 
 ## Reducer Rules
 
@@ -150,6 +165,8 @@ The reducer should:
 - validate every event before applying it;
 - reject unknown entity references;
 - produce derived dashboard state.
+- build indexes from the ledger being validated, never from module-global
+  default state.
 
 Minimum reducer tests:
 - duplicate event does not double-apply;

@@ -99,6 +99,18 @@ Evidence:
 Strength: strong for event source alignment. It does not yet prove append-only
 write integrity or reducer replay.
 
+### Claim 7: Event, approval, import and release contracts are documented
+
+Evidence:
+- `docs/EVENT_LOG_INTEGRITY.md`
+- `docs/APPROVAL_POLICY_MATRIX.md`
+- `docs/REDACTION_AND_IMPORT_BOUNDARIES.md`
+- `docs/RELEASE_GATES.md`
+- README architecture links include these documents.
+
+Strength: medium. These documents constrain future work, but runtime
+enforcement is still incomplete.
+
 ## Files Changed For Honesty Closure
 
 - `package.json`: added `typecheck`, `audit:prod`, `verify`; moved Next to
@@ -118,6 +130,13 @@ write integrity or reducer replay.
 - `tests/ledger.test.mjs`: tests validation, duplicate idempotency keys,
   self-verification rejection and fail-closed external approvals.
 - `types/raw-imports.d.ts`: declares raw JSONL imports for the app bundle.
+- `docs/EVENT_LOG_INTEGRITY.md`: event envelope, hash-chain target, reducer and
+  write-path contract.
+- `docs/APPROVAL_POLICY_MATRIX.md`: action risk levels and approval rules.
+- `docs/REDACTION_AND_IMPORT_BOUNDARIES.md`: importer and secret-handling
+  boundaries.
+- `docs/RELEASE_GATES.md`: local, evidence, production, agentic write,
+  integration and backup gates.
 
 ## Known Gaps
 

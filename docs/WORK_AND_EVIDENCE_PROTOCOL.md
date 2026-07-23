@@ -1,6 +1,6 @@
 # Work And Evidence Protocol
 
-Status: draft v0.1  
+Status: draft v0.2  
 Last updated: 2026-07-23
 
 ## Purpose
@@ -64,7 +64,12 @@ Evidence must include:
 - timestamp or run context;
 - result;
 - location where the proof can be inspected;
-- known gaps.
+- known gaps;
+- verifier identity;
+- whether the verifier is independent from the submitter;
+- freshness or expiry policy;
+- artifact hash when practical;
+- reproduction command or procedure when practical.
 
 ### 4. Verification
 
@@ -94,6 +99,7 @@ Strong evidence:
 - inspected rendered output;
 - commit/PR/check URL;
 - durable plan/evidence file.
+- independent verifier for medium/high-risk agent work.
 
 Medium evidence:
 - static source inspection;
@@ -137,11 +143,11 @@ must remain blocked until this is resolved or explicitly accepted.
 ## Known Current Gaps
 
 - Buttons are visible but inert.
-- State is still seed/file-code based, not durable user-editable data.
+- State is local-file based, not durable user-editable data.
 - PLAN FIRST entries from the first night were stated in chat but not preserved
   as durable artifacts.
-- External research was originally captured in thread context; stable research
-  notes now need a file artifact.
+- Event writer/reducer is not implemented yet.
+- Hash-chain integrity is documented but not implemented.
 
 ## Future Artifact Layout
 
@@ -165,6 +171,8 @@ data/events.jsonl
 
 Each event should include:
 - id;
+- schema version;
+- sequence;
 - timestamp;
 - actor;
 - action;
@@ -174,6 +182,12 @@ Each event should include:
 - evidence ids;
 - source;
 - idempotency key.
+- approval ids;
+- trace id;
+- redaction status;
+- retention class;
+- previous event hash;
+- event hash.
 
 ## Stop Rules
 
