@@ -42,7 +42,7 @@ Evidence:
   - ledger rule tests
 
 Observed test result:
-- 28 tests passed.
+- 30 tests passed.
 
 Strength: strong for current static/local code quality.
 
@@ -175,6 +175,22 @@ Strength: strong for the first local file-backed write path. It does not yet
 prove a UI/API action, current snapshot regeneration or durable approval-used
 event.
 
+### Claim 12: The first append writer is hardened against basic races and retry drift
+
+Evidence:
+- `app/ledger-writer.ts` uses a per-event-file lock during
+  read/build/preflight/append.
+- Existing idempotency keys compare payloads before returning no-op.
+- Changed retry with the same idempotency key is rejected.
+- Exact retry with the same payload is ignored without appending.
+- Parallel append test verifies consecutive sequence/hash-chain events.
+- `data/approvals.json` scope now matches
+  `project-agency-os:project.next_action_updated`.
+- `npm run verify` passes with 30 tests.
+
+Strength: strong for local single-file writer hardening. It does not yet prove
+multi-process crash recovery or durable approval lifecycle events.
+
 ## Files Changed For Honesty Closure
 
 - `package.json`: added `typecheck`, `audit:prod`, `verify`; moved Next to
@@ -204,6 +220,8 @@ event.
 - `data/events.jsonl`: migrated to the minimal event integrity envelope.
 - `data/approvals.json`: added single-use approval fields.
 - `app/ledger-writer.ts`: first guarded append-only writer path.
+- `data/approvals.json`: aligned scoped-write permission with runtime action
+  scope.
 
 ## Known Gaps
 
@@ -212,6 +230,8 @@ event.
 - State now comes from local JSON ledger files and events load from JSONL. A
   first pure replay path and append writer exist for one action, but there is no
   visible UI/API action or full reducer coverage yet.
+- Writer has lock and idempotency conflict checks, but no durable
+  `approval.used` companion event yet.
 - Dependency audit blocks production deployment.
 - No visual screenshot artifact is saved in the repo yet.
 - The baseline has one local commit, but no remote backup has been created.

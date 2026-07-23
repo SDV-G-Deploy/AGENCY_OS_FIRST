@@ -146,8 +146,10 @@ must remain blocked until this is resolved or explicitly accepted.
 - State is local-file based, not durable user-editable data.
 - PLAN FIRST entries from the first night were stated in chat but not preserved
   as durable artifacts.
-- Event writer/reducer is not implemented yet.
-- Hash-chain integrity is documented but not implemented.
+- Event hash-chain validation is implemented for the local JSONL ledger.
+- A guarded local append writer exists for `project.next_action_updated`.
+- Full reducer coverage, visible write surfaces and durable approval-used events
+  are not implemented yet.
 
 ## Future Artifact Layout
 

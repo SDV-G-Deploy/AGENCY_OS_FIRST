@@ -1,4 +1,4 @@
-import { appendFile, readFile } from "node:fs/promises";
+import { appendFile, open, readFile, unlink } from "node:fs/promises";
 
 import {
   calculateEventHash,
@@ -31,6 +31,8 @@ type ProjectNextActionWriteResult = {
   ignoredEventIds: string[];
 };
 
+type LockHandle = Awaited<ReturnType<typeof open>>;
+
 function eventIdFromIdempotencyKey(idempotencyKey: string) {
   const safeKey = idempotencyKey
     .toLowerCase()
@@ -47,6 +49,60 @@ function getReferenceSets(ledger: StateLedger) {
     approvalIds: new Set(ledger.approvals.map((approval) => approval.id)),
     traceIds: new Set(ledger.traces.map((trace) => trace.id)),
   };
+}
+
+function comparableIdempotencyPayload(event: LedgerEvent) {
+  return JSON.stringify({
+    actorId: event.actorId,
+    action: event.action,
+    entityType: event.entityType,
+    entityId: event.entityId,
+    after: event.after,
+    approvalIds: event.approvalIds,
+    traceId: event.traceId,
+    source: event.source,
+    idempotencyKey: event.idempotencyKey,
+    redactionStatus: event.redactionStatus,
+    retentionClass: event.retentionClass,
+  });
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function acquireLock(lockPath: string, attempts = 50): Promise<LockHandle> {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      return await open(lockPath, "wx");
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST" || attempt === attempts - 1) {
+        throw error;
+      }
+      await sleep(20);
+    }
+  }
+
+  throw new Error(`Unable to acquire lock ${lockPath}`);
+}
+
+async function withEventsLock<T>(eventsPath: string, work: () => Promise<T>) {
+  const lockPath = `${eventsPath}.lock`;
+  const lock = await acquireLock(lockPath);
+
+  try {
+    await lock.writeFile(`${process.pid}:${Date.now()}`);
+    return await work();
+  } finally {
+    await lock.close();
+    await unlink(lockPath).catch((error: NodeJS.ErrnoException) => {
+      if (error.code !== "ENOENT") {
+        throw error;
+      }
+    });
+  }
 }
 
 export function buildProjectNextActionEvent({
@@ -106,6 +162,7 @@ export async function appendProjectNextActionEvent({
   source = "local_writer",
   redactionStatus = "not_required",
 }: ProjectNextActionWriteInput): Promise<ProjectNextActionWriteResult> {
+  return withEventsLock(eventsPath, async () => {
   const currentEventsSource = await readFile(eventsPath, "utf8");
   const currentEvents = parseLedgerEvents(currentEventsSource);
   const ledgerForWrite: StateLedger = {
@@ -113,8 +170,30 @@ export async function appendProjectNextActionEvent({
     events: currentEvents,
   };
 
-  const existingEvent = currentEvents.find((event) => event.idempotencyKey === idempotencyKey);
+  const event = buildProjectNextActionEvent({
+    ledger: ledgerForWrite,
+    actorId,
+    projectId,
+    nextAction,
+    idempotencyKey,
+    approvalIds,
+    traceId,
+    timestamp,
+    source,
+    redactionStatus,
+  });
+
+  const existingEvent = currentEvents.find((item) => item.idempotencyKey === idempotencyKey);
   if (existingEvent) {
+    if (comparableIdempotencyPayload(existingEvent) !== comparableIdempotencyPayload(event)) {
+      return {
+        appended: false,
+        event: existingEvent,
+        errors: [`idempotency conflict for ${idempotencyKey}`],
+        ignoredEventIds: [],
+      };
+    }
+
     return {
       appended: false,
       event: existingEvent,
@@ -133,18 +212,6 @@ export async function appendProjectNextActionEvent({
     };
   }
 
-  const event = buildProjectNextActionEvent({
-    ledger: ledgerForWrite,
-    actorId,
-    projectId,
-    nextAction,
-    idempotencyKey,
-    approvalIds,
-    traceId,
-    timestamp,
-    source,
-    redactionStatus,
-  });
   const replayResult = replayLedgerEvents(ledgerForWrite, [event]);
 
   if (replayResult.errors.length > 0) {
@@ -169,4 +236,5 @@ export async function appendProjectNextActionEvent({
     errors: [],
     ignoredEventIds: [],
   };
+  });
 }

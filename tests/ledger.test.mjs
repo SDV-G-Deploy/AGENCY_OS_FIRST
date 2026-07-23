@@ -505,7 +505,7 @@ test("writer appends a human project next-action event after preflight replay", 
   assert.equal(afterEvents.at(-1).eventHash, ledger.calculateEventHash(afterEvents.at(-1)));
 });
 
-test("writer treats an existing idempotency key as a no-op", async () => {
+test("writer rejects an existing idempotency key with different payload", async () => {
   const { eventsPath, ledger, writer } = await loadLedgerWithWriter();
   const beforeEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
 
@@ -521,9 +521,35 @@ test("writer treats an existing idempotency key as a no-op", async () => {
   const afterEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
 
   assert.equal(result.appended, false);
-  assert.deepEqual(result.errors, []);
-  assert.deepEqual(result.ignoredEventIds, ["event-v0-2-honesty-closure"]);
+  assert.ok(result.errors.some((error) => error.includes("idempotency conflict")));
+  assert.deepEqual(result.ignoredEventIds, []);
   assert.equal(afterEvents.length, beforeEvents.length);
+});
+
+test("writer treats an exact retry idempotency key as a no-op", async () => {
+  const { eventsPath, ledger, writer } = await loadLedgerWithWriter();
+  const input = {
+    ledger: ledger.stateLedger,
+    eventsPath,
+    actorId: "person-serj",
+    projectId: "project-agency-os",
+    nextAction: "Retry should not append twice.",
+    idempotencyKey: "test-writer-exact-retry",
+    timestamp: "2026-07-23T10:00:00Z",
+  };
+
+  const first = await writer.appendProjectNextActionEvent(input);
+  const second = await writer.appendProjectNextActionEvent(input);
+  const events = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+
+  assert.equal(first.appended, true);
+  assert.equal(second.appended, false);
+  assert.deepEqual(second.errors, []);
+  assert.deepEqual(second.ignoredEventIds, [first.event.id]);
+  assert.equal(
+    events.filter((event) => event.idempotencyKey === "test-writer-exact-retry").length,
+    1,
+  );
 });
 
 test("writer blocks an agent next-action event without scoped approval", async () => {
@@ -598,4 +624,40 @@ test("writer refuses to append when the existing event log is invalid", async ()
 
   assert.equal(result.appended, false);
   assert.ok(result.errors.some((error) => error.includes("invalid event hash")));
+});
+
+test("writer serializes parallel appends through the event log lock", async () => {
+  const { eventsPath, ledger, writer } = await loadLedgerWithWriter();
+  const beforeEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+
+  const [first, second] = await Promise.all([
+    writer.appendProjectNextActionEvent({
+      ledger: ledger.stateLedger,
+      eventsPath,
+      actorId: "person-serj",
+      projectId: "project-agency-os",
+      nextAction: "Parallel write one.",
+      idempotencyKey: "test-writer-parallel-one",
+      timestamp: "2026-07-23T10:00:00Z",
+    }),
+    writer.appendProjectNextActionEvent({
+      ledger: ledger.stateLedger,
+      eventsPath,
+      actorId: "person-serj",
+      projectId: "project-agency-os",
+      nextAction: "Parallel write two.",
+      idempotencyKey: "test-writer-parallel-two",
+      timestamp: "2026-07-23T10:00:01Z",
+    }),
+  ]);
+  const afterEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+
+  assert.equal(first.appended, true);
+  assert.equal(second.appended, true);
+  assert.equal(afterEvents.length, beforeEvents.length + 2);
+  assert.deepEqual(
+    afterEvents.slice(-2).map((event) => event.sequence),
+    [beforeEvents.length + 1, beforeEvents.length + 2],
+  );
+  assert.equal(afterEvents.at(-1).previousEventHash, afterEvents.at(-2).eventHash);
 });

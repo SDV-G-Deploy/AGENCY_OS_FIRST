@@ -689,3 +689,59 @@ Next safest step:
 - Add a server/API or local command wrapper around the writer only after
   deciding whether the first visible write should be phone-mode capture or
   laptop command-center action.
+
+## PLAN FIRST - 2026-07-23 Writer Hardening
+
+Block: Harden the first append writer before exposing it.
+
+Goal:
+- Remove the two biggest writer honesty gaps found by independent critics:
+  concurrent sequence races and hidden idempotency conflicts.
+
+In scope:
+- Per-file lock around read/build/preflight/append.
+- Conflict detection when an existing idempotency key has a different payload.
+- Exact retry no-op for identical idempotency payload.
+- Approval scope data aligned with runtime policy.
+- Tests for idempotency conflict, exact retry and parallel append.
+
+Out of scope:
+- Durable `approval.used` companion event.
+- UI/API command surface.
+- Snapshot regeneration.
+- Redaction scanner.
+
+Done criteria:
+- Parallel appends serialize to consecutive sequence/hash-chain events.
+- Changed retry is rejected as a conflict.
+- Exact retry is a no-op.
+- `npm run verify` passes.
+
+Evidence:
+- `app/ledger-writer.ts` lock and payload comparison.
+- `tests/ledger.test.mjs` writer-hardening coverage.
+
+## PLAN UPDATE - 2026-07-23 Writer Hardening
+
+Changed:
+- Added a lock-file guard around the first append writer.
+- Added comparable idempotency payload checks.
+- Changed duplicate idempotency behavior: exact retry is ignored, changed retry
+  is rejected.
+- Fixed `data/approvals.json` scope to match
+  `project-agency-os:project.next_action_updated`.
+- Updated writer tests.
+
+Verified:
+- `npm run verify` passes: lint, typecheck, build and 30 tests.
+
+Still missing:
+- No durable `approval.used` event is appended.
+- No visible command/API/UI surface calls the writer.
+- Current dashboard state is not yet derived from replayed appended events.
+- Redaction scanner/import fixtures are not implemented.
+
+Next safest step:
+- Add durable `approval.used` event emission for approved agent writes, or add a
+  local command wrapper that writes and then replays the updated event log into
+  derived state.
