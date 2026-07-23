@@ -631,7 +631,11 @@ test("agent replay applies scoped single-use approval once", async () => {
     after: { nextAction: "Agent tries to reuse scoped approval." },
   });
 
-  const result = replayLedgerEvents(approvedLedger, [firstEvent, secondEvent]);
+  const result = replayLedgerEvents(
+    approvedLedger,
+    [firstEvent, secondEvent],
+    new Date("2026-07-24T12:00:00Z"),
+  );
   const usedApproval = result.ledger.approvals.find(
     (approval) => approval.id === "approval-first-scoped-write",
   );

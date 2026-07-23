@@ -56,7 +56,8 @@ export default function Home() {
 
         <section className="mobile-brief" aria-labelledby="mobile-brief-title">
           <p className="eyebrow">7 minute phone mode</p>
-          <h2 id="mobile-brief-title">Approve, verify, unblock.</h2>
+          <h2 id="mobile-brief-title">Capture first, then review.</h2>
+          <CaptureNoteForm projects={captureProjects} recentCaptures={uncategorizedCaptures} />
           <div className="phone-action-list">
             {phoneReviewQueue.map((item) => (
               <article className={`phone-action ${item.type}`} key={item.id}>
@@ -69,7 +70,6 @@ export default function Home() {
               </article>
             ))}
           </div>
-          <CaptureNoteForm projects={captureProjects} recentCaptures={uncategorizedCaptures} />
         </section>
       </aside>
 

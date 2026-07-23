@@ -31,6 +31,7 @@ test("server-renders the Agency OS dashboard shell", async () => {
   const html = await response.text();
   assert.match(html, /<title>Agency OS - Local Solo Builder Kit<\/title>/i);
   assert.match(html, /Local Solo Builder Kit/);
+  assert.match(html, /Capture first, then review/);
   assert.match(html, /Evidence queue/);
   assert.match(html, /Agent run ledger/);
   assert.match(html, /Blockers/);
@@ -88,6 +89,7 @@ test("keeps the first MVP focused on state, proof and agent runs", async () => {
   assert.match(page, /phone-action-list/);
   assert.match(page, /NextActionForm/);
   assert.match(page, /CaptureNoteForm/);
+  assert.match(page, /<CaptureNoteForm[\s\S]*<div className="phone-action-list">/);
   assert.match(page, /getUncategorizedCaptures/);
   assert.match(page, /recentCaptures=\{uncategorizedCaptures\}/);
   assert.doesNotMatch(page, /<button/);
@@ -100,8 +102,11 @@ test("keeps the first MVP focused on state, proof and agent runs", async () => {
   assert.match(captureRoute, /resolve\(process\.cwd\(\), "data\/events\.jsonl"\)/);
   assert.doesNotMatch(captureRoute, /payload\.actorId|payload\.eventsPath/);
   assert.match(captureForm, /fetch\("\/api\/local\/capture-note"/);
+  assert.match(captureForm, /try \{/);
+  assert.match(captureForm, /catch \{/);
   assert.match(captureForm, /useState\("phone"\)/);
   assert.match(captureForm, /<option value="inbox">Inbox<\/option>/);
+  assert.match(captureForm, /className="capture-note-fields"/);
   assert.match(captureForm, /recentCaptures\.map/);
   assert.doesNotMatch(captureForm, /telegram|github|openc-law|openclaw/i);
   assert.match(layout, /Agency OS - Local Solo Builder Kit/);

@@ -1097,6 +1097,8 @@ export function replayLedgerEvents(
       continue;
     }
     if (actor.actorType === "agent") {
+      const eventTime = new Date(event.timestamp);
+      const approvalUseTime = Number.isNaN(eventTime.getTime()) ? now : eventTime;
       const validApproval = event.approvalIds
         .map((approvalId) => ledger.approvals.find((approval) => approval.id === approvalId))
         .find((approval) =>
@@ -1109,7 +1111,7 @@ export function replayLedgerEvents(
             entityId: actor.id,
             approvals: ledger.approvals,
             actors: ledger.actors,
-            now,
+            now: approvalUseTime,
           }),
         );
 

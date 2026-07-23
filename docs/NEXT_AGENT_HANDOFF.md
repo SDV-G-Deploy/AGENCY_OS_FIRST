@@ -1,16 +1,16 @@
 # Next Agent Handoff
 
 Status: current handoff  
-Last updated: 2026-07-23
+Last updated: 2026-07-24
 
 ## Handoff Freshness
 
 Branch:
-- `feature/mobile-capture-form`
+- `feature/mobile-capture-placement`
 
 Commit:
-- pending until this handoff update is committed; run `git log -1 --oneline`
-  after checkout for the exact checkpoint commit.
+- this handoff is included in the current slice commit; run
+  `git log -1 --oneline` after checkout for the exact checkpoint hash.
 
 Working tree state after this handoff checkpoint:
 - expected clean.
@@ -29,9 +29,9 @@ Agency OS now has a canonical local repo and GitHub remote:
 - local: `C:\Agency_os_first\AGENCY_OS_FIRST`;
 - GitHub: `https://github.com/SDV-G-Deploy/AGENCY_OS_FIRST`.
 
-Agency OS is on the supervised mobile capture form branch. The prior
-`capture.note_created` writer/command/API slice has been merged to `main`, and
-this branch adds the first local dashboard form that uses it.
+Agency OS is on the supervised mobile capture placement branch. The prior
+mobile capture form slice has been merged to `main`, and this branch makes the
+phone-mode panel capture-first on mobile.
 
 The next branch or continuation should stay inside the v0.3 phone-first capture
 path, starting from the contracts already written in:
@@ -102,11 +102,32 @@ Mobile capture form checkpoint:
   replay-derived state.
 - No UI conversion to evidence, blockers, decisions or tasks was added.
 
-Changed files in this slice:
+Changed files in the previous mobile capture form slice:
 - `app/CaptureNoteForm.tsx`
 - `app/page.tsx`
 - `app/globals.css`
 - `tests/rendered-html.test.mjs`
+- `docs/NEXT_AGENT_HANDOFF.md`
+
+Mobile capture placement checkpoint:
+- The phone-mode panel now says "Capture first, then review."
+- The capture form renders before the phone review cards in source and visual
+  order.
+- Project and source controls are grouped into a compact row so the first phone
+  viewport reaches note entry and submit sooner.
+- Rendered/static tests assert the capture-first order.
+- Approval replay now evaluates scoped approval expiry at the event timestamp,
+  not the current wall clock, so historical verified ledger events do not rot
+  when the calendar advances. This fixed the July 24 verify failure without
+  relaxing approval rules.
+
+Changed files in this slice:
+- `app/CaptureNoteForm.tsx`
+- `app/page.tsx`
+- `app/globals.css`
+- `app/ledger.ts`
+- `tests/rendered-html.test.mjs`
+- `tests/ledger.test.mjs`
 - `docs/NEXT_AGENT_HANDOFF.md`
 
 Organizational checkpoint:
@@ -120,17 +141,15 @@ Organizational checkpoint:
 
 ## Next Chewable Step
 
-Manually exercise the local capture form in a mobile viewport, then implement
-the smallest capture triage/readiness slice.
+Add a safe manual local capture smoke test path or documented test command that
+does not pollute real `data/events.jsonl`.
 
 Recommended scope:
-- run the app locally and submit one throwaway capture against a temp or
-  consciously reviewed event log;
-- verify success/error states in a narrow viewport;
-- define the next supported capture state-changing action before implementing
-  conversion;
-- keep conversion to evidence/blocker/decision/task out until that action
-  contract is explicit.
+- use a temporary copied event log or existing test harness pattern;
+- exercise `/api/local/capture-note` or `runCaptureNoteCommand()`;
+- prove the real `data/events.jsonl` stays unchanged;
+- document the command in a developer-facing place;
+- keep conversion to evidence/blocker/decision/task out of scope.
 
 Out of scope:
 - Telegram;
@@ -160,6 +179,7 @@ Out of scope:
 - `app/api/local/capture-note/route.ts`
 - `app/CaptureNoteForm.tsx`
 - `app/page.tsx`
+- `app/ledger.ts`
 - `tests/ledger.test.mjs`
 - `tests/rendered-html.test.mjs`
 

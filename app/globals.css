@@ -145,6 +145,8 @@ button:hover {
 }
 
 .mobile-brief {
+  display: grid;
+  gap: 16px;
   margin-top: auto;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -160,7 +162,7 @@ button:hover {
 .phone-action-list {
   display: grid;
   gap: 10px;
-  margin: 18px 0 0;
+  margin: 0;
 }
 
 .phone-action {
@@ -219,10 +221,9 @@ button:hover {
 
 .capture-note-panel {
   display: grid;
-  gap: 14px;
-  margin-top: 18px;
+  gap: 12px;
   border-top: 1px solid var(--line);
-  padding-top: 18px;
+  padding-top: 16px;
 }
 
 .capture-note-panel h3 {
@@ -233,7 +234,13 @@ button:hover {
 
 .capture-note-form {
   display: grid;
-  gap: 10px;
+  gap: 9px;
+}
+
+.capture-note-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(92px, 0.62fr);
+  gap: 8px;
 }
 
 .capture-note-form label {
@@ -257,15 +264,15 @@ button:hover {
   border-radius: 8px;
   background: var(--surface-strong);
   color: var(--ink);
-  padding: 10px 11px;
+  padding: 9px 10px;
 }
 
 .capture-note-form select {
-  min-height: 40px;
+  min-height: 38px;
 }
 
 .capture-note-form textarea {
-  min-height: 96px;
+  min-height: 78px;
   resize: vertical;
 }
 
@@ -990,6 +997,10 @@ button:hover {
 
   .next-action-form {
     grid-template-columns: 1fr;
+  }
+
+  .capture-note-fields {
+    grid-template-columns: minmax(0, 1fr) minmax(92px, 0.58fr);
   }
 
   .segmented-status {

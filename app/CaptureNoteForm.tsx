@@ -46,28 +46,33 @@ export function CaptureNoteForm({ projects, recentCaptures }: CaptureNoteFormPro
     setStatus("saving");
     setMessage("");
 
-    const response = await fetch("/api/local/capture-note", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        projectId,
-        source,
-        body,
-        createdAt: new Date().toISOString(),
-      }),
-    });
-    const result = (await response.json()) as CaptureResult;
+    try {
+      const response = await fetch("/api/local/capture-note", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          projectId,
+          source,
+          body,
+          createdAt: new Date().toISOString(),
+        }),
+      });
+      const result = (await response.json()) as CaptureResult;
 
-    if (!response.ok || !result.ok) {
+      if (!response.ok || !result.ok) {
+        setStatus("error");
+        setMessage(result.errors.join("; ") || "Unable to capture note.");
+        return;
+      }
+
+      setStatus("saved");
+      setMessage(result.appended ? "Captured for review." : "Already captured.");
+      setBody("");
+      window.setTimeout(() => window.location.reload(), 500);
+    } catch {
       setStatus("error");
-      setMessage(result.errors.join("; ") || "Unable to capture note.");
-      return;
+      setMessage("Unable to capture note.");
     }
-
-    setStatus("saved");
-    setMessage(result.appended ? "Captured for review." : "Already captured.");
-    setBody("");
-    window.setTimeout(() => window.location.reload(), 500);
   }
 
   return (
@@ -78,28 +83,30 @@ export function CaptureNoteForm({ projects, recentCaptures }: CaptureNoteFormPro
       </div>
 
       <form className="capture-note-form" onSubmit={submit}>
-        <label>
-          <span>Project</span>
-          <select value={projectId} onChange={(event) => setProjectId(event.target.value)}>
-            <option value="inbox">Inbox</option>
-            {projects.map((project) => (
-              <option key={project.id} value={project.id}>
-                {project.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="capture-note-fields">
+          <label>
+            <span>Project</span>
+            <select value={projectId} onChange={(event) => setProjectId(event.target.value)}>
+              <option value="inbox">Inbox</option>
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.name}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <label>
-          <span>Source</span>
-          <select value={source} onChange={(event) => setSource(event.target.value)}>
-            {sourceOptions.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+          <label>
+            <span>Source</span>
+            <select value={source} onChange={(event) => setSource(event.target.value)}>
+              {sourceOptions.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
 
         <label className="capture-note-body">
           <span>Note or fact</span>
@@ -107,7 +114,7 @@ export function CaptureNoteForm({ projects, recentCaptures }: CaptureNoteFormPro
             value={body}
             onChange={(event) => setBody(event.target.value)}
             placeholder="Write what changed"
-            rows={4}
+            rows={3}
           />
         </label>
 
