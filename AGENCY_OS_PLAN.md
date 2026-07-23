@@ -1547,3 +1547,54 @@ Changed:
 
 Next safest step:
 - Run `npm run verify`, then commit this stack-readiness checkpoint.
+
+## PLAN FIRST - 2026-07-23 Pre-Development Readiness Audit
+
+Block: Final readiness audit before v0.3 implementation.
+
+Goal:
+- Decide whether anything else must be changed before starting the first
+  development branch.
+
+In scope:
+- Requirement-to-evidence readiness matrix.
+- Stack/tooling fit.
+- Easy-first and future-flexible assessment.
+- Go/no-go boundaries.
+
+Out of scope:
+- Implementing `capture.note_created`.
+- Replatforming.
+- Deploying.
+- Adding integrations.
+
+Done criteria:
+- Readiness audit exists and is linked from README and handoff.
+- The audit gives a clear go/no-go verdict.
+- Local verification passes.
+
+Evidence expected:
+- `docs/PRE_DEVELOPMENT_READINESS_AUDIT.md`.
+- README and handoff links.
+- `npm run verify`.
+
+## PLAN UPDATE - 2026-07-23 Pre-Development Readiness Audit
+
+Changed:
+- Added `docs/PRE_DEVELOPMENT_READINESS_AUDIT.md`.
+- Linked the readiness audit from README and next-agent handoff.
+- Recorded readiness evidence in `docs/CURRENT_EVIDENCE.md`.
+
+Verified:
+- `npm run verify` passes: lint, typecheck, build and 42 tests.
+
+Decision:
+- Nothing else should be changed before starting development.
+- Do not replatform before v0.3.
+- Start exactly one supervised bounded branch for
+  `capture.note_created` data/reducer support.
+- Keep production, auth, backup/restore, desktop packaging and integrations out
+  of the first branch.
+
+Next safest step:
+- Commit this readiness-audit checkpoint, then start the first v0.3 branch.

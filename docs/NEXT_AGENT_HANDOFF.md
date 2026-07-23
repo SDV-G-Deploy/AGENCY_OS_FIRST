@@ -33,6 +33,7 @@ The next branch should implement the v0.3 phone-first capture slice, starting
 from the contracts already written in:
 - `docs/AGENT_START_BRIEF.md`;
 - `docs/PRODUCT_DEVELOPMENT_FLOW.md`;
+- `docs/PRE_DEVELOPMENT_READINESS_AUDIT.md`;
 - `docs/STACK_AND_TOOLING_DECISION.md`;
 - `docs/DATA_MODEL_AND_INVARIANTS.md`;
 - `docs/REDACTION_AND_IMPORT_BOUNDARIES.md`;
@@ -63,6 +64,11 @@ Stack/tooling checkpoint:
   event type at a time, with human review before merge if files outside the
   planned slice change.
 
+Pre-development readiness checkpoint:
+- `docs/PRE_DEVELOPMENT_READINESS_AUDIT.md` clears only the first supervised
+  v0.3 branch.
+- The next branch remains `capture.note_created` data/reducer slice.
+
 ## Next Chewable Step
 
 Implement the first data/reducer slice for `capture.note_created`.
@@ -90,6 +96,7 @@ Out of scope:
 - `docs/PRODUCT_DEVELOPMENT_FLOW.md` sections:
   - `v0.3 Wedge Contract`
   - `Stage 2: First Phone Write`
+- `docs/PRE_DEVELOPMENT_READINESS_AUDIT.md`
 - `docs/STACK_AND_TOOLING_DECISION.md`
 - `docs/DATA_MODEL_AND_INVARIANTS.md` section:
   - `Capture`

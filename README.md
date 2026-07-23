@@ -52,6 +52,7 @@ npm run audit:prod
 - [Agent Context Protocol](docs/AGENT_CONTEXT_PROTOCOL.md)
 - [Product DNA](docs/PRODUCT_DNA.md)
 - [Product Development Flow](docs/PRODUCT_DEVELOPMENT_FLOW.md)
+- [Pre-Development Readiness Audit](docs/PRE_DEVELOPMENT_READINESS_AUDIT.md)
 - [Stack And Tooling Decision](docs/STACK_AND_TOOLING_DECISION.md)
 - [Agency OS Architecture](docs/AGENCY_OS_ARCHITECTURE.md)
 - [Work And Evidence Protocol](docs/WORK_AND_EVIDENCE_PROTOCOL.md)
