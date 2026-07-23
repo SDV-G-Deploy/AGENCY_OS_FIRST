@@ -26,8 +26,9 @@ Current implementation status:
 - dashboard event history loads from `data/events.jsonl`;
 - event envelope and hash-chain validation are active;
 - pure replay exists for `project.next_action_updated`;
+- file-backed append writer exists for `project.next_action_updated`;
 - current entity records still come from `data/*.json`;
-- full reducer replay and event writer are not implemented yet.
+- full reducer replay and visible write surfaces are not implemented yet.
 
 ## Identity
 

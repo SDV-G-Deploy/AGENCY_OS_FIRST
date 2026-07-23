@@ -33,6 +33,7 @@ async function transpileModule(sourcePath, targetPath, rewriteImports = false) {
       'from "../data/events.jsonl?raw"',
       'from "./events-jsonl.js"',
     );
+    source = source.replace('from "./ledger"', 'from "./ledger.js"');
   }
   const output = ts.transpileModule(source, {
     compilerOptions: {
@@ -78,6 +79,57 @@ async function loadLedger() {
     true,
   );
   return import(pathToFileURL(join(moduleDir, "ledger.js")).href);
+}
+
+async function loadLedgerWithWriter() {
+  const moduleDir = await mkdtemp(join(tmpdir(), "agency-os-ledger-writer-"));
+  const jsonModules = [
+    "actors",
+    "agent-runs",
+    "approvals",
+    "blockers",
+    "claims",
+    "decisions",
+    "evidence",
+    "projects",
+    "traces",
+    "work-items",
+  ];
+
+  await Promise.all(
+    jsonModules.map(async (name) => {
+      const source = await readFile(new URL(`../data/${name}.json`, import.meta.url), "utf8");
+      await writeFile(join(moduleDir, `${name}.js`), `export default ${source};\n`, "utf8");
+    }),
+  );
+
+  const eventsSource = await readFile(new URL("../data/events.jsonl", import.meta.url), "utf8");
+  await writeFile(
+    join(moduleDir, "events-jsonl.js"),
+    `export default ${JSON.stringify(eventsSource)};\n`,
+    "utf8",
+  );
+  await writeFile(join(moduleDir, "events.jsonl"), eventsSource, "utf8");
+
+  await transpileModule(
+    new URL("../app/ledger.ts", import.meta.url),
+    join(moduleDir, "ledger.js"),
+    true,
+  );
+  await transpileModule(
+    new URL("../app/ledger-writer.ts", import.meta.url),
+    join(moduleDir, "ledger-writer.js"),
+    true,
+  );
+
+  const ledger = await import(pathToFileURL(join(moduleDir, "ledger.js")).href);
+  const writer = await import(pathToFileURL(join(moduleDir, "ledger-writer.js")).href);
+
+  return {
+    eventsPath: join(moduleDir, "events.jsonl"),
+    ledger,
+    writer,
+  };
 }
 
 test("sanity checks find stale evidence and unproven agent claims", async () => {
@@ -427,4 +479,123 @@ test("replay rejects idempotency keys that already exist in the ledger", async (
       error.includes("duplicate idempotency key 2026-07-23-honesty-closure has different payload"),
     ),
   );
+});
+
+test("writer appends a human project next-action event after preflight replay", async () => {
+  const { eventsPath, ledger, writer } = await loadLedgerWithWriter();
+  const beforeSource = await readFile(eventsPath, "utf8");
+  const beforeEvents = ledger.parseLedgerEvents(beforeSource);
+
+  const result = await writer.appendProjectNextActionEvent({
+    ledger: ledger.stateLedger,
+    eventsPath,
+    actorId: "person-serj",
+    projectId: "project-agency-os",
+    nextAction: "Use the writer output as local proof.",
+    idempotencyKey: "test-writer-human-next-action",
+    timestamp: "2026-07-23T10:00:00Z",
+  });
+  const afterEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+
+  assert.equal(result.appended, true);
+  assert.deepEqual(result.errors, []);
+  assert.equal(afterEvents.length, beforeEvents.length + 1);
+  assert.equal(afterEvents.at(-1).sequence, beforeEvents.length + 1);
+  assert.equal(afterEvents.at(-1).previousEventHash, beforeEvents.at(-1).eventHash);
+  assert.equal(afterEvents.at(-1).eventHash, ledger.calculateEventHash(afterEvents.at(-1)));
+});
+
+test("writer treats an existing idempotency key as a no-op", async () => {
+  const { eventsPath, ledger, writer } = await loadLedgerWithWriter();
+  const beforeEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+
+  const result = await writer.appendProjectNextActionEvent({
+    ledger: ledger.stateLedger,
+    eventsPath,
+    actorId: "person-serj",
+    projectId: "project-agency-os",
+    nextAction: "This should not append.",
+    idempotencyKey: "2026-07-23-honesty-closure",
+    timestamp: "2026-07-23T10:00:00Z",
+  });
+  const afterEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+
+  assert.equal(result.appended, false);
+  assert.deepEqual(result.errors, []);
+  assert.deepEqual(result.ignoredEventIds, ["event-v0-2-honesty-closure"]);
+  assert.equal(afterEvents.length, beforeEvents.length);
+});
+
+test("writer blocks an agent next-action event without scoped approval", async () => {
+  const { eventsPath, ledger, writer } = await loadLedgerWithWriter();
+  const beforeEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+
+  const result = await writer.appendProjectNextActionEvent({
+    ledger: ledger.stateLedger,
+    eventsPath,
+    actorId: "agent-codex",
+    projectId: "project-agency-os",
+    nextAction: "Agent write should be blocked.",
+    idempotencyKey: "test-writer-agent-without-approval",
+    timestamp: "2026-07-23T10:00:00Z",
+  });
+  const afterEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+
+  assert.equal(result.appended, false);
+  assert.ok(result.errors.some((error) => error.includes("requires scoped approval")));
+  assert.equal(afterEvents.length, beforeEvents.length);
+});
+
+test("writer appends an agent next-action event with scoped approval", async () => {
+  const { eventsPath, ledger, writer } = await loadLedgerWithWriter();
+  const approvedLedger = {
+    ...ledger.stateLedger,
+    approvals: ledger.stateLedger.approvals.map((approval) =>
+      approval.id === "approval-first-scoped-write"
+        ? {
+            ...approval,
+            state: "approved",
+            scope: "project-agency-os:project.next_action_updated",
+            approverId: "person-serj",
+            decidedAt: "2026-07-23T10:00:00Z",
+          }
+        : approval,
+    ),
+  };
+
+  const result = await writer.appendProjectNextActionEvent({
+    ledger: approvedLedger,
+    eventsPath,
+    actorId: "agent-codex",
+    projectId: "project-agency-os",
+    nextAction: "Agent write passes through scoped approval.",
+    idempotencyKey: "test-writer-agent-with-approval",
+    approvalIds: ["approval-first-scoped-write"],
+    timestamp: "2026-07-23T10:00:00Z",
+  });
+  const afterEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+
+  assert.equal(result.appended, true);
+  assert.deepEqual(result.errors, []);
+  assert.equal(afterEvents.at(-1).approvalIds[0], "approval-first-scoped-write");
+});
+
+test("writer refuses to append when the existing event log is invalid", async () => {
+  const { eventsPath, ledger, writer } = await loadLedgerWithWriter();
+  const events = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+  events[0].eventHash = "fnv1a32:badbad00";
+  await writeFile(eventsPath, `${events.map((event) => JSON.stringify(event)).join("\n")}\n`, "utf8");
+
+  const result = await writer.appendProjectNextActionEvent({
+    ledger: ledger.stateLedger,
+    eventsPath,
+    actorId: "person-serj",
+    projectId: "project-agency-os",
+    nextAction: "This should not append after broken precondition.",
+    idempotencyKey: "test-writer-broken-precondition",
+    timestamp: "2026-07-23T10:00:00Z",
+  });
+
+  assert.equal(result.appended, false);
+  assert.ok(result.errors.some((error) => error.includes("invalid event hash")));
 });

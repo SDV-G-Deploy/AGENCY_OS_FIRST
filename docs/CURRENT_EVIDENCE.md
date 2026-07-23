@@ -42,7 +42,7 @@ Evidence:
   - ledger rule tests
 
 Observed test result:
-- 23 tests passed.
+- 28 tests passed.
 
 Strength: strong for current static/local code quality.
 
@@ -157,6 +157,24 @@ Evidence:
 Strength: strong for replay preflight safety. It does not yet prove append-only
 file writing.
 
+### Claim 11: The first append-only writer path exists
+
+Evidence:
+- `app/ledger-writer.ts` exports `buildProjectNextActionEvent()` and
+  `appendProjectNextActionEvent()`.
+- Writer reads the current event log from disk before writing.
+- Writer validates the existing event log precondition.
+- Writer builds the next `sequence`, `previousEventHash` and `eventHash`.
+- Writer preflights through `replayLedgerEvents()` before append.
+- `tests/ledger.test.mjs` covers human append, duplicate idempotency no-op,
+  blocked agent append, approved agent append and invalid existing log
+  precondition.
+- `npm run verify` passes with 28 tests.
+
+Strength: strong for the first local file-backed write path. It does not yet
+prove a UI/API action, current snapshot regeneration or durable approval-used
+event.
+
 ## Files Changed For Honesty Closure
 
 - `package.json`: added `typecheck`, `audit:prod`, `verify`; moved Next to
@@ -185,14 +203,15 @@ file writing.
   integration and backup gates.
 - `data/events.jsonl`: migrated to the minimal event integrity envelope.
 - `data/approvals.json`: added single-use approval fields.
+- `app/ledger-writer.ts`: first guarded append-only writer path.
 
 ## Known Gaps
 
 - The app is still mostly read-only.
 - Buttons are not wired to write actions.
 - State now comes from local JSON ledger files and events load from JSONL. A
-  first pure replay path exists for one action, but no append writer or full
-  reducer coverage exists yet.
+  first pure replay path and append writer exist for one action, but there is no
+  visible UI/API action or full reducer coverage yet.
 - Dependency audit blocks production deployment.
 - No visual screenshot artifact is saved in the repo yet.
 - The baseline has one local commit, but no remote backup has been created.
@@ -204,5 +223,5 @@ file writing.
 Before the next product feature:
 - commit the current baseline or otherwise preserve it;
 - make one phone review action create an append-only event;
-- implement append writer and broader reducer replay;
+- implement a visible UI/API command path and broader reducer replay;
 - capture a screenshot or browser QA artifact after the next visible UI change.

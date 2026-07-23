@@ -56,7 +56,7 @@ Current status:
 - schema and hash-chain validation is partial but active;
 - reducer replay exists for `project.next_action_updated` and validates append
   candidates before applying state;
-- writer is not implemented;
+- a local file-backed writer exists for `project.next_action_updated`;
 - approval linkage is partial but scoped/single-use replay enforcement exists
   for the first agent write path;
 - redaction is documented but not enforced.

@@ -631,3 +631,61 @@ Next safest step:
 - Implement one append-only writer path for `project.next_action_updated`, with
   preflight validation and replay confirmation, or stop if a human product
   choice is needed before writes become visible.
+
+## PLAN FIRST - 2026-07-23 Append Writer Path
+
+Block: Add one file-backed append writer without UI.
+
+Goal:
+- Prove that Agency OS can create one durable state-changing event through a
+  guarded runtime path.
+
+In scope:
+- Build a `project.next_action_updated` event from current ledger state.
+- Read the current `events.jsonl` file before writing.
+- Refuse writes when the existing event log is invalid.
+- Refuse duplicate idempotency as a no-op.
+- Preflight the event through replay before append.
+- Append exactly one JSONL line after successful preflight.
+- Test human write, agent write with approval, agent write without approval,
+  duplicate idempotency and broken existing log.
+
+Out of scope:
+- UI/API surface.
+- Updating current snapshot JSON files after append.
+- Durable `approval.used` companion event.
+- Redaction scanner.
+- Wider reducer action set.
+
+Done criteria:
+- Writer appends a valid next sequence/hash-chain event in a temp event log.
+- Writer blocks unsafe writes before disk append.
+- `npm run verify` passes.
+
+Evidence:
+- `app/ledger-writer.ts`.
+- `tests/ledger.test.mjs` writer tests.
+
+## PLAN UPDATE - 2026-07-23 Append Writer Path
+
+Changed:
+- Added `app/ledger-writer.ts` with `buildProjectNextActionEvent()` and
+  `appendProjectNextActionEvent()`.
+- Writer reads the current event log, validates existing chain, builds the next
+  envelope, preflights via `replayLedgerEvents()`, and appends after success.
+- Added tests for successful human append, duplicate idempotency no-op, blocked
+  agent append, approved agent append and invalid existing log precondition.
+
+Verified:
+- `npm run verify` passes: lint, typecheck, build and 28 tests.
+
+Still missing:
+- No visible UI/API action calls the writer.
+- Current JSON snapshots are not regenerated after append.
+- Approval consumption is not yet written as its own durable event.
+- Redaction/import scanner fixtures remain missing.
+
+Next safest step:
+- Add a server/API or local command wrapper around the writer only after
+  deciding whether the first visible write should be phone-mode capture or
+  laptop command-center action.

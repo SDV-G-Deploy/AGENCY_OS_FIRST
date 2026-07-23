@@ -23,6 +23,11 @@ For v0.3:
 - current JSON records become reducer output or explicitly marked snapshots;
 - direct mutation of current state files is forbidden outside migrations.
 
+Current implementation status:
+- the first local file-backed writer exists for `project.next_action_updated`;
+- it is not yet wired to the UI or API;
+- it does not regenerate current snapshot files after append.
+
 ## Event Envelope
 
 Every event must eventually include:
