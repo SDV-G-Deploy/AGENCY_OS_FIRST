@@ -42,7 +42,7 @@ Evidence:
   - ledger rule tests
 
 Observed test result:
-- 11 tests passed.
+- 16 tests passed.
 
 Strength: strong for current static/local code quality.
 
@@ -111,6 +111,21 @@ Evidence:
 Strength: medium. These documents constrain future work, but runtime
 enforcement is still incomplete.
 
+### Claim 8: Event log integrity has first runtime validation
+
+Evidence:
+- `data/events.jsonl` has minimal envelope fields:
+  `schemaVersion`, `sequence`, `approvalIds`, `traceId`, `redactionStatus`,
+  `retentionClass`, `previousEventHash` and `eventHash`.
+- `app/ledger.ts` exports `calculateEventHash()` and `validateEventLog()`.
+- `validateLedger()` includes event log validation errors.
+- `tests/ledger.test.mjs` covers valid event log, broken hash chain, duplicate
+  sequence, missing redaction and unknown approval reference.
+- `npm run verify` passes with 16 tests.
+
+Strength: strong for local event integrity validation. It does not yet prove
+append-only write enforcement or reducer replay.
+
 ## Files Changed For Honesty Closure
 
 - `package.json`: added `typecheck`, `audit:prod`, `verify`; moved Next to
@@ -137,6 +152,7 @@ enforcement is still incomplete.
   boundaries.
 - `docs/RELEASE_GATES.md`: local, evidence, production, agentic write,
   integration and backup gates.
+- `data/events.jsonl`: migrated to the minimal event integrity envelope.
 
 ## Known Gaps
 
@@ -147,11 +163,13 @@ enforcement is still incomplete.
 - Dependency audit blocks production deployment.
 - No visual screenshot artifact is saved in the repo yet.
 - The baseline has one local commit, but no remote backup has been created.
+- Event integrity is validated, but the hash function is a deterministic local
+  tamper-evidence checksum, not a cryptographic security boundary.
 
 ## Next Evidence To Create
 
 Before the next product feature:
 - commit the current baseline or otherwise preserve it;
 - make one phone review action create an append-only event;
-- add event schema versioning and hash-chain integrity;
+- implement reducer replay and event writer;
 - capture a screenshot or browser QA artifact after the next visible UI change.

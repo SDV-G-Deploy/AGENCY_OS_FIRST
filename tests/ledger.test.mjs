@@ -119,6 +119,69 @@ test("ledger events are loaded from the jsonl source", async () => {
   assert.deepEqual(stateLedger.events, parsedEvents);
 });
 
+test("event log validator accepts the current jsonl envelope and hash chain", async () => {
+  const { stateLedger, validateEventLog } = await loadLedger();
+
+  assert.deepEqual(
+    validateEventLog(stateLedger.events, {
+      evidenceIds: new Set(stateLedger.evidence.map((item) => item.id)),
+      approvalIds: new Set(stateLedger.approvals.map((item) => item.id)),
+      traceIds: new Set(stateLedger.traces.map((item) => item.id)),
+    }),
+    [],
+  );
+});
+
+test("event log validator rejects a broken hash chain", async () => {
+  const { calculateEventHash, stateLedger, validateEventLog } = await loadLedger();
+  const brokenEvent = {
+    ...stateLedger.events[1],
+    previousEventHash: "fnv1a32:broken",
+  };
+  brokenEvent.eventHash = calculateEventHash(brokenEvent);
+
+  const errors = validateEventLog([stateLedger.events[0], brokenEvent]);
+
+  assert.ok(errors.some((error) => error.includes("broken previous hash")));
+});
+
+test("event log validator rejects duplicate sequence numbers", async () => {
+  const { stateLedger, validateEventLog } = await loadLedger();
+  const duplicateSequence = {
+    ...stateLedger.events[1],
+    sequence: stateLedger.events[0].sequence,
+  };
+
+  const errors = validateEventLog([stateLedger.events[0], duplicateSequence]);
+
+  assert.ok(errors.some((error) => error.includes("duplicate event sequence")));
+});
+
+test("event log validator rejects missing redaction status", async () => {
+  const { stateLedger, validateEventLog } = await loadLedger();
+  const { redactionStatus, ...missingRedaction } = stateLedger.events[0];
+  assert.equal(redactionStatus, "not_required");
+
+  const errors = validateEventLog([missingRedaction]);
+
+  assert.ok(errors.some((error) => error.includes("missing redaction status")));
+});
+
+test("event log validator rejects unknown approval references", async () => {
+  const { calculateEventHash, stateLedger, validateEventLog } = await loadLedger();
+  const approvalLinkedEvent = {
+    ...stateLedger.events[0],
+    approvalIds: ["approval-does-not-exist"],
+  };
+  approvalLinkedEvent.eventHash = calculateEventHash(approvalLinkedEvent);
+
+  const errors = validateEventLog([approvalLinkedEvent], {
+    approvalIds: new Set(stateLedger.approvals.map((item) => item.id)),
+  });
+
+  assert.ok(errors.some((error) => error.includes("unknown approval")));
+});
+
 test("ledger validation accepts the current local data skeleton", async () => {
   const { validateLedger } = await loadLedger();
 

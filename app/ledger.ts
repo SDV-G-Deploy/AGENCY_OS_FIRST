@@ -14,6 +14,13 @@ type Severity = "critical" | "warning" | "info";
 type ActionType = "approve" | "verify" | "unblock" | "capture";
 type VerificationStatus = "missing" | "pending" | "verified" | "rejected" | "stale";
 type ApprovalState = "requested" | "approved" | "rejected" | "expired" | "used";
+type RedactionStatus =
+  | "not_required"
+  | "pending_scan"
+  | "redacted"
+  | "no_secrets_detected"
+  | "blocked_sensitive";
+type RetentionClass = "audit" | "operational" | "temporary";
 
 export type ProjectRecord = {
   id: string;
@@ -146,6 +153,8 @@ export type TraceRecord = {
 };
 
 export type LedgerEvent = {
+  schemaVersion: 1;
+  sequence: number;
   id: string;
   timestamp: string;
   actorId: string;
@@ -155,8 +164,14 @@ export type LedgerEvent = {
   before: unknown;
   after: Record<string, unknown> | null;
   evidenceIds: string[];
+  approvalIds: string[];
+  traceId: string | null;
   source: string;
   idempotencyKey: string;
+  redactionStatus: RedactionStatus;
+  retentionClass: RetentionClass;
+  previousEventHash: string | null;
+  eventHash: string;
 };
 
 export type StateLedger = {
@@ -220,6 +235,118 @@ export function parseLedgerEvents(source: string): LedgerEvent[] {
     .map((line) => JSON.parse(line) as LedgerEvent);
 }
 
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== "object") {
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableStringify(item)).join(",")}]`;
+  }
+
+  const record = value as Record<string, unknown>;
+  return `{${Object.keys(record)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${stableStringify(record[key])}`)
+    .join(",")}}`;
+}
+
+export function calculateEventHash(event: LedgerEvent) {
+  const hashableEvent = Object.fromEntries(
+    Object.entries(event).filter(([key]) => key !== "eventHash"),
+  );
+  const canonical = stableStringify(hashableEvent);
+  let hash = 0x811c9dc5;
+
+  for (let index = 0; index < canonical.length; index += 1) {
+    hash ^= canonical.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+
+  return `fnv1a32:${hash.toString(16).padStart(8, "0")}`;
+}
+
+export function validateEventLog(
+  events: LedgerEvent[],
+  references: {
+    evidenceIds?: Set<string>;
+    approvalIds?: Set<string>;
+    traceIds?: Set<string>;
+  } = {},
+) {
+  const errors: string[] = [];
+  const sequences = new Set<number>();
+  const eventIds = new Set<string>();
+  const idempotencyKeys = new Map<string, string>();
+  let previousHash: string | null = null;
+
+  events.forEach((event, index) => {
+    if (event.schemaVersion !== 1) {
+      errors.push(`event ${event.id ?? index} has unsupported schema version`);
+    }
+    if (typeof event.sequence !== "number" || event.sequence < 1) {
+      errors.push(`event ${event.id ?? index} has invalid sequence`);
+    }
+    if (sequences.has(event.sequence)) {
+      errors.push(`duplicate event sequence ${event.sequence}`);
+    }
+    sequences.add(event.sequence);
+    if (event.sequence !== index + 1) {
+      errors.push(`event ${event.id} sequence must be ${index + 1}`);
+    }
+    if (eventIds.has(event.id)) {
+      errors.push(`duplicate event id ${event.id}`);
+    }
+    eventIds.add(event.id);
+
+    if (!Array.isArray(event.evidenceIds)) {
+      errors.push(`event ${event.id} evidenceIds must be an array`);
+    }
+    if (!Array.isArray(event.approvalIds)) {
+      errors.push(`event ${event.id} approvalIds must be an array`);
+    }
+    if (!event.redactionStatus) {
+      errors.push(`event ${event.id} is missing redaction status`);
+    }
+    if (!event.retentionClass) {
+      errors.push(`event ${event.id} is missing retention class`);
+    }
+    if (event.previousEventHash !== previousHash) {
+      errors.push(`event ${event.id} has broken previous hash`);
+    }
+
+    const expectedHash = calculateEventHash(event);
+    if (event.eventHash !== expectedHash) {
+      errors.push(`event ${event.id} has invalid event hash`);
+    }
+
+    const priorIdempotencyHash = idempotencyKeys.get(event.idempotencyKey);
+    if (priorIdempotencyHash && priorIdempotencyHash !== expectedHash) {
+      errors.push(`duplicate idempotency key ${event.idempotencyKey} has different payload`);
+    } else if (priorIdempotencyHash) {
+      errors.push(`duplicate idempotency key ${event.idempotencyKey}`);
+    }
+    idempotencyKeys.set(event.idempotencyKey, expectedHash);
+
+    for (const id of event.evidenceIds ?? []) {
+      if (references.evidenceIds && !references.evidenceIds.has(id)) {
+        errors.push(`event ${event.id} references unknown evidence ${id}`);
+      }
+    }
+    for (const id of event.approvalIds ?? []) {
+      if (references.approvalIds && !references.approvalIds.has(id)) {
+        errors.push(`event ${event.id} references unknown approval ${id}`);
+      }
+    }
+    if (event.traceId && references.traceIds && !references.traceIds.has(event.traceId)) {
+      errors.push(`event ${event.id} references unknown trace ${event.traceId}`);
+    }
+
+    previousHash = event.eventHash;
+  });
+
+  return errors;
+}
+
 export const stateLedger: StateLedger = {
   actors: actorsData as ActorRecord[],
   projects: projectsData as ProjectRecord[],
@@ -279,6 +406,14 @@ export function validateLedger(ledger: StateLedger = stateLedger): string[] {
   const approvalIds = new Set(ledger.approvals.map((approval) => approval.id));
   const traceIds = new Set(ledger.traces.map((trace) => trace.id));
   const idempotencyKeys = new Set<string>();
+
+  errors.push(
+    ...validateEventLog(ledger.events, {
+      evidenceIds,
+      approvalIds,
+      traceIds,
+    }),
+  );
 
   for (const project of ledger.projects) {
     if (!actorIds.has(project.ownerId)) {

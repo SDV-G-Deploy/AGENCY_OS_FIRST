@@ -53,7 +53,7 @@ Before any agent can write durable state:
 
 Current status:
 - events load from `data/events.jsonl`;
-- schema validation is partial;
+- schema and hash-chain validation is partial but active;
 - reducer/writer is not implemented;
 - approval linkage is partial;
 - redaction is documented but not enforced.
@@ -79,4 +79,3 @@ Before relying on the dashboard as daily operational memory:
 Current status:
 - local git baseline exists;
 - remote backup is not configured.
-

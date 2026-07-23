@@ -46,20 +46,27 @@ Every event must eventually include:
 - `previousEventHash`;
 - `eventHash`.
 
-Current v0.2 events do not yet have the full envelope. This is a known
-architecture gap, not a hidden implementation detail.
+Current v0.2 events have this minimal envelope. The next gap is writer/reducer
+enforcement: new state changes are not yet forced through this envelope.
 
 ## Hash Chain
 
-Target rule:
+Current v0.2 rule:
+- `eventHash` uses the deterministic `fnv1a32:*` checksum implemented in
+  `app/ledger.ts`;
+- this catches accidental drift in local development.
+
+Target production rule:
 - `eventHash` is computed from a canonical JSON form of the event without
   `eventHash`;
 - `previousEventHash` equals the prior event's `eventHash`;
 - the first event uses `previousEventHash: null`;
 - a broken chain blocks writes and marks the ledger as unsafe.
 
-The hash is not a security boundary by itself. It is a tamper-evidence signal
-that makes accidental or silent edits visible.
+The current hash is not a cryptographic security boundary by itself. It is a
+tamper-evidence signal that makes accidental or silent edits visible. Before
+hosted/multi-user use, replace or supplement it with cryptographic SHA-256 or
+signed events.
 
 ## Reducer Contract
 
@@ -111,4 +118,3 @@ If any step fails, the event is not appended.
 - agent tries to verify its own medium/high-risk work;
 - raw secret appears in event payload;
 - clock skew creates out-of-order timestamp.
-

@@ -24,6 +24,7 @@ architecture target is event-derived state.
 
 Current implementation status:
 - dashboard event history loads from `data/events.jsonl`;
+- event envelope and hash-chain validation are active;
 - current entity records still come from `data/*.json`;
 - reducer replay and event writer are not implemented yet.
 

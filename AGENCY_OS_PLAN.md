@@ -467,3 +467,60 @@ Next safest step:
 - Ask independent critics to re-score the architecture after this contract pass;
   if they still score below 95, implement the highest-risk missing runtime rule
   first.
+
+## PLAN FIRST - 2026-07-23 Event Log Validator
+
+Block: Add minimal event log integrity validation.
+
+Goal:
+- Move from documented event integrity to runtime validation over
+  `data/events.jsonl`.
+
+In scope:
+- Add minimal event envelope fields to existing events.
+- Add deterministic event hash calculation.
+- Validate sequence, hash chain, idempotency payloads, approval references,
+  trace references and redaction status.
+- Surface event validation failures through existing ledger validation.
+- Add tests for the new failure modes.
+
+Out of scope:
+- Event writer.
+- Reducer replay into current snapshots.
+- UI actions.
+- External integrations.
+- Production dependency fixes.
+
+Done criteria:
+- Current `data/events.jsonl` validates.
+- Broken hash, duplicate sequence, missing redaction and unknown approval are
+  caught by tests.
+- `npm run verify` passes without lint warnings.
+
+Evidence:
+- `app/ledger.ts` exports `calculateEventHash()` and `validateEventLog()`.
+- `data/events.jsonl` contains `schemaVersion`, `sequence`,
+  `previousEventHash`, `eventHash`, `approvalIds`, `traceId`,
+  `redactionStatus` and `retentionClass`.
+- `tests/ledger.test.mjs` includes event integrity tests.
+
+## PLAN UPDATE - 2026-07-23 Event Log Validator
+
+Changed:
+- Added event envelope and hash-chain validation.
+- Migrated the three existing JSONL events to the minimal envelope.
+- Added event integrity tests.
+- Connected event log validation into `validateLedger()`.
+
+Verified:
+- `npm run verify` passes: lint, typecheck, build and 16 tests.
+
+Still missing:
+- No append-only writer yet.
+- No reducer replay from events into current state yet.
+- No approval scope/single-use enforcement on event application yet.
+- No redaction scanner fixtures yet.
+
+Next safest step:
+- Implement reducer replay for a small allowed action set, or enforce approval
+  scope/single-use rules before any phone/UI write action.
