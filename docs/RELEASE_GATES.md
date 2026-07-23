@@ -54,8 +54,10 @@ Before any agent can write durable state:
 Current status:
 - events load from `data/events.jsonl`;
 - schema and hash-chain validation is partial but active;
-- reducer/writer is not implemented;
-- approval linkage is partial;
+- reducer replay exists for `project.next_action_updated`;
+- writer is not implemented;
+- approval linkage is partial but scoped/single-use replay enforcement exists
+  for the first agent write path;
 - redaction is documented but not enforced.
 
 ## Integration Gate

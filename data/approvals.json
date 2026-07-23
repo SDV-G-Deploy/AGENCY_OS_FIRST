@@ -13,6 +13,10 @@
     "approverId": null,
     "decidedAt": null,
     "expiresAt": "2026-07-24T00:00:00+03:00",
+    "singleUse": true,
+    "usedAt": null,
+    "usedByEventId": null,
+    "humanRequired": true,
     "rationale": "First scoped write should be explicit before agents mutate state.",
     "linkedEvidenceIds": []
   }

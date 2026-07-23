@@ -524,3 +524,59 @@ Still missing:
 Next safest step:
 - Implement reducer replay for a small allowed action set, or enforce approval
   scope/single-use rules before any phone/UI write action.
+
+## PLAN FIRST - 2026-07-23 Minimal Replay Reducer
+
+Block: Add the first pure replay path for one state-changing action.
+
+Goal:
+- Prove that a project state change can be derived from events without mutating
+  the input snapshot.
+
+In scope:
+- `replayLedgerEvents()` for `project.next_action_updated`.
+- Exact duplicate idempotency payloads are ignored.
+- Changed duplicate idempotency payloads are rejected.
+- Agent writes require scoped approval.
+- Single-use approvals are marked used after successful agent replay.
+- Redaction `pending_scan` and `blocked_sensitive` fail closed for replay.
+
+Out of scope:
+- File append writer.
+- UI or API action.
+- Full reducer for every event type.
+- Cryptographic SHA-256 migration.
+- Production dependency fix.
+
+Done criteria:
+- Replay updates a cloned ledger and leaves the input snapshot unchanged.
+- Agent write fails without approval and succeeds once with valid scoped
+  single-use approval.
+- `npm run verify` passes without lint warnings.
+
+Evidence:
+- `app/ledger.ts` exports `replayLedgerEvents()` and `canUseApproval()`.
+- `data/approvals.json` includes single-use approval fields.
+- `tests/ledger.test.mjs` includes replay/idempotency/approval tests.
+
+## PLAN UPDATE - 2026-07-23 Minimal Replay Reducer
+
+Changed:
+- Added pure replay support for `project.next_action_updated`.
+- Added scoped approval validation for agent writes.
+- Added single-use approval consumption during replay.
+- Added tests for no-mutation replay, exact duplicate idempotency, changed
+  duplicate idempotency, missing approval and single-use approval consumption.
+
+Verified:
+- `npm run verify` passes: lint, typecheck, build and 21 tests.
+
+Still missing:
+- No append-to-file writer.
+- No UI/API action creates events.
+- Reducer supports only one state-changing action.
+- Redaction scanner and importer fixtures are not implemented.
+
+Next safest step:
+- Add a local append-event writer function for one phone review action, or add
+  redaction/import fixture tests before opening any external input.

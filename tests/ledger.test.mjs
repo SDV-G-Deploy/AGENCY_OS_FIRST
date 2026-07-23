@@ -274,3 +274,126 @@ test("external actions fail closed without a live approval", async () => {
     true,
   );
 });
+
+function makeProjectNextActionEvent(calculateEventHash, overrides = {}) {
+  const event = {
+    schemaVersion: 1,
+    sequence: 1,
+    id: "event-test-next-action",
+    timestamp: "2026-07-23T09:00:00Z",
+    actorId: "person-serj",
+    action: "project.next_action_updated",
+    entityType: "project",
+    entityId: "project-agency-os",
+    before: { nextAction: "old action" },
+    after: { nextAction: "Review event reducer output." },
+    evidenceIds: [],
+    approvalIds: [],
+    traceId: null,
+    source: "test",
+    idempotencyKey: "test-next-action",
+    redactionStatus: "not_required",
+    retentionClass: "audit",
+    previousEventHash: null,
+    eventHash: "",
+    ...overrides,
+  };
+  event.eventHash = calculateEventHash(event);
+  return event;
+}
+
+test("replay updates project next action without mutating the input snapshot", async () => {
+  const { calculateEventHash, replayLedgerEvents, stateLedger } = await loadLedger();
+  const originalNextAction = stateLedger.projects.find((project) => project.id === "project-agency-os").nextAction;
+  const event = makeProjectNextActionEvent(calculateEventHash);
+
+  const result = replayLedgerEvents(stateLedger, [event]);
+  const replayedProject = result.ledger.projects.find((project) => project.id === "project-agency-os");
+  const originalProject = stateLedger.projects.find((project) => project.id === "project-agency-os");
+
+  assert.deepEqual(result.errors, []);
+  assert.deepEqual(result.appliedEventIds, ["event-test-next-action"]);
+  assert.equal(replayedProject.nextAction, "Review event reducer output.");
+  assert.equal(originalProject.nextAction, originalNextAction);
+});
+
+test("replay ignores exact duplicate idempotency payloads", async () => {
+  const { calculateEventHash, replayLedgerEvents, stateLedger } = await loadLedger();
+  const event = makeProjectNextActionEvent(calculateEventHash);
+
+  const result = replayLedgerEvents(stateLedger, [event, { ...event }]);
+
+  assert.deepEqual(result.errors, []);
+  assert.deepEqual(result.appliedEventIds, ["event-test-next-action"]);
+  assert.deepEqual(result.ignoredEventIds, ["event-test-next-action"]);
+});
+
+test("replay rejects changed duplicate idempotency payloads", async () => {
+  const { calculateEventHash, replayLedgerEvents, stateLedger } = await loadLedger();
+  const event = makeProjectNextActionEvent(calculateEventHash);
+  const changedDuplicate = makeProjectNextActionEvent(calculateEventHash, {
+    id: "event-test-next-action-changed",
+    after: { nextAction: "Different action with same idempotency key." },
+  });
+
+  const result = replayLedgerEvents(stateLedger, [event, changedDuplicate]);
+
+  assert.ok(
+    result.errors.some((error) =>
+      error.includes("duplicate idempotency key test-next-action has different payload"),
+    ),
+  );
+});
+
+test("agent replay requires scoped approval", async () => {
+  const { calculateEventHash, replayLedgerEvents, stateLedger } = await loadLedger();
+  const agentEvent = makeProjectNextActionEvent(calculateEventHash, {
+    actorId: "agent-codex",
+  });
+
+  const result = replayLedgerEvents(stateLedger, [agentEvent]);
+
+  assert.ok(result.errors.some((error) => error.includes("requires scoped approval")));
+});
+
+test("agent replay applies scoped single-use approval once", async () => {
+  const { calculateEventHash, replayLedgerEvents, stateLedger } = await loadLedger();
+  const approvedLedger = {
+    ...stateLedger,
+    approvals: stateLedger.approvals.map((approval) =>
+      approval.id === "approval-first-scoped-write"
+        ? {
+            ...approval,
+            state: "approved",
+            scope: "project-agency-os:project.next_action_updated",
+            approverId: "person-serj",
+            decidedAt: "2026-07-23T09:00:00Z",
+          }
+        : approval,
+    ),
+  };
+  const firstEvent = makeProjectNextActionEvent(calculateEventHash, {
+    id: "event-test-agent-next-action-1",
+    actorId: "agent-codex",
+    approvalIds: ["approval-first-scoped-write"],
+    idempotencyKey: "test-agent-next-action-1",
+    after: { nextAction: "Agent writes through scoped approval." },
+  });
+  const secondEvent = makeProjectNextActionEvent(calculateEventHash, {
+    id: "event-test-agent-next-action-2",
+    actorId: "agent-codex",
+    approvalIds: ["approval-first-scoped-write"],
+    idempotencyKey: "test-agent-next-action-2",
+    after: { nextAction: "Agent tries to reuse scoped approval." },
+  });
+
+  const result = replayLedgerEvents(approvedLedger, [firstEvent, secondEvent]);
+  const usedApproval = result.ledger.approvals.find(
+    (approval) => approval.id === "approval-first-scoped-write",
+  );
+
+  assert.deepEqual(result.appliedEventIds, ["event-test-agent-next-action-1"]);
+  assert.ok(result.errors.some((error) => error.includes("requires scoped approval")));
+  assert.equal(usedApproval.state, "used");
+  assert.equal(usedApproval.usedByEventId, "event-test-agent-next-action-1");
+});

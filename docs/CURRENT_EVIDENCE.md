@@ -42,7 +42,7 @@ Evidence:
   - ledger rule tests
 
 Observed test result:
-- 16 tests passed.
+- 21 tests passed.
 
 Strength: strong for current static/local code quality.
 
@@ -126,6 +126,23 @@ Evidence:
 Strength: strong for local event integrity validation. It does not yet prove
 append-only write enforcement or reducer replay.
 
+### Claim 9: The first pure replay reducer path exists
+
+Evidence:
+- `app/ledger.ts` exports `replayLedgerEvents()`.
+- Supported state-changing action: `project.next_action_updated`.
+- Replay clones the input ledger and does not mutate the original snapshot.
+- Agent writes require a scoped approval for
+  `project-id:project.next_action_updated`.
+- Single-use approval is marked `used` during successful agent replay.
+- `tests/ledger.test.mjs` covers no-mutation replay, exact duplicate
+  idempotency ignore, changed duplicate rejection, missing approval and
+  single-use approval consumption.
+- `npm run verify` passes with 21 tests.
+
+Strength: strong for the first pure reducer path. It does not yet prove a file
+append writer, UI action, or full event replay coverage.
+
 ## Files Changed For Honesty Closure
 
 - `package.json`: added `typecheck`, `audit:prod`, `verify`; moved Next to
@@ -153,13 +170,15 @@ append-only write enforcement or reducer replay.
 - `docs/RELEASE_GATES.md`: local, evidence, production, agentic write,
   integration and backup gates.
 - `data/events.jsonl`: migrated to the minimal event integrity envelope.
+- `data/approvals.json`: added single-use approval fields.
 
 ## Known Gaps
 
 - The app is still mostly read-only.
 - Buttons are not wired to write actions.
-- State now comes from local JSON ledger files and events load from JSONL, but
-  there is no reducer/writer for append-only event replay yet.
+- State now comes from local JSON ledger files and events load from JSONL. A
+  first pure replay path exists for one action, but no append writer or full
+  reducer coverage exists yet.
 - Dependency audit blocks production deployment.
 - No visual screenshot artifact is saved in the repo yet.
 - The baseline has one local commit, but no remote backup has been created.
@@ -171,5 +190,5 @@ append-only write enforcement or reducer replay.
 Before the next product feature:
 - commit the current baseline or otherwise preserve it;
 - make one phone review action create an append-only event;
-- implement reducer replay and event writer;
+- implement append writer and broader reducer replay;
 - capture a screenshot or browser QA artifact after the next visible UI change.

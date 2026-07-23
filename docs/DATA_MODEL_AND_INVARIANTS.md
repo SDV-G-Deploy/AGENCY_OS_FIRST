@@ -25,8 +25,9 @@ architecture target is event-derived state.
 Current implementation status:
 - dashboard event history loads from `data/events.jsonl`;
 - event envelope and hash-chain validation are active;
+- pure replay exists for `project.next_action_updated`;
 - current entity records still come from `data/*.json`;
-- reducer replay and event writer are not implemented yet.
+- full reducer replay and event writer are not implemented yet.
 
 ## Identity
 

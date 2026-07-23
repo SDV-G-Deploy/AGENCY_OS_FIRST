@@ -125,6 +125,10 @@ export type ApprovalRecord = {
   approverId: string | null;
   decidedAt: string | null;
   expiresAt: string | null;
+  singleUse: boolean;
+  usedAt: string | null;
+  usedByEventId: string | null;
+  humanRequired: boolean;
   rationale: string;
   linkedEvidenceIds: string[];
 };
@@ -227,6 +231,19 @@ export type PhoneReviewAction = {
   count?: number;
 };
 
+const allowedRedactionStatuses = new Set<RedactionStatus>([
+  "not_required",
+  "pending_scan",
+  "redacted",
+  "no_secrets_detected",
+  "blocked_sensitive",
+]);
+const allowedRetentionClasses = new Set<RetentionClass>([
+  "audit",
+  "operational",
+  "temporary",
+]);
+
 export function parseLedgerEvents(source: string): LedgerEvent[] {
   return source
     .split(/\r?\n/)
@@ -306,9 +323,13 @@ export function validateEventLog(
     }
     if (!event.redactionStatus) {
       errors.push(`event ${event.id} is missing redaction status`);
+    } else if (!allowedRedactionStatuses.has(event.redactionStatus)) {
+      errors.push(`event ${event.id} has invalid redaction status`);
     }
     if (!event.retentionClass) {
       errors.push(`event ${event.id} is missing retention class`);
+    } else if (!allowedRetentionClasses.has(event.retentionClass)) {
+      errors.push(`event ${event.id} has invalid retention class`);
     }
     if (event.previousEventHash !== previousHash) {
       errors.push(`event ${event.id} has broken previous hash`);
@@ -550,10 +571,177 @@ export function canRunExternalAction(
   if (!approval || approval.state !== "approved") {
     return false;
   }
+  if (approval.singleUse && approval.usedAt) {
+    return false;
+  }
   if (approval.expiresAt && new Date(approval.expiresAt).getTime() < now.getTime()) {
     return false;
   }
   return true;
+}
+
+export type ApprovalUseRequest = {
+  approvalId: string | null;
+  actionType: string;
+  scope: string;
+  riskLevel: ApprovalRecord["riskLevel"];
+  approvals?: ApprovalRecord[];
+  actors?: ActorRecord[];
+  now?: Date;
+};
+
+export function canUseApproval({
+  approvalId,
+  actionType,
+  scope,
+  riskLevel,
+  approvals = stateLedger.approvals,
+  actors = stateLedger.actors,
+  now = new Date(),
+}: ApprovalUseRequest) {
+  if (!approvalId) {
+    return false;
+  }
+
+  const approval = approvals.find((item) => item.id === approvalId);
+  if (!approval || approval.state !== "approved") {
+    return false;
+  }
+  if (approval.expiresAt && new Date(approval.expiresAt).getTime() < now.getTime()) {
+    return false;
+  }
+  if (approval.singleUse && approval.usedAt) {
+    return false;
+  }
+  if (approval.actionType !== actionType) {
+    return false;
+  }
+  if (approval.scope !== scope) {
+    return false;
+  }
+  if (approval.riskLevel !== riskLevel) {
+    return false;
+  }
+  if (approval.humanRequired) {
+    const approver = actors.find((actor) => actor.id === approval.approverId);
+    if (approver?.actorType !== "person") {
+      return false;
+    }
+  }
+  return true;
+}
+
+export type ReplayResult = {
+  ledger: StateLedger;
+  appliedEventIds: string[];
+  ignoredEventIds: string[];
+  errors: string[];
+};
+
+function cloneLedger(ledger: StateLedger): StateLedger {
+  return JSON.parse(JSON.stringify(ledger)) as StateLedger;
+}
+
+function idempotencyPayloadHash(event: LedgerEvent) {
+  const payload = Object.fromEntries(
+    Object.entries(event).filter(
+      ([key]) => key !== "eventHash" && key !== "previousEventHash" && key !== "sequence",
+    ),
+  );
+  return stableStringify(payload);
+}
+
+export function replayLedgerEvents(
+  initialLedger: StateLedger,
+  events: LedgerEvent[],
+  now = new Date(),
+): ReplayResult {
+  const ledger = cloneLedger(initialLedger);
+  const projectById = new Map(ledger.projects.map((project) => [project.id, project]));
+  const actorById = new Map(ledger.actors.map((actor) => [actor.id, actor]));
+  const seenIdempotency = new Map<string, string>();
+  const appliedEventIds: string[] = [];
+  const ignoredEventIds: string[] = [];
+  const errors: string[] = [];
+
+  for (const event of events) {
+    const payloadHash = idempotencyPayloadHash(event);
+    const previousPayloadHash = seenIdempotency.get(event.idempotencyKey);
+
+    if (previousPayloadHash) {
+      if (previousPayloadHash === payloadHash) {
+        ignoredEventIds.push(event.id);
+      } else {
+        errors.push(`duplicate idempotency key ${event.idempotencyKey} has different payload`);
+      }
+      continue;
+    }
+    seenIdempotency.set(event.idempotencyKey, payloadHash);
+
+    if (event.redactionStatus === "pending_scan" || event.redactionStatus === "blocked_sensitive") {
+      errors.push(`event ${event.id} cannot be applied with redaction status ${event.redactionStatus}`);
+      continue;
+    }
+
+    if (event.action !== "project.next_action_updated") {
+      ignoredEventIds.push(event.id);
+      continue;
+    }
+
+    const actor = actorById.get(event.actorId);
+    const project = projectById.get(event.entityId);
+    const nextAction = event.after?.nextAction;
+
+    if (!actor) {
+      errors.push(`event ${event.id} references unknown actor ${event.actorId}`);
+      continue;
+    }
+    if (event.entityType !== "project" || !project) {
+      errors.push(`event ${event.id} references unknown project ${event.entityId}`);
+      continue;
+    }
+    if (typeof nextAction !== "string" || !nextAction.trim()) {
+      errors.push(`event ${event.id} missing nextAction`);
+      continue;
+    }
+    if (actor.actorType === "agent") {
+      const validApproval = event.approvalIds
+        .map((approvalId) => ledger.approvals.find((approval) => approval.id === approvalId))
+        .find((approval) =>
+          canUseApproval({
+            approvalId: approval?.id ?? null,
+            actionType: "scoped_write",
+            scope: `${project.id}:project.next_action_updated`,
+            riskLevel: "medium",
+            approvals: ledger.approvals,
+            actors: ledger.actors,
+            now,
+          }),
+        );
+
+      if (!validApproval) {
+        errors.push(`event ${event.id} requires scoped approval`);
+        continue;
+      }
+
+      if (validApproval.singleUse) {
+        validApproval.state = "used";
+        validApproval.usedAt = event.timestamp;
+        validApproval.usedByEventId = event.id;
+      }
+    }
+
+    project.nextAction = nextAction;
+    project.lastUpdated = event.timestamp;
+    appliedEventIds.push(event.id);
+  }
+
+  return {
+    ledger,
+    appliedEventIds,
+    ignoredEventIds,
+    errors,
+  };
 }
 
 export function getSanityChecks(ledger: StateLedger = stateLedger): SanityCheck[] {
