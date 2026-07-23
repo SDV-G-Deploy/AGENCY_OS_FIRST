@@ -28,6 +28,7 @@ Current implementation status:
 - the writer uses a lock file and idempotency payload comparison;
 - approved agent writes require durable `approval.approved` and append a durable
   `approval.used` companion event;
+- `approval.approved` rejects non-person approvers and changed request details;
 - it is not yet wired to the UI or API;
 - it does not regenerate current snapshot files after append.
 

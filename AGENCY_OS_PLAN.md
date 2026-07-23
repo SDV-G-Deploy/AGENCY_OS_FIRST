@@ -854,3 +854,55 @@ Still missing:
 Next safest step:
 - Either add the first local command/API wrapper for the writer, or add a small
   replay-derived state adapter so the dashboard can show appended event effects.
+
+## PLAN FIRST - 2026-07-23 Approval Event Authorization
+
+Block: Protect durable approval events from forgery.
+
+Goal:
+- Ensure `approval.approved` cannot be forged by an agent or used to mutate the
+  original approval request scope.
+
+In scope:
+- `approval.approved` replay validation requires a person actor.
+- `event.actorId` must match `after.approverId`.
+- `requestedBy`, `actionType`, `scope`, `riskLevel` and `entityId` must match
+  the original approval request.
+- Add negative tests for forged agent approval and scope mutation.
+
+Out of scope:
+- UI approval form.
+- `approval.rejected` lifecycle.
+- Redaction scanner.
+- Hosted persistence.
+
+Done criteria:
+- Forged agent approval is rejected.
+- Approval event that changes requested scope is rejected.
+- Existing durable approval/write tests still pass.
+- `npm run verify` passes.
+
+Evidence:
+- `app/ledger.ts` approval approval validation.
+- `tests/ledger.test.mjs` forged approval tests.
+
+## PLAN UPDATE - 2026-07-23 Approval Event Authorization
+
+Changed:
+- Hardened `approval.approved` replay validation.
+- Approval approval events now require person actor, matching approver, and
+  immutable request details.
+- Added negative tests for agent-forged approval and changed-scope approval.
+
+Verified:
+- `npm run verify` passes: lint, typecheck, build and 34 tests.
+
+Still missing:
+- No UI/API approval surface.
+- No redaction scanner/import fixtures.
+- Dashboard state is not yet visibly derived from replayed appended events.
+- Production audit remains blocked by Next/PostCSS/sharp advisories.
+
+Next safest step:
+- Stop implementation for this cycle unless we choose the next product-visible
+  surface: command/API writer wrapper versus dashboard replay-derived state.

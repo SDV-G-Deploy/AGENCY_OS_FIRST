@@ -370,6 +370,11 @@ function makeApprovalApprovedEvent(calculateEventHash, ledger, overrides = {}) {
     after: {
       approverId: "person-serj",
       decidedAt: "2026-07-23T09:59:00Z",
+      requestedBy: "agent-codex",
+      actionType: "scoped_write",
+      scope: "project-agency-os:project.next_action_updated",
+      riskLevel: "medium",
+      entityId: "agent-codex",
     },
     evidenceIds: [],
     approvalIds: [],
@@ -711,6 +716,51 @@ test("writer does not trust approved snapshot without durable approval event", a
 
   assert.equal(result.appended, false);
   assert.ok(result.errors.some((error) => error.includes("requires scoped approval")));
+});
+
+test("replay rejects forged approval from an agent actor", async () => {
+  const { calculateEventHash, replayLedgerEvents, stateLedger } = await loadLedger();
+  const approvalEvent = makeApprovalApprovedEvent(calculateEventHash, stateLedger, {
+    actorId: "agent-codex",
+    after: {
+      approverId: "agent-codex",
+      decidedAt: "2026-07-23T09:59:00Z",
+      requestedBy: "agent-codex",
+      actionType: "scoped_write",
+      scope: "project-agency-os:project.next_action_updated",
+      riskLevel: "medium",
+      entityId: "agent-codex",
+    },
+  });
+
+  const result = replayLedgerEvents({ ...stateLedger, events: [] }, [
+    ...stateLedger.events,
+    approvalEvent,
+  ]);
+
+  assert.ok(result.errors.some((error) => error.includes("requires person approver actor")));
+});
+
+test("replay rejects approval event that changes requested scope", async () => {
+  const { calculateEventHash, replayLedgerEvents, stateLedger } = await loadLedger();
+  const approvalEvent = makeApprovalApprovedEvent(calculateEventHash, stateLedger, {
+    after: {
+      approverId: "person-serj",
+      decidedAt: "2026-07-23T09:59:00Z",
+      requestedBy: "agent-codex",
+      actionType: "scoped_write",
+      scope: "project-agency-os:wrong-scope",
+      riskLevel: "medium",
+      entityId: "agent-codex",
+    },
+  });
+
+  const result = replayLedgerEvents({ ...stateLedger, events: [] }, [
+    ...stateLedger.events,
+    approvalEvent,
+  ]);
+
+  assert.ok(result.errors.some((error) => error.includes("approval details do not match request")));
 });
 
 test("writer refuses to append when the existing event log is invalid", async () => {

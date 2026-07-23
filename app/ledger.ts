@@ -728,15 +728,47 @@ export function replayLedgerEvents(
     if (event.action !== "project.next_action_updated") {
       if (event.action === "approval.approved") {
         const approval = ledger.approvals.find((item) => item.id === event.entityId);
+        const actor = actorById.get(event.actorId);
         const approverId = event.after?.approverId;
         const decidedAt = event.after?.decidedAt;
+        const requestedBy = event.after?.requestedBy;
+        const actionType = event.after?.actionType;
+        const scope = event.after?.scope;
+        const riskLevel = event.after?.riskLevel;
+        const approvedEntityId = event.after?.entityId;
 
         if (event.entityType !== "approval" || !approval) {
           errors.push(`event ${event.id} references unknown approval ${event.entityId}`);
           continue;
         }
-        if (typeof approverId !== "string" || typeof decidedAt !== "string") {
+        if (!actor || actor.actorType !== "person") {
+          errors.push(`event ${event.id} requires person approver actor`);
+          continue;
+        }
+        if (event.actorId !== approverId) {
+          errors.push(`event ${event.id} approver must match actor`);
+          continue;
+        }
+        if (
+          typeof approverId !== "string" ||
+          typeof decidedAt !== "string" ||
+          typeof requestedBy !== "string" ||
+          typeof actionType !== "string" ||
+          typeof scope !== "string" ||
+          typeof riskLevel !== "string" ||
+          typeof approvedEntityId !== "string"
+        ) {
           errors.push(`event ${event.id} missing approval decision details`);
+          continue;
+        }
+        if (
+          approval.requestedBy !== requestedBy ||
+          approval.actionType !== actionType ||
+          approval.scope !== scope ||
+          approval.riskLevel !== riskLevel ||
+          approval.entityId !== approvedEntityId
+        ) {
+          errors.push(`event ${event.id} approval details do not match request`);
           continue;
         }
 

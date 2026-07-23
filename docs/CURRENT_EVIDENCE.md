@@ -42,7 +42,7 @@ Evidence:
   - ledger rule tests
 
 Observed test result:
-- 32 tests passed.
+- 34 tests passed.
 
 Strength: strong for current static/local code quality.
 
@@ -220,6 +220,20 @@ Evidence:
 
 Strength: strong for the first durable approve/use lifecycle. It does not yet
 prove rejection, UI approval, or hosted persistence.
+
+### Claim 15: Approval approval events reject basic forgery
+
+Evidence:
+- `approval.approved` replay requires a person actor.
+- `event.actorId` must equal `after.approverId`.
+- Approval event details must match the original `requestedBy`, `actionType`,
+  `scope`, `riskLevel` and `entityId`.
+- `tests/ledger.test.mjs` verifies agent-forged approval is rejected.
+- `tests/ledger.test.mjs` verifies changed-scope approval is rejected.
+- `npm run verify` passes with 34 tests.
+
+Strength: strong for the first approval authorization guard. It does not yet
+prove a UI approval form or full rejection lifecycle.
 
 ## Files Changed For Honesty Closure
 

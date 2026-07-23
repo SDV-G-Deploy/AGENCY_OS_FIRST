@@ -60,7 +60,7 @@ Current status:
   lock-file serialization and idempotency conflict checks;
 - approval linkage is partial but scoped/single-use replay enforcement exists
   for the first agent write path, including durable `approval.approved` and
-  `approval.used` events;
+  `approval.used` events with basic approval-event authorization;
 - redaction is documented but not enforced.
 
 ## Integration Gate
