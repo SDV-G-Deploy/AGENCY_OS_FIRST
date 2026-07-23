@@ -80,6 +80,8 @@ Always read:
 
 Read selectively:
 - `docs/PRODUCT_DEVELOPMENT_FLOW.md` for the current stage/slice;
+- `docs/STACK_AND_TOOLING_DECISION.md` before changing framework, storage,
+  deployment, packaging or autonomous-agent branch scope;
 - `docs/DATA_MODEL_AND_INVARIANTS.md` for entity contracts;
 - `docs/EVENT_LOG_INTEGRITY.md` for reducer/write work;
 - `docs/REDACTION_AND_IMPORT_BOUNDARIES.md` for raw text/import work;

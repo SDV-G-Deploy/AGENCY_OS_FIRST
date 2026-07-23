@@ -25,13 +25,15 @@ Conflict rule:
 
 ## Current Position
 
-Agency OS is ready for the next coding branch, but agents should not reload all
-large product documents by default.
+Agency OS is ready for one supervised bounded local coding branch, but not for
+broad autonomous expansion. Agents should not reload all large product
+documents by default.
 
 The next branch should implement the v0.3 phone-first capture slice, starting
 from the contracts already written in:
 - `docs/AGENT_START_BRIEF.md`;
 - `docs/PRODUCT_DEVELOPMENT_FLOW.md`;
+- `docs/STACK_AND_TOOLING_DECISION.md`;
 - `docs/DATA_MODEL_AND_INVARIANTS.md`;
 - `docs/REDACTION_AND_IMPORT_BOUNDARIES.md`;
 - `docs/EVENT_LOG_INTEGRITY.md`.
@@ -51,6 +53,15 @@ Current context-protocol checkpoint:
 - Agent start brief added.
 - Handoff protocol added.
 - Next-agent handoff added.
+
+Stack/tooling checkpoint:
+- Current stack is kept for v0.3 local product development.
+- Production deployment remains blocked by dependency audit.
+- Storage/auth/deployment/desktop changes require reading
+  `docs/STACK_AND_TOOLING_DECISION.md` first.
+- Autonomous work is allowed only as one branch, one slice and one command or
+  event type at a time, with human review before merge if files outside the
+  planned slice change.
 
 ## Next Chewable Step
 
@@ -79,6 +90,7 @@ Out of scope:
 - `docs/PRODUCT_DEVELOPMENT_FLOW.md` sections:
   - `v0.3 Wedge Contract`
   - `Stage 2: First Phone Write`
+- `docs/STACK_AND_TOOLING_DECISION.md`
 - `docs/DATA_MODEL_AND_INVARIANTS.md` section:
   - `Capture`
 - `docs/REDACTION_AND_IMPORT_BOUNDARIES.md` section:

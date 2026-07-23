@@ -317,6 +317,23 @@ Evidence:
 Strength: strong for reducer safety before adding the capture write surface. It
 does not yet implement the `capture.note_created` reducer itself.
 
+### Claim 21: Current stack is accepted for v0.3 local work, not production
+
+Evidence:
+- `docs/STACK_AND_TOOLING_DECISION.md` records the stack decision.
+- README links the decision with the architecture/evidence docs.
+- `docs/AGENT_START_BRIEF.md` tells agents to read the decision before changing
+  framework, storage, deployment, packaging or autonomous-agent branch scope.
+- `docs/NEXT_AGENT_HANDOFF.md` includes the stack/tooling checkpoint.
+- Command: `npm run verify`
+- Result: pass with lint, typecheck, build and 42 tests.
+- Command: `npm run audit:prod`
+- Result: fail on the known Next transitive `postcss`/`sharp` advisories.
+
+Strength: strong for local v0.3 readiness boundaries. It does not clear hosted
+production deployment, real auth, backup/restore, multi-user use or broad
+parallel autonomous expansion.
+
 ## Files Changed For Honesty Closure
 
 - `package.json`: added `typecheck`, `audit:prod`, `verify`; moved Next to

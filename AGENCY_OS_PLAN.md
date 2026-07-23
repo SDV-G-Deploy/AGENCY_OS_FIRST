@@ -1472,3 +1472,78 @@ Decision:
 
 Next safest step:
 - Commit the context protocol checkpoint.
+
+## PLAN FIRST - 2026-07-23 Stack Fitness
+
+Block: Stack and autonomous-agent readiness.
+
+Goal:
+- Decide whether the current technical stack is adequate before launching more
+  autonomous product branches.
+
+In scope:
+- Stack fitness.
+- Easy-first and future-flexible criteria.
+- Production blockers.
+- Autonomous agent boundaries.
+- Handoff docs.
+
+Out of scope:
+- Replatforming.
+- New product feature implementation.
+- Deployment.
+- Real external integrations.
+
+Done criteria:
+- Stack/tooling decision is documented.
+- Agent start and handoff docs point to the decision.
+- Local verification passes or failures are recorded.
+
+Evidence expected:
+- `docs/STACK_AND_TOOLING_DECISION.md`.
+- README and handoff links.
+- `npm run verify`.
+
+## PLAN UPDATE - 2026-07-23 Stack Fitness
+
+Changed:
+- Added `docs/STACK_AND_TOOLING_DECISION.md`.
+- Linked stack decision from README, agent start brief and next-agent handoff.
+- Recorded stack readiness evidence in `docs/CURRENT_EVIDENCE.md`.
+
+Verified:
+- `npm run verify` passes: lint, typecheck, build and 42 tests.
+- `npm run audit:prod` still fails on known Next transitive
+  `postcss`/`sharp` advisories.
+
+Decision:
+- Keep the current Next/Vinext/React/TypeScript/Vite local web stack for v0.3.
+- Do not deploy or convert to hosted/SaaS until audit, auth and storage are
+  resolved.
+- Autonomous agents may work only on bounded v0.3 branches behind
+  reducer/writer/command seams.
+- After independent critique, autonomy is explicitly limited to supervised
+  local branches: one branch, one slice, one command/event type, with human
+  review before merge when files outside the planned slice change.
+
+Next safest step:
+- Review independent critic feedback, patch any concrete guardrail gaps, then
+  commit this stack-readiness checkpoint.
+
+## PLAN UPDATE - 2026-07-23 Stack Critic Follow-Up
+
+Result:
+- Independent critic score: 78/100.
+- Critic accepted the stack decision as mostly honest, but flagged overbroad
+  autonomy wording and missing emphasis on backup/export, redaction and
+  production blockers.
+
+Changed:
+- Rephrased `docs/NEXT_AGENT_HANDOFF.md` from broad readiness to "one
+  supervised bounded local coding branch".
+- Tightened `docs/STACK_AND_TOOLING_DECISION.md` with one branch, one slice,
+  one command/event type and review-before-merge guardrails.
+- Updated `docs/CURRENT_EVIDENCE.md` to exclude broad parallel autonomy.
+
+Next safest step:
+- Run `npm run verify`, then commit this stack-readiness checkpoint.
