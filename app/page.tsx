@@ -2,6 +2,7 @@ import {
   integrations,
   todaySignals,
 } from "./seed";
+import { CaptureNoteForm } from "./CaptureNoteForm";
 import { NextActionForm } from "./NextActionForm";
 import {
   agentRuns,
@@ -12,6 +13,7 @@ import {
   getPhoneReviewQueue,
   getRecommendedSteps,
   getSanityChecks,
+  getUncategorizedCaptures,
   ledgerEvents,
 } from "./ledger";
 
@@ -24,9 +26,14 @@ const verificationLoad = evidenceQueue.filter(
 const sanityChecks = getSanityChecks();
 const recommendedSteps = getRecommendedSteps();
 const phoneReviewQueue = getPhoneReviewQueue();
+const uncategorizedCaptures = getUncategorizedCaptures();
 const primaryProject = projects.find(
   (project) => project.priority === "core" && project.state === "active",
 ) ?? projects[0];
+const captureProjects = projects.map((project) => ({
+  id: project.id,
+  name: project.name,
+}));
 
 export default function Home() {
   return (
@@ -62,6 +69,7 @@ export default function Home() {
               </article>
             ))}
           </div>
+          <CaptureNoteForm projects={captureProjects} recentCaptures={uncategorizedCaptures} />
         </section>
       </aside>
 

@@ -6,7 +6,7 @@ Last updated: 2026-07-23
 ## Handoff Freshness
 
 Branch:
-- `feature/capture-note-writer-api`
+- `feature/mobile-capture-form`
 
 Commit:
 - pending until this handoff update is committed; run `git log -1 --oneline`
@@ -29,9 +29,9 @@ Agency OS now has a canonical local repo and GitHub remote:
 - local: `C:\Agency_os_first\AGENCY_OS_FIRST`;
 - GitHub: `https://github.com/SDV-G-Deploy/AGENCY_OS_FIRST`.
 
-Agency OS is on the supervised local capture branch. The
-`capture.note_created` writer/command/API slice is implemented, but the branch
-has not been merged to `main` in this handoff.
+Agency OS is on the supervised mobile capture form branch. The prior
+`capture.note_created` writer/command/API slice has been merged to `main`, and
+this branch adds the first local dashboard form that uses it.
 
 The next branch or continuation should stay inside the v0.3 phone-first capture
 path, starting from the contracts already written in:
@@ -85,11 +85,28 @@ Local capture write checkpoint:
 - Invalid existing logs, `redactionStatus: not_required` for raw capture and
   agent actors are blocked before durable append.
 
-Changed files in this slice:
+Changed files in the previous writer/API slice:
 - `app/ledger-writer.ts`
 - `app/local-command.ts`
 - `app/api/local/capture-note/route.ts`
 - `tests/ledger.test.mjs`
+- `docs/NEXT_AGENT_HANDOFF.md`
+
+Mobile capture form checkpoint:
+- `app/CaptureNoteForm.tsx` adds a small local form for one note/fact.
+- The form lets the user choose Inbox or an existing project.
+- Source defaults to `phone` and can be changed to `laptop` or `manual`.
+- Submit posts to `/api/local/capture-note` and shows success/error
+  confirmation.
+- The phone-mode panel shows the last three uncategorized captures from
+  replay-derived state.
+- No UI conversion to evidence, blockers, decisions or tasks was added.
+
+Changed files in this slice:
+- `app/CaptureNoteForm.tsx`
+- `app/page.tsx`
+- `app/globals.css`
+- `tests/rendered-html.test.mjs`
 - `docs/NEXT_AGENT_HANDOFF.md`
 
 Organizational checkpoint:
@@ -103,17 +120,17 @@ Organizational checkpoint:
 
 ## Next Chewable Step
 
-Implement the first local mobile viewport capture form that calls the existing
-`/api/local/capture-note` route.
+Manually exercise the local capture form in a mobile viewport, then implement
+the smallest capture triage/readiness slice.
 
 Recommended scope:
-- first viewport on mobile can enter one note/fact;
-- choose an existing project or Inbox;
-- choose source, defaulting to phone for the phone path;
-- save through the local capture API and show confirmation;
-- show the last three uncategorized captures from replay-derived state;
-- keep raw capture text quarantined and do not convert it to evidence/blocker/
-  decision/next action in this slice.
+- run the app locally and submit one throwaway capture against a temp or
+  consciously reviewed event log;
+- verify success/error states in a narrow viewport;
+- define the next supported capture state-changing action before implementing
+  conversion;
+- keep conversion to evidence/blocker/decision/task out until that action
+  contract is explicit.
 
 Out of scope:
 - Telegram;
@@ -141,6 +158,7 @@ Out of scope:
 - `app/ledger-writer.ts`
 - `app/local-command.ts`
 - `app/api/local/capture-note/route.ts`
+- `app/CaptureNoteForm.tsx`
 - `app/page.tsx`
 - `tests/ledger.test.mjs`
 - `tests/rendered-html.test.mjs`
@@ -151,7 +169,7 @@ Out of scope:
 - Full `docs/PRODUCT_DNA.md`
 - Full `docs/AGENCY_OS_ARCHITECTURE.md`
 - Full `docs/RESEARCH_AND_COMPARISON.md`
-- UI files, unless implementing the mobile viewport
+- Full UI files unrelated to the phone-mode panel
 
 ## Required Exit Handoff
 

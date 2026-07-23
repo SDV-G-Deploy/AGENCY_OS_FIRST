@@ -42,7 +42,9 @@ body {
 }
 
 button,
-a {
+a,
+select,
+textarea {
   font: inherit;
 }
 
@@ -74,6 +76,7 @@ button:hover {
   flex-direction: column;
   gap: 28px;
   height: 100vh;
+  overflow-y: auto;
   padding: 28px;
   border-right: 1px solid var(--line);
   background: rgba(255, 253, 248, 0.84);
@@ -211,6 +214,104 @@ button:hover {
 }
 
 .phone-action small {
+  color: var(--blue);
+}
+
+.capture-note-panel {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+}
+
+.capture-note-panel h3 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.16;
+}
+
+.capture-note-form {
+  display: grid;
+  gap: 10px;
+}
+
+.capture-note-form label {
+  display: grid;
+  gap: 6px;
+}
+
+.capture-note-form span,
+.capture-review-list > span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.capture-note-form select,
+.capture-note-form textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-strong);
+  color: var(--ink);
+  padding: 10px 11px;
+}
+
+.capture-note-form select {
+  min-height: 40px;
+}
+
+.capture-note-form textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.capture-note-body {
+  min-width: 0;
+}
+
+.capture-note-form .command-status {
+  color: var(--muted);
+}
+
+.capture-note-form .command-status.saved {
+  color: var(--green);
+}
+
+.capture-note-form .command-status.error {
+  color: var(--red);
+}
+
+.capture-review-list {
+  display: grid;
+  gap: 9px;
+}
+
+.capture-review-list article {
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-strong);
+  padding: 10px;
+}
+
+.capture-review-list strong {
+  font-size: 13px;
+}
+
+.capture-review-list p,
+.capture-review-list small {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.capture-review-list small {
   color: var(--blue);
 }
 

@@ -39,6 +39,11 @@ test("server-renders the Agency OS dashboard shell", async () => {
   assert.match(html, /Recommended next steps/);
   assert.match(html, /New next action/);
   assert.match(html, /Local-only write through the event ledger/);
+  assert.match(html, /Quick capture/);
+  assert.match(html, /One note or fact/);
+  assert.match(html, /Note or fact/);
+  assert.match(html, /Last uncategorized/);
+  assert.match(html, /Local-only capture through the event ledger/);
   assert.match(html, /Evidence attachment is planned/);
   assert.doesNotMatch(html, />Attach evidence</);
   assert.doesNotMatch(html, />Run verifier</);
@@ -48,9 +53,11 @@ test("server-renders the Agency OS dashboard shell", async () => {
 });
 
 test("keeps the first MVP focused on state, proof and agent runs", async () => {
-  const [page, route, projectsData, evidenceData, ledger, layout, packageJson] = await Promise.all([
+  const [page, route, captureRoute, captureForm, projectsData, evidenceData, ledger, layout, packageJson] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/api/local/next-action/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/local/capture-note/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/CaptureNoteForm.tsx", import.meta.url), "utf8"),
     readFile(new URL("../data/projects.json", import.meta.url), "utf8"),
     readFile(new URL("../data/evidence.json", import.meta.url), "utf8"),
     readFile(new URL("../app/ledger.ts", import.meta.url), "utf8"),
@@ -80,12 +87,23 @@ test("keeps the first MVP focused on state, proof and agent runs", async () => {
   assert.match(page, /ledgerEvents/);
   assert.match(page, /phone-action-list/);
   assert.match(page, /NextActionForm/);
+  assert.match(page, /CaptureNoteForm/);
+  assert.match(page, /getUncategorizedCaptures/);
+  assert.match(page, /recentCaptures=\{uncategorizedCaptures\}/);
   assert.doesNotMatch(page, /<button/);
   assert.doesNotMatch(page, /segmented-control|secondary-action|action-row/);
   assert.match(page, /from "\.\/ledger"/);
   assert.match(route, /actorId: "person-serj"/);
   assert.match(route, /resolve\(process\.cwd\(\), "data\/events\.jsonl"\)/);
   assert.doesNotMatch(route, /payload\.actorId|payload\.eventsPath/);
+  assert.match(captureRoute, /actorId: "person-serj"/);
+  assert.match(captureRoute, /resolve\(process\.cwd\(\), "data\/events\.jsonl"\)/);
+  assert.doesNotMatch(captureRoute, /payload\.actorId|payload\.eventsPath/);
+  assert.match(captureForm, /fetch\("\/api\/local\/capture-note"/);
+  assert.match(captureForm, /useState\("phone"\)/);
+  assert.match(captureForm, /<option value="inbox">Inbox<\/option>/);
+  assert.match(captureForm, /recentCaptures\.map/);
+  assert.doesNotMatch(captureForm, /telegram|github|openc-law|openclaw/i);
   assert.match(layout, /Agency OS - Local Solo Builder Kit/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
 });
