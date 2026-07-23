@@ -112,6 +112,37 @@ Invariant:
   type.
 - linked evidence IDs must exist.
 
+### Capture
+
+Purpose:
+- raw human or imported observation that is not yet evidence, blocker or
+  decision.
+
+Required fields for `capture.note_created`:
+- `id`;
+- `projectId`;
+- `actorId`;
+- `source`: phone, laptop, codex, chatgpt, claude, github, openc-law,
+  telegram, manual;
+- `body`;
+- `createdAt`;
+- `receivedAt`;
+- `redactionStatus`;
+- `classification`: inbox, evidence_candidate, blocker_candidate,
+  decision_candidate, next_action_candidate;
+- `linkedEntityIds`;
+- `reviewStatus`: uncategorized, triaged, converted, dismissed.
+
+Invariant:
+- raw capture text starts as `pending_scan`, `no_secrets_detected`,
+  `redacted` or `blocked_sensitive`; it must not default to `not_required`.
+- blocked sensitive captures do not appear in normal dashboard text.
+- a capture does not verify a claim by itself.
+- converting a capture to evidence, blocker, decision or next action requires a
+  separate event.
+- `capture.note_created` must fail replay until a reducer explicitly supports
+  it.
+
 ### Decision
 
 Required fields:
@@ -198,6 +229,8 @@ Minimum reducer tests:
 - blocked project without decision is flagged;
 - stale evidence expires;
 - external action fails closed without approval.
+- unsupported state-changing actions fail closed instead of being silently
+  ignored.
 
 ## Freshness
 

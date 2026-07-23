@@ -1236,3 +1236,158 @@ Residual risks for future milestones:
 Next safest step:
 - Commit this checkpoint, then choose the next branch: phone review write,
   evidence attach, backup/export, or GitHub importer.
+
+## PLAN FIRST - 2026-07-23 Product DNA Lock
+
+Block: Clarify the product before the next coding stage.
+
+Goal:
+- Define Agency OS product DNA, wedge, first user, first repeated workflow,
+  development flow and validation path before adding more features.
+
+In scope:
+- Product DNA document.
+- Product development flow document.
+- Current-market/best-practice web check.
+- Independent product/architecture/UX critique cycles.
+- Doc and UI wording fixes when critics identify concrete overclaims.
+
+Out of scope:
+- New runtime product features.
+- Production deployment.
+- New external integrations.
+
+Done criteria:
+- Product plan is explicit enough to guide the next coding branch.
+- Independent critic score reaches at least 95/100 or remaining issues require
+  human product choice.
+- `npm run verify` remains green.
+
+Evidence:
+- `docs/PRODUCT_DNA.md`
+- `docs/PRODUCT_DEVELOPMENT_FLOW.md`
+- `docs/RESEARCH_AND_COMPARISON.md`
+- critic reports in this thread.
+
+## PLAN UPDATE - 2026-07-23 Product Critic Round 1
+
+Result:
+- Independent product strategy critic score: 84/100.
+
+Main criticism:
+- The product spine is real, but the wedge was still too broad and
+  self-referential.
+- First market, first non-Serj user, first repeated workflow, first aha and
+  package path were under-specified.
+- UI wording overclaimed cross-tool coverage before importers exist.
+
+Changed:
+- Added `docs/PRODUCT_DNA.md`.
+- Added `docs/PRODUCT_DEVELOPMENT_FLOW.md`.
+- Added `v0.3 Wedge Contract`.
+- Chose the next wedge as a local cross-tool personal truth ledger for solo
+  builders.
+- Chose the first package path: local solo-builder kit.
+- Chose first external profile: independent AI-heavy builder with 2-6 active
+  projects.
+- Chose first repeated workflow: capture raw state, link it to a project, and
+  turn it into next action/review.
+- Changed dashboard wording from "global state layer over" to "local truth
+  ledger staging for" cross-tool sources.
+
+Verified:
+- `npm run verify` passes: lint, typecheck, build and 40 tests.
+
+Next safest step:
+- Run architecture/security critic against the narrowed wedge, then patch
+  concrete gaps.
+
+## PLAN UPDATE - 2026-07-23 Architecture Critic Round 1
+
+Result:
+- Independent architecture/security critic score: 92/100.
+
+Main criticism:
+- `capture.note_created` was the recommended next command but had no concrete
+  data contract.
+- Raw capture/import redaction and quarantine were not explicit enough for the
+  next write surface.
+- Unknown state-changing reducer actions were silently ignored.
+- External-action approval helper was weaker than scoped approval logic.
+
+Changed:
+- Added capture data model and invariants.
+- Added `capture.note_created` contract to the product development flow.
+- Added raw capture quarantine rules.
+- Updated event integrity contract to fail closed on unknown state-changing
+  actions.
+- Updated replay behavior and tests so unsupported state-changing actions are
+  errors while non-state informational events can still be ignored.
+- Documented that `canRunExternalAction()` must not be used for real external
+  actions before being narrowed or replaced.
+
+Verified:
+- `npm run verify` passes: lint, typecheck, build and 42 tests.
+
+Next safest step:
+- Run `npm run verify`, then run UX/solo-builder critic.
+
+## PLAN UPDATE - 2026-07-23 UX Critic Round 1
+
+Result:
+- Independent UX / solo-builder workflow critic score: 89/100.
+
+Main criticism:
+- The plan said phone-first, but the next slice was not yet defined as a
+  concrete first mobile viewport.
+- Raw capture alone could become another inbox unless it immediately shows what
+  changed and what remains to review.
+- Daily use definition was too broad for a tired solo builder.
+- Packaging still sounded like project staging more than a local kit.
+
+Changed:
+- Defined v0.3 as one phone-first vertical slice:
+  capture one note/fact, choose project or Inbox, save, see confirmation, last
+  three uncategorized captures and one suggested next action/review item.
+- Added default daily ritual.
+- Added UX acceptance states: empty queue, saving, saved, duplicate, error,
+  local write failure, redaction pending, blocked-sensitive, mobile proof.
+- Updated README packaging from "Project Portfolio Staging" to "Local Solo
+  Builder Kit".
+
+Verified:
+- `npm run verify` passes: lint, typecheck, build and 42 tests.
+
+Next safest step:
+- Run `npm run verify`, then rerun independent critics against the tightened
+  product plan.
+
+## PLAN UPDATE - 2026-07-23 Final Product DNA Critic
+
+Result:
+- Final independent combined critic score: 96/100.
+
+Verified:
+- `npm run verify` passes: lint, typecheck, build and 42 tests.
+
+Why this clears:
+- Product DNA is explicit.
+- Wedge is narrowed to a local cross-tool personal truth ledger.
+- First package path is the local solo-builder kit.
+- First external user is an independent AI-heavy builder with 2-6 projects.
+- v0.3 is a phone-first vertical slice: capture note/fact, choose project or
+  Inbox, save, see confirmation, last three uncategorized captures and one
+  suggested next action/review item.
+- Capture contract, quarantine/redaction policy and unsupported
+  state-changing-event fail-closed behavior are documented and partially
+  enforced before coding the write surface.
+
+Residual future risks:
+- Production deployment remains blocked by dependency audit.
+- Redaction is designed but not yet runtime-enforced for capture.
+- Backup/export/restore is still required before daily reliance.
+- v0.3 capture reducer/write UI is intentionally next, not present now.
+- External validation needs a non-Serj user after the phone capture slice.
+
+Next safest step:
+- Commit this product DNA checkpoint.

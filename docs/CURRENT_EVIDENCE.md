@@ -42,7 +42,7 @@ Evidence:
   - ledger rule tests
 
 Observed test result:
-- 40 tests passed.
+- 42 tests passed.
 
 Strength: strong for current static/local code quality.
 
@@ -261,7 +261,7 @@ Evidence:
   result through replay-derived state.
 - `tests/ledger.test.mjs` covers success, blocked agent actor and invalid
   input.
-- `npm run verify` passes with 40 tests.
+- `npm run verify` passes with 42 tests.
 
 Strength: strong for a local command surface. It does not yet prove browser UI,
 HTTP API or external integrations.
@@ -281,7 +281,7 @@ Evidence:
 - `tests/ledger.test.mjs` verifies the route against a temporary event ledger:
   POST succeeds, appends exactly one event, uses the human actor, and replay
   confirms the new next action.
-- `npm run verify` passes with 40 tests.
+- `npm run verify` passes with 42 tests.
 
 Strength: strong for the first local browser-to-ledger write path. It does not
 yet prove hosted persistence, real mobile QA, authentication, or general write
@@ -298,10 +298,24 @@ Evidence:
   evidence for every declared `requiredEvidenceTypes` entry.
 - `tests/ledger.test.mjs` verifies that removing the `local_url` evidence link
   from the verified claim creates a validation error.
-- `npm run verify` passes with 40 tests.
+- `npm run verify` passes with 42 tests.
 
 Strength: strong for the first claim/evidence-type contract. It does not yet
 prove automated evidence collection or freshness expiry enforcement.
+
+### Claim 20: Unknown state-changing event actions fail closed
+
+Evidence:
+- `replayLedgerEvents()` now treats unsupported state-changing actions for
+  known state entities as errors instead of silently ignoring them.
+- `tests/ledger.test.mjs` verifies that unsupported `capture.note_created`
+  fails replay until a reducer explicitly supports it.
+- `tests/ledger.test.mjs` verifies that non-state informational events can
+  still be ignored.
+- `npm run verify` passes with 42 tests.
+
+Strength: strong for reducer safety before adding the capture write surface. It
+does not yet implement the `capture.note_created` reducer itself.
 
 ## Files Changed For Honesty Closure
 
@@ -340,13 +354,18 @@ prove automated evidence collection or freshness expiry enforcement.
 - `app/api/local/next-action/route.ts`: local API route into the command layer.
 - `app/page.tsx`: primary focus now derives from ledger-facing project state.
 - `tests/ledger.test.mjs`: route integration test against a temporary event
-  ledger and required evidence type validation.
+  ledger, required evidence type validation and unsupported state-changing
+  action rejection.
 - `data/claims.json`: local verified claim now links all required evidence
   types.
 - `data/evidence.json`: added local URL evidence for the current MVP claim.
 - `docs/DATA_MODEL_AND_INVARIANTS.md`: documented claim evidence-type
   invariant.
 - `docs/EVENT_LOG_INTEGRITY.md`: updated current write-path status.
+- `docs/PRODUCT_DNA.md`: product wedge and validation target.
+- `docs/PRODUCT_DEVELOPMENT_FLOW.md`: v0.3 wedge contract and capture contract.
+- `docs/REDACTION_AND_IMPORT_BOUNDARIES.md`: raw capture quarantine path.
+- `docs/SECURITY_AND_APPROVALS.md`: warning for external-action helper.
 
 ## Known Gaps
 

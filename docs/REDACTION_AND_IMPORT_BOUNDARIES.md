@@ -105,6 +105,31 @@ Do not import:
 - contact lists;
 - unrelated message threads.
 
+## Raw Capture Quarantine
+
+`capture.note_created` is the first planned raw-text write path.
+
+Rules:
+- raw capture text is untrusted data;
+- the event must not use `redactionStatus: not_required`;
+- the command must choose `pending_scan`, `redacted`,
+  `no_secrets_detected` or `blocked_sensitive`;
+- blocked sensitive captures must not render in normal dashboard summaries;
+- a capture is not evidence until a later event explicitly converts or links it;
+- imported chat/Codex/OpenClaw text follows the same quarantine path.
+
+Allowed v0.3 display:
+- project name;
+- capture source;
+- timestamp;
+- redacted summary or "pending scan";
+- review status.
+
+Disallowed v0.3 display:
+- raw secret-looking text;
+- full private chat logs;
+- unrelated conversation context.
+
 ## Tests Required Before Real Integrations
 
 - secret fixture is redacted;
@@ -113,4 +138,3 @@ Do not import:
 - missing project mapping lands in inbox;
 - importer cannot create verified evidence directly;
 - external action import requires approval linkage.
-

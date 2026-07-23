@@ -678,6 +678,12 @@ function idempotencyPayloadHash(event: LedgerEvent) {
   return stableStringify(payload);
 }
 
+const stateChangingActionPattern = /^(project|capture|evidence|agent_run|blocker|decision|approval|work_item)\..*[._](created|updated|submitted|verified|resolved|recorded|approved|used|rejected|deleted|archived)$/;
+
+function isStateChangingAction(action: string) {
+  return stateChangingActionPattern.test(action);
+}
+
 export function replayLedgerEvents(
   initialLedger: StateLedger,
   events: LedgerEvent[],
@@ -817,7 +823,11 @@ export function replayLedgerEvents(
         continue;
       }
 
-      ignoredEventIds.push(event.id);
+      if (isStateChangingAction(event.action)) {
+        errors.push(`event ${event.id} has unsupported state-changing action ${event.action}`);
+      } else {
+        ignoredEventIds.push(event.id);
+      }
       continue;
     }
 

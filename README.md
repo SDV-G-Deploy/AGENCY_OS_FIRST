@@ -1,12 +1,13 @@
-# Agency OS / Project Portfolio Staging
+# Agency OS / Local Solo Builder Kit
 
-A one-evening technical skeleton for a solo builder command center.
+A local-first truth ledger for a solo builder working with AI agents, chats,
+repos and short phone sessions.
 
 The first version is intentionally small: one visual dashboard over projects,
 work items, evidence, agent runs, blockers and integration lanes. It is not a
 chat workspace and not a full task manager. Its job is to keep state honest.
 
-## Today scope
+## Current local kit scope
 
 - Command Center with the main focus and portfolio health.
 - Four active portfolio lanes: core, revenue, infrastructure and lab.
@@ -19,10 +20,11 @@ chat workspace and not a full task manager. Its job is to keep state honest.
 - Phone review cards for verify, unblock, approve and capture queues.
 - Replay-derived dashboard state over the append-only event log.
 - First local browser form/API for updating one project's next action.
+- Product DNA and v0.3 phone-first capture plan.
 
 ## Next useful layer
 
-1. Add one local phone review action that appends an event.
+1. Add one phone-first capture action that appends an event.
 2. Broaden reducer replay beyond `project.next_action_updated`.
 3. Add approval rejection and expiry UI.
 4. Add runtime schema validation and redaction/import fixtures.
@@ -45,6 +47,8 @@ npm run audit:prod
 
 ## Architecture And Evidence
 
+- [Product DNA](docs/PRODUCT_DNA.md)
+- [Product Development Flow](docs/PRODUCT_DEVELOPMENT_FLOW.md)
 - [Agency OS Architecture](docs/AGENCY_OS_ARCHITECTURE.md)
 - [Work And Evidence Protocol](docs/WORK_AND_EVIDENCE_PROTOCOL.md)
 - [Research And Comparison Notes](docs/RESEARCH_AND_COMPARISON.md)

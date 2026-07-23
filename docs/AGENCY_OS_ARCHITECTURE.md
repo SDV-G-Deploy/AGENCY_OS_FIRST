@@ -3,6 +3,11 @@
 Status: draft v0.4 planning baseline  
 Last updated: 2026-07-23
 
+Related product documents:
+- [Product DNA](PRODUCT_DNA.md)
+- [Product Development Flow](PRODUCT_DEVELOPMENT_FLOW.md)
+- [Research And Comparison Notes](RESEARCH_AND_COMPARISON.md)
+
 ## Product Spine
 
 Agency OS is a state, evidence and coordination layer for a solo builder who

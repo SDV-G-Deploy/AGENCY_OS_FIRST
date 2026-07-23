@@ -91,11 +91,13 @@ The reducer must:
 - ignore exact duplicate idempotency keys;
 - reject duplicate idempotency keys with different payloads;
 - apply only known action types;
+- fail closed on unknown state-changing actions;
 - emit validation errors as sanity checks;
 - never mutate input records in place.
 
 Minimum reducer actions:
 - `project.next_action_updated`;
+- `capture.note_created`;
 - `evidence.submitted`;
 - `evidence.verified`;
 - `agent_run.submitted`;

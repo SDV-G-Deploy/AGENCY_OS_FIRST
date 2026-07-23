@@ -155,6 +155,23 @@ Current status:
 - no production deployment should happen until the blocker is resolved or
   consciously accepted.
 
+## External Action Helper Warning
+
+The current runtime has a strong scoped approval path for the first project
+write, but the legacy `canRunExternalAction()` helper only checks approval
+state, expiry and use status.
+
+Before any real external action uses approval logic, the helper must be
+replaced or narrowed so it checks:
+- action type;
+- scope;
+- requester;
+- entity;
+- risk level;
+- human approver;
+- single-use state;
+- expiration.
+
 ## Audit Retention
 
 Minimum retention:

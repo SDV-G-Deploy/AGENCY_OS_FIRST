@@ -36,7 +36,7 @@ export default function Home() {
           <span className="brand-mark">AO</span>
           <div>
             <p className="eyebrow">Agency OS</p>
-            <h1>Project Portfolio Staging</h1>
+            <h1>Local Solo Builder Kit</h1>
           </div>
         </div>
 
@@ -68,7 +68,7 @@ export default function Home() {
       <section className="workspace">
         <header className="topbar">
           <div>
-            <p className="eyebrow">Global state layer over ChatGPT, Codex, Claude, OpenClaw and GitHub</p>
+            <p className="eyebrow">Local truth ledger staging for ChatGPT, Codex, Claude, OpenClaw and GitHub</p>
             <h2>One screen that refuses false progress.</h2>
           </div>
           <div className="session-chip">

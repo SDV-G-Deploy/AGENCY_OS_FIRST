@@ -591,6 +591,49 @@ test("replay rejects append events with invalid hash before applying state", asy
   assert.equal(replayedProject.nextAction, originalProject.nextAction);
 });
 
+test("replay rejects unsupported state-changing event actions", async () => {
+  const { calculateEventHash, replayLedgerEvents, stateLedger } = await loadLedger();
+  const event = makeProjectNextActionEvent(calculateEventHash, stateLedger, {
+    id: "event-test-unsupported-capture-note",
+    action: "capture.note_created",
+    entityType: "capture",
+    entityId: "capture-test-note",
+    after: {
+      projectId: "project-agency-os",
+      source: "phone",
+      body: "Raw capture should wait for reducer support.",
+    },
+    idempotencyKey: "test-unsupported-capture-note",
+  });
+
+  const result = replayLedgerEvents(stateLedger, [event]);
+
+  assert.ok(
+    result.errors.some((error) =>
+      error.includes("unsupported state-changing action capture.note_created"),
+    ),
+  );
+  assert.deepEqual(result.appliedEventIds, []);
+});
+
+test("replay can ignore unsupported non-state informational events", async () => {
+  const { calculateEventHash, replayLedgerEvents, stateLedger } = await loadLedger();
+  const event = makeProjectNextActionEvent(calculateEventHash, stateLedger, {
+    id: "event-test-informational",
+    action: "system.observed",
+    entityType: "system",
+    entityId: "system-local",
+    after: { note: "Informational event does not claim state mutation." },
+    idempotencyKey: "test-informational",
+  });
+
+  const result = replayLedgerEvents(stateLedger, [event]);
+
+  assert.deepEqual(result.errors, []);
+  assert.deepEqual(result.appliedEventIds, []);
+  assert.deepEqual(result.ignoredEventIds, ["event-test-informational"]);
+});
+
 test("replay rejects idempotency keys that already exist in the ledger", async () => {
   const { calculateEventHash, replayLedgerEvents, stateLedger } = await loadLedger();
   const event = makeProjectNextActionEvent(calculateEventHash, stateLedger, {

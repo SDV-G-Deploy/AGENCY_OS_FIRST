@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Agency OS - Project Portfolio Staging",
+  title: "Agency OS - Local Solo Builder Kit",
   description:
     "A solo builder command center for projects, evidence, blockers and agent runs.",
   icons: {

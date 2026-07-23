@@ -29,8 +29,8 @@ test("server-renders the Agency OS dashboard shell", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /<title>Agency OS - Project Portfolio Staging<\/title>/i);
-  assert.match(html, /Project Portfolio Staging/);
+  assert.match(html, /<title>Agency OS - Local Solo Builder Kit<\/title>/i);
+  assert.match(html, /Local Solo Builder Kit/);
   assert.match(html, /Evidence queue/);
   assert.match(html, /Agent run ledger/);
   assert.match(html, /Blockers/);
@@ -86,6 +86,6 @@ test("keeps the first MVP focused on state, proof and agent runs", async () => {
   assert.match(route, /actorId: "person-serj"/);
   assert.match(route, /resolve\(process\.cwd\(\), "data\/events\.jsonl"\)/);
   assert.doesNotMatch(route, /payload\.actorId|payload\.eventsPath/);
-  assert.match(layout, /Agency OS - Project Portfolio Staging/);
+  assert.match(layout, /Agency OS - Local Solo Builder Kit/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
 });
