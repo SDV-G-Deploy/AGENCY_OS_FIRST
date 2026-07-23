@@ -415,6 +415,26 @@ test("replay updates project next action without mutating the input snapshot", a
   assert.equal(originalProject.nextAction, originalNextAction);
 });
 
+test("derived ledger reflects appended project next-action events over snapshots", async () => {
+  const { calculateEventHash, getReplayDerivedLedger, stateLedger } = await loadLedger();
+  const event = makeProjectNextActionEvent(calculateEventHash, stateLedger, {
+    id: "event-test-derived-next-action",
+    idempotencyKey: "test-derived-next-action",
+    after: { nextAction: "Derived dashboard state comes from replay." },
+  });
+
+  const derived = getReplayDerivedLedger({
+    ...stateLedger,
+    events: [...stateLedger.events, event],
+  });
+  const project = derived.ledger.projects.find((item) => item.id === "project-agency-os");
+  const snapshotProject = stateLedger.projects.find((item) => item.id === "project-agency-os");
+
+  assert.deepEqual(derived.errors, []);
+  assert.equal(project.nextAction, "Derived dashboard state comes from replay.");
+  assert.notEqual(snapshotProject.nextAction, project.nextAction);
+});
+
 test("replay ignores exact duplicate idempotency payloads", async () => {
   const { calculateEventHash, replayLedgerEvents, stateLedger } = await loadLedger();
   const event = makeProjectNextActionEvent(calculateEventHash, stateLedger);

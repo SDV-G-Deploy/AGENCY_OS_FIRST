@@ -30,6 +30,7 @@ Current implementation status:
   `approval.used` companion event;
 - `approval.approved` rejects non-person approvers and changed request details;
 - it is not yet wired to the UI or API;
+- dashboard-facing state derives from replayed events over snapshots;
 - it does not regenerate current snapshot files after append.
 
 ## Event Envelope

@@ -42,7 +42,7 @@ Evidence:
   - ledger rule tests
 
 Observed test result:
-- 34 tests passed.
+- 35 tests passed.
 
 Strength: strong for current static/local code quality.
 
@@ -235,6 +235,20 @@ Evidence:
 Strength: strong for the first approval authorization guard. It does not yet
 prove a UI approval form or full rejection lifecycle.
 
+### Claim 16: Dashboard-facing state is replay-derived
+
+Evidence:
+- `app/ledger.ts` exports `getReplayDerivedLedger()` and
+  `derivedStateLedger`.
+- Dashboard-facing exports use `derivedStateLedger`.
+- `getSanityChecks()` surfaces replay errors for the default derived ledger.
+- `tests/ledger.test.mjs` proves an appended `project.next_action_updated`
+  event changes derived project `nextAction` without changing the snapshot.
+- `npm run verify` passes with 35 tests.
+
+Strength: strong for local replay-derived display state. It does not yet prove
+a visible UI/API write action.
+
 ## Files Changed For Honesty Closure
 
 - `package.json`: added `typecheck`, `audit:prod`, `verify`; moved Next to
@@ -266,6 +280,7 @@ prove a UI approval form or full rejection lifecycle.
 - `app/ledger-writer.ts`: first guarded append-only writer path.
 - `data/approvals.json`: aligned scoped-write permission with runtime action
   scope.
+- `app/ledger.ts`: dashboard-facing exports now derive state through replay.
 
 ## Known Gaps
 
@@ -273,7 +288,8 @@ prove a UI approval form or full rejection lifecycle.
 - Buttons are not wired to write actions.
 - State now comes from local JSON ledger files and events load from JSONL. A
   first pure replay path and append writer exist for one action, but there is no
-  visible UI/API action or full reducer coverage yet.
+  visible UI/API action or full reducer coverage yet. Dashboard-facing state now
+  uses replay-derived state.
 - Writer has lock and idempotency conflict checks, but no durable
   `approval.rejected` lifecycle event yet.
 - Dependency audit blocks production deployment.

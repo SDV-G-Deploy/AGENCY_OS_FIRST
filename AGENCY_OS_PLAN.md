@@ -906,3 +906,57 @@ Still missing:
 Next safest step:
 - Stop implementation for this cycle unless we choose the next product-visible
   surface: command/API writer wrapper versus dashboard replay-derived state.
+
+## PLAN FIRST - 2026-07-23 Replay-Derived Dashboard State
+
+Block: Make dashboard state derive from event replay.
+
+Goal:
+- Ensure appended events can become visible state without hand-editing
+  `data/projects.json`.
+
+In scope:
+- Add a replay-derived ledger adapter.
+- Make dashboard-facing exports use the derived ledger.
+- Surface replay errors through sanity checks.
+- Add a test proving an appended `project.next_action_updated` changes derived
+  project state while leaving the snapshot unchanged.
+
+Out of scope:
+- UI buttons.
+- API endpoint.
+- Writing to real `data/events.jsonl` during tests.
+- Full reducer action coverage.
+- Redaction scanner.
+
+Done criteria:
+- `projects` and other display exports are based on derived state.
+- Synthetic appended event changes derived `nextAction`.
+- `npm run verify` passes.
+
+Evidence:
+- `app/ledger.ts` exports `getReplayDerivedLedger()` and
+  `derivedStateLedger`.
+- `tests/ledger.test.mjs` covers derived state over snapshot.
+
+## PLAN UPDATE - 2026-07-23 Replay-Derived Dashboard State
+
+Changed:
+- Added `getReplayDerivedLedger()` and `derivedStateLedger`.
+- Dashboard-facing exports now use replay-derived state instead of raw snapshot
+  state.
+- Sanity checks include replay errors for the default derived ledger.
+- Added derived-state test for appended next-action events.
+
+Verified:
+- `npm run verify` passes: lint, typecheck, build and 35 tests.
+
+Still missing:
+- No visible UI/API action calls the writer.
+- Full reducer coverage is still limited.
+- Redaction scanner/import fixtures are not implemented.
+- Production audit remains blocked by Next/PostCSS/sharp advisories.
+
+Next safest step:
+- Add a narrow local command or API endpoint that calls the writer, then use the
+  existing derived-state path to show its result.

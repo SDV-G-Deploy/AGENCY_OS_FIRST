@@ -55,6 +55,8 @@ test("keeps the first MVP focused on state, proof and agent runs", async () => {
   assert.match(projectsData, /project-agency-os/);
   assert.match(evidenceData, /evidence-local-v0-2-verify/);
   assert.match(ledger, /export const stateLedger/);
+  assert.match(ledger, /export const derivedStateLedger/);
+  assert.match(ledger, /export function getReplayDerivedLedger/);
   assert.match(ledger, /eventsJsonl/);
   assert.doesNotMatch(ledger, /const rawEvents/);
   assert.match(ledger, /export const projects/);

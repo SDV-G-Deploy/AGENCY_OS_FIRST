@@ -390,8 +390,6 @@ function createIndexes(ledger: StateLedger) {
   };
 }
 
-const defaultIndexes = createIndexes(stateLedger);
-
 function hasText(value: string | undefined) {
   return Boolean(value && value.trim().length > 0);
 }
@@ -648,6 +646,11 @@ export type ReplayResult = {
   errors: string[];
 };
 
+export type DerivedLedgerResult = {
+  ledger: StateLedger;
+  errors: string[];
+};
+
 function cloneLedger(ledger: StateLedger): StateLedger {
   return JSON.parse(JSON.stringify(ledger)) as StateLedger;
 }
@@ -862,7 +865,29 @@ export function replayLedgerEvents(
   };
 }
 
-export function getSanityChecks(ledger: StateLedger = stateLedger): SanityCheck[] {
+export function getReplayDerivedLedger(ledger: StateLedger = stateLedger): DerivedLedgerResult {
+  const replayResult = replayLedgerEvents(
+    {
+      ...ledger,
+      events: [],
+    },
+    ledger.events,
+  );
+
+  return {
+    ledger: {
+      ...replayResult.ledger,
+      events: ledger.events,
+    },
+    errors: replayResult.errors,
+  };
+}
+
+export const replayDerivedLedger = getReplayDerivedLedger(stateLedger);
+export const derivedStateLedger = replayDerivedLedger.ledger;
+const derivedIndexes = createIndexes(derivedStateLedger);
+
+export function getSanityChecks(ledger: StateLedger = derivedStateLedger): SanityCheck[] {
   const checks: SanityCheck[] = [];
   const activeProjects = ledger.projects.filter((project) => project.state === "active");
 
@@ -935,10 +960,21 @@ export function getSanityChecks(ledger: StateLedger = stateLedger): SanityCheck[
     });
   }
 
+  if (ledger === derivedStateLedger) {
+    for (const error of replayDerivedLedger.errors) {
+      checks.push({
+        id: `ledger-replay-${checks.length}`,
+        severity: "critical",
+        title: "Ledger replay failed",
+        detail: error,
+      });
+    }
+  }
+
   return checks;
 }
 
-export function getRecommendedSteps(ledger: StateLedger = stateLedger): RecommendedStep[] {
+export function getRecommendedSteps(ledger: StateLedger = derivedStateLedger): RecommendedStep[] {
   const { projectById } = createIndexes(ledger);
   const missingEvidence = ledger.claims
     .filter((claim) => claim.status !== "verified")
@@ -971,7 +1007,7 @@ export function getRecommendedSteps(ledger: StateLedger = stateLedger): Recommen
   return [...missingEvidence, ...blockerSteps].slice(0, 4);
 }
 
-export function getPhoneReviewQueue(ledger: StateLedger = stateLedger): PhoneReviewAction[] {
+export function getPhoneReviewQueue(ledger: StateLedger = derivedStateLedger): PhoneReviewAction[] {
   const { actorById, projectById } = createIndexes(ledger);
   const sanityChecks = getSanityChecks(ledger);
   const missingEvidenceCount = ledger.claims.filter(
@@ -1029,8 +1065,8 @@ export function getPhoneReviewQueue(ledger: StateLedger = stateLedger): PhoneRev
   ];
 }
 
-export const ledgerEvents = stateLedger.events.map((event) => {
-  const actor = defaultIndexes.actorById.get(event.actorId);
+export const ledgerEvents = derivedStateLedger.events.map((event) => {
+  const actor = derivedIndexes.actorById.get(event.actorId);
   return {
     id: event.id,
     actor: actor?.displayName ?? event.actorId,
@@ -1040,7 +1076,7 @@ export const ledgerEvents = stateLedger.events.map((event) => {
   };
 });
 
-export const projects = stateLedger.projects.map((project) => ({
+export const projects = derivedStateLedger.projects.map((project) => ({
   name: project.name,
   purpose: project.purpose,
   stage: project.stage,
@@ -1056,13 +1092,13 @@ export const projects = stateLedger.projects.map((project) => ({
           : "Laboratory",
   nextAction: project.nextAction,
   lastVerifiedChange:
-    projectEvidence(project.id).find((evidence) => evidence.verificationStatus === "verified")
+    projectEvidence(project.id, derivedStateLedger).find((evidence) => evidence.verificationStatus === "verified")
       ?.urlOrPath ?? "No fresh proof attached",
-  evidenceState: projectFreshnessLabel(project.id),
+  evidenceState: projectFreshnessLabel(project.id, derivedStateLedger),
 }));
 
-export const workItems = stateLedger.workItems.map((item) => {
-  const project = defaultIndexes.projectById.get(item.projectId);
+export const workItems = derivedStateLedger.workItems.map((item) => {
+  const project = derivedIndexes.projectById.get(item.projectId);
   return {
     project: project?.name ?? item.projectId,
     title: item.title,
@@ -1073,10 +1109,10 @@ export const workItems = stateLedger.workItems.map((item) => {
   };
 });
 
-export const blockerQueue = stateLedger.blockers
+export const blockerQueue = derivedStateLedger.blockers
   .filter((blocker) => blocker.state === "open")
   .map((blocker) => {
-    const project = defaultIndexes.projectById.get(blocker.projectId);
+    const project = derivedIndexes.projectById.get(blocker.projectId);
     return {
       project: project?.name ?? blocker.projectId,
       question: blocker.question,
@@ -1084,10 +1120,10 @@ export const blockerQueue = stateLedger.blockers
     };
   });
 
-export const evidenceQueue = stateLedger.claims.map((claim) => {
-  const project = defaultIndexes.projectById.get(claim.projectId);
+export const evidenceQueue = derivedStateLedger.claims.map((claim) => {
+  const project = derivedIndexes.projectById.get(claim.projectId);
   const evidence = claim.linkedEvidenceIds
-    .map((id) => defaultIndexes.evidenceById.get(id))
+    .map((id) => derivedIndexes.evidenceById.get(id))
     .find(Boolean);
   const status =
     claim.status === "verified"
@@ -1105,10 +1141,10 @@ export const evidenceQueue = stateLedger.claims.map((claim) => {
   };
 });
 
-export const agentRuns = stateLedger.agentRuns.map((run) => {
-  const actor = defaultIndexes.actorById.get(run.agentId);
+export const agentRuns = derivedStateLedger.agentRuns.map((run) => {
+  const actor = derivedIndexes.actorById.get(run.agentId);
   const linkedEvidence = run.linkedEvidenceIds
-    .map((id) => defaultIndexes.evidenceById.get(id))
+    .map((id) => derivedIndexes.evidenceById.get(id))
     .filter(Boolean)
     .map((evidence) => evidence?.id)
     .join(", ");
