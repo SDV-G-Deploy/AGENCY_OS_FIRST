@@ -4,10 +4,15 @@ import {
   getReplayDerivedLedger,
   parseLedgerEvents,
   stateLedger,
+  type CaptureRecord,
   type LedgerEvent,
   type StateLedger,
 } from "./ledger";
-import { appendCaptureNoteEvent, appendProjectNextActionEvent } from "./ledger-writer";
+import {
+  appendCaptureNoteEvent,
+  appendCaptureReviewMarkedEvent,
+  appendProjectNextActionEvent,
+} from "./ledger-writer";
 
 type ProjectNextActionCommandInput = {
   ledger?: StateLedger;
@@ -49,6 +54,26 @@ type CaptureNoteCommandResult = {
   reviewStatus: string | null;
 };
 
+type CaptureReviewMarkedCommandInput = {
+  ledger?: StateLedger;
+  eventsPath: string;
+  actorId: string;
+  captureId: string;
+  candidateType: string;
+  idempotencyKey: string;
+  reviewedAt: string;
+};
+
+type CaptureReviewMarkedCommandResult = {
+  ok: boolean;
+  errors: string[];
+  appended: boolean;
+  captureId: string | null;
+  eventId: string | null;
+  reviewStatus: string | null;
+  candidateType: CaptureRecord["candidateType"];
+};
+
 const inboxProjectId = "inbox";
 const allowedCaptureSources = new Set([
   "phone",
@@ -67,6 +92,12 @@ const allowedCaptureRedactionStatuses = new Set([
   "redacted",
   "no_secrets_detected",
   "blocked_sensitive",
+]);
+const allowedCaptureCandidateTypes = new Set([
+  "evidence_candidate",
+  "blocker_candidate",
+  "decision_candidate",
+  "next_action_candidate",
 ]);
 
 function validateProjectNextActionCommand(
@@ -132,6 +163,45 @@ function validateCaptureNoteCommand(ledger: StateLedger, input: CaptureNoteComma
   }
   if (!allowedCaptureRedactionStatuses.has(redactionStatus)) {
     errors.push(`invalid capture redaction status ${redactionStatus}`);
+  }
+
+  return errors;
+}
+
+function validateCaptureReviewMarkedCommand(
+  ledger: StateLedger,
+  capture: CaptureRecord | undefined,
+  input: CaptureReviewMarkedCommandInput,
+  hasExistingIdempotencyKey: boolean,
+) {
+  const errors: string[] = [];
+  const actor = ledger.actors.find((item) => item.id === input.actorId);
+
+  if (!actor) {
+    errors.push(`unknown actor ${input.actorId}`);
+  } else if (actor.actorType !== "person") {
+    errors.push("capture review command is human-only");
+  }
+  if (!input.captureId.trim()) {
+    errors.push("captureId is required");
+  } else if (!capture) {
+    errors.push(`unknown capture ${input.captureId}`);
+  } else {
+    if (capture.redactionStatus === "blocked_sensitive") {
+      errors.push("blocked sensitive captures cannot be reviewed in normal flow");
+    }
+    if (capture.reviewStatus !== "uncategorized" && !hasExistingIdempotencyKey) {
+      errors.push("capture review requires uncategorized capture");
+    }
+  }
+  if (!allowedCaptureCandidateTypes.has(input.candidateType)) {
+    errors.push(`invalid capture candidate type ${input.candidateType}`);
+  }
+  if (!input.idempotencyKey.trim()) {
+    errors.push("idempotencyKey is required");
+  }
+  if (Number.isNaN(new Date(input.reviewedAt).getTime())) {
+    errors.push("reviewedAt must be a valid date");
   }
 
   return errors;
@@ -272,5 +342,110 @@ export async function runCaptureNoteCommand(
     captureId: capture?.id ?? writeResult.event?.entityId ?? null,
     eventId: writeResult.event?.id ?? null,
     reviewStatus: capture?.reviewStatus ?? null,
+  };
+}
+
+export async function runCaptureReviewMarkedCommand(
+  input: CaptureReviewMarkedCommandInput,
+): Promise<CaptureReviewMarkedCommandResult> {
+  const ledger = input.ledger ?? stateLedger;
+  const currentEvents = parseLedgerEvents(await readFile(input.eventsPath, "utf8"));
+  const currentDerived = getReplayDerivedLedger({
+    ...ledger,
+    events: currentEvents,
+  });
+
+  if (currentDerived.errors.length > 0) {
+    return {
+      ok: false,
+      errors: currentDerived.errors,
+      appended: false,
+      captureId: null,
+      eventId: null,
+      reviewStatus: null,
+      candidateType: null,
+    };
+  }
+
+  const currentCapture = currentDerived.ledger.captures.find(
+    (item) => item.id === input.captureId,
+  );
+  const hasExistingIdempotencyKey = currentEvents.some(
+    (event) => event.idempotencyKey === input.idempotencyKey,
+  );
+  const inputErrors = validateCaptureReviewMarkedCommand(
+    ledger,
+    currentCapture,
+    input,
+    hasExistingIdempotencyKey,
+  );
+
+  if (inputErrors.length > 0) {
+    return {
+      ok: false,
+      errors: inputErrors,
+      appended: false,
+      captureId: currentCapture?.id ?? null,
+      eventId: null,
+      reviewStatus: currentCapture?.reviewStatus ?? null,
+      candidateType: currentCapture?.candidateType ?? null,
+    };
+  }
+
+  const writeResult = await appendCaptureReviewMarkedEvent({
+    ledger,
+    eventsPath: input.eventsPath,
+    actorId: input.actorId,
+    captureId: input.captureId,
+    candidateType: input.candidateType as Exclude<CaptureRecord["candidateType"], null>,
+    idempotencyKey: input.idempotencyKey,
+    reviewedAt: input.reviewedAt,
+    eventSource: "local_command",
+  });
+
+  if (writeResult.errors.length > 0) {
+    return {
+      ok: false,
+      errors: writeResult.errors,
+      appended: writeResult.appended,
+      captureId: writeResult.event?.entityId ?? input.captureId,
+      eventId: writeResult.event?.id ?? null,
+      reviewStatus: null,
+      candidateType: null,
+    };
+  }
+
+  const updatedEvents = parseLedgerEvents(await readFile(input.eventsPath, "utf8"));
+  const updatedDerived = getReplayDerivedLedger({
+    ...ledger,
+    events: updatedEvents,
+  });
+
+  if (updatedDerived.errors.length > 0) {
+    return {
+      ok: false,
+      errors: updatedDerived.errors,
+      appended: writeResult.appended,
+      captureId: writeResult.event?.entityId ?? input.captureId,
+      eventId: writeResult.event?.id ?? null,
+      reviewStatus: null,
+      candidateType: null,
+    };
+  }
+
+  const capture = updatedDerived.ledger.captures.find(
+    (item) => item.id === writeResult.event?.entityId,
+  );
+  const confirmed =
+    capture?.reviewStatus === "triaged" && capture.candidateType === input.candidateType;
+
+  return {
+    ok: confirmed,
+    errors: confirmed ? [] : ["derived state did not confirm capture review"],
+    appended: writeResult.appended,
+    captureId: capture?.id ?? writeResult.event?.entityId ?? input.captureId,
+    eventId: writeResult.event?.id ?? null,
+    reviewStatus: capture?.reviewStatus ?? null,
+    candidateType: capture?.candidateType ?? null,
   };
 }

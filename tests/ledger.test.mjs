@@ -194,6 +194,28 @@ async function loadLocalCaptureApiRoute() {
   };
 }
 
+async function loadLocalCaptureReviewApiRoute() {
+  const loaded = await loadLocalCommand();
+  const moduleDir = loaded.eventsPath.replace(/\\events\.jsonl$/, "").replace(/\/events\.jsonl$/, "");
+  const dataDir = join(moduleDir, "data");
+  const eventsSource = await readFile(new URL("../data/events.jsonl", import.meta.url), "utf8");
+
+  await mkdir(dataDir);
+  await writeFile(join(dataDir, "events.jsonl"), eventsSource, "utf8");
+  await transpileModule(
+    new URL("../app/api/local/capture-review/route.ts", import.meta.url),
+    join(moduleDir, "capture-review-route.js"),
+    true,
+  );
+
+  return {
+    ...loaded,
+    eventsPath: join(dataDir, "events.jsonl"),
+    moduleDir,
+    route: await import(pathToFileURL(join(moduleDir, "capture-review-route.js")).href),
+  };
+}
+
 test("sanity checks find stale evidence and unproven agent claims", async () => {
   const { getSanityChecks } = await loadLedger();
   const checks = getSanityChecks();
@@ -1604,6 +1626,93 @@ test("writer treats an exact capture retry idempotency key as a no-op", async ()
   );
 });
 
+test("writer appends a capture review marking and confirms derived state", async () => {
+  const { eventsPath, ledger, writer } = await loadLedgerWithWriter();
+  const beforeEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+  const note = await writer.appendCaptureNoteEvent({
+    ledger: ledger.stateLedger,
+    eventsPath,
+    actorId: "person-serj",
+    projectId: "project-agency-os",
+    body: "Capture review writer should only triage this note.",
+    source: "phone",
+    idempotencyKey: "test-writer-review-note",
+    createdAt: "2026-07-23T12:07:00Z",
+    receivedAt: "2026-07-23T12:07:01Z",
+  });
+
+  const result = await writer.appendCaptureReviewMarkedEvent({
+    ledger: ledger.stateLedger,
+    eventsPath,
+    actorId: "person-serj",
+    captureId: note.event.entityId,
+    candidateType: "decision_candidate",
+    idempotencyKey: "test-writer-capture-review-marked",
+    reviewedAt: "2026-07-23T12:08:00Z",
+  });
+  const afterEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+  const derived = ledger.getReplayDerivedLedger({
+    ...ledger.stateLedger,
+    events: afterEvents,
+  });
+  const capture = derived.ledger.captures.find((item) => item.id === note.event.entityId);
+
+  assert.equal(result.appended, true);
+  assert.deepEqual(result.errors, []);
+  assert.equal(afterEvents.length, beforeEvents.length + 2);
+  assert.equal(afterEvents.at(-1).action, "capture.review_marked");
+  assert.equal(afterEvents.at(-1).entityType, "capture");
+  assert.equal(afterEvents.at(-1).entityId, note.event.entityId);
+  assert.equal(afterEvents.at(-1).actorId, "person-serj");
+  assert.equal(afterEvents.at(-1).source, "local_writer");
+  assert.equal(afterEvents.at(-1).redactionStatus, "not_required");
+  assert.equal(afterEvents.at(-1).retentionClass, "operational");
+  assert.equal(afterEvents.at(-1).previousEventHash, afterEvents.at(-2).eventHash);
+  assert.equal(afterEvents.at(-1).eventHash, ledger.calculateEventHash(afterEvents.at(-1)));
+  assert.equal(capture.classification, "decision_candidate");
+  assert.equal(capture.candidateType, "decision_candidate");
+  assert.equal(capture.reviewStatus, "triaged");
+  assert.equal(capture.reviewedAt, "2026-07-23T12:08:00Z");
+  assert.deepEqual(capture.linkedEntityIds, []);
+});
+
+test("writer treats an exact capture review retry idempotency key as a no-op", async () => {
+  const { eventsPath, ledger, writer } = await loadLedgerWithWriter();
+  const note = await writer.appendCaptureNoteEvent({
+    ledger: ledger.stateLedger,
+    eventsPath,
+    actorId: "person-serj",
+    projectId: "inbox",
+    body: "Retrying this capture review should not append twice.",
+    source: "phone",
+    idempotencyKey: "test-writer-review-retry-note",
+    createdAt: "2026-07-23T12:09:00Z",
+    receivedAt: "2026-07-23T12:09:01Z",
+  });
+  const input = {
+    ledger: ledger.stateLedger,
+    eventsPath,
+    actorId: "person-serj",
+    captureId: note.event.entityId,
+    candidateType: "evidence_candidate",
+    idempotencyKey: "test-writer-capture-review-exact-retry",
+    reviewedAt: "2026-07-23T12:10:00Z",
+  };
+
+  const first = await writer.appendCaptureReviewMarkedEvent(input);
+  const second = await writer.appendCaptureReviewMarkedEvent(input);
+  const events = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+
+  assert.equal(first.appended, true);
+  assert.equal(second.appended, false);
+  assert.deepEqual(second.errors, []);
+  assert.deepEqual(second.ignoredEventIds, [first.event.id]);
+  assert.equal(
+    events.filter((event) => event.idempotencyKey === "test-writer-capture-review-exact-retry").length,
+    1,
+  );
+});
+
 test("writer blocks capture notes with invalid raw redaction status", async () => {
   const { eventsPath, ledger, writer } = await loadLedgerWithWriter();
   const beforeEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
@@ -1802,6 +1911,146 @@ test("local command rejects agent capture actors before writer execution", async
   assert.equal(afterEvents.length, beforeEvents.length);
 });
 
+test("local command writes a human capture review and confirms derived state", async () => {
+  const { command, eventsPath, ledger, writer } = await loadLocalCommand();
+  const note = await writer.appendCaptureNoteEvent({
+    ledger: ledger.stateLedger,
+    eventsPath,
+    actorId: "person-serj",
+    projectId: "project-agency-os",
+    body: "Command layer can triage this quarantined capture.",
+    source: "phone",
+    idempotencyKey: "test-command-review-note",
+    createdAt: "2026-07-23T12:11:00Z",
+    receivedAt: "2026-07-23T12:11:01Z",
+  });
+  const beforeEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+
+  const result = await command.runCaptureReviewMarkedCommand({
+    ledger: ledger.stateLedger,
+    eventsPath,
+    actorId: "person-serj",
+    captureId: note.event.entityId,
+    candidateType: "blocker_candidate",
+    idempotencyKey: "test-command-human-capture-review",
+    reviewedAt: "2026-07-23T12:12:00Z",
+  });
+  const afterEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+  const reviewEvent = afterEvents.find(
+    (event) => event.idempotencyKey === "test-command-human-capture-review",
+  );
+
+  assert.equal(result.ok, true);
+  assert.equal(result.appended, true);
+  assert.equal(result.captureId, note.event.entityId);
+  assert.equal(result.reviewStatus, "triaged");
+  assert.equal(result.candidateType, "blocker_candidate");
+  assert.equal(reviewEvent.source, "local_command");
+  assert.equal(reviewEvent.redactionStatus, "not_required");
+  assert.equal(afterEvents.length, beforeEvents.length + 1);
+});
+
+test("local command treats an exact capture review retry as a confirmed no-op", async () => {
+  const { command, eventsPath, ledger, writer } = await loadLocalCommand();
+  const note = await writer.appendCaptureNoteEvent({
+    ledger: ledger.stateLedger,
+    eventsPath,
+    actorId: "person-serj",
+    projectId: "project-agency-os",
+    body: "Command retry should confirm this already triaged capture.",
+    source: "phone",
+    idempotencyKey: "test-command-review-retry-note",
+    createdAt: "2026-07-23T12:12:10Z",
+    receivedAt: "2026-07-23T12:12:11Z",
+  });
+  const input = {
+    ledger: ledger.stateLedger,
+    eventsPath,
+    actorId: "person-serj",
+    captureId: note.event.entityId,
+    candidateType: "evidence_candidate",
+    idempotencyKey: "test-command-capture-review-exact-retry",
+    reviewedAt: "2026-07-23T12:12:20Z",
+  };
+
+  const first = await command.runCaptureReviewMarkedCommand(input);
+  const beforeRetryEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+  const second = await command.runCaptureReviewMarkedCommand(input);
+  const afterRetryEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+
+  assert.equal(first.ok, true);
+  assert.equal(first.appended, true);
+  assert.equal(second.ok, true);
+  assert.equal(second.appended, false);
+  assert.equal(second.eventId, first.eventId);
+  assert.equal(second.reviewStatus, "triaged");
+  assert.equal(second.candidateType, "evidence_candidate");
+  assert.equal(afterRetryEvents.length, beforeRetryEvents.length);
+});
+
+test("local command rejects agent capture review actors before writer execution", async () => {
+  const { command, eventsPath, ledger, writer } = await loadLocalCommand();
+  const note = await writer.appendCaptureNoteEvent({
+    ledger: ledger.stateLedger,
+    eventsPath,
+    actorId: "person-serj",
+    projectId: "project-agency-os",
+    body: "Agent should not be able to review this capture.",
+    source: "phone",
+    idempotencyKey: "test-command-review-agent-note",
+    createdAt: "2026-07-23T12:13:00Z",
+    receivedAt: "2026-07-23T12:13:01Z",
+  });
+  const beforeEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+
+  const result = await command.runCaptureReviewMarkedCommand({
+    ledger: ledger.stateLedger,
+    eventsPath,
+    actorId: "agent-codex",
+    captureId: note.event.entityId,
+    candidateType: "evidence_candidate",
+    idempotencyKey: "test-command-agent-capture-review-blocked",
+    reviewedAt: "2026-07-23T12:14:00Z",
+  });
+  const afterEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.some((error) => error.includes("human-only")));
+  assert.equal(afterEvents.length, beforeEvents.length);
+});
+
+test("local command rejects blocked sensitive capture review before writer execution", async () => {
+  const { command, eventsPath, ledger, writer } = await loadLocalCommand();
+  const note = await writer.appendCaptureNoteEvent({
+    ledger: ledger.stateLedger,
+    eventsPath,
+    actorId: "person-serj",
+    projectId: "project-agency-os",
+    body: "Sensitive raw text should be blocked from normal capture review.",
+    source: "phone",
+    idempotencyKey: "test-command-review-sensitive-note",
+    createdAt: "2026-07-23T12:15:00Z",
+    receivedAt: "2026-07-23T12:15:01Z",
+    redactionStatus: "blocked_sensitive",
+  });
+  const beforeEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+
+  const result = await command.runCaptureReviewMarkedCommand({
+    ledger: ledger.stateLedger,
+    eventsPath,
+    actorId: "person-serj",
+    captureId: note.event.entityId,
+    candidateType: "decision_candidate",
+    idempotencyKey: "test-command-sensitive-capture-review-blocked",
+    reviewedAt: "2026-07-23T12:16:00Z",
+  });
+  const afterEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.some((error) => error.includes("blocked sensitive")));
+  assert.equal(afterEvents.length, beforeEvents.length);
+});
+
 test("local API route writes through the canonical temp event ledger", async () => {
   const { eventsPath, ledger, moduleDir, route } = await loadLocalApiRoute();
   const beforeEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
@@ -1880,6 +2129,84 @@ test("local capture API route writes through the canonical temp event ledger", a
     assert.equal(captureEvent.redactionStatus, "pending_scan");
     assert.equal(capture.projectId, "inbox");
     assert.equal(capture.reviewStatus, "uncategorized");
+  } finally {
+    process.chdir(previousCwd);
+  }
+});
+
+test("local capture review API route writes through the canonical temp event ledger", async () => {
+  const { eventsPath, ledger, moduleDir, route, writer } = await loadLocalCaptureReviewApiRoute();
+  const note = await writer.appendCaptureNoteEvent({
+    ledger: ledger.stateLedger,
+    eventsPath,
+    actorId: "person-serj",
+    projectId: "inbox",
+    body: "API route can triage this local capture without conversion.",
+    source: "phone",
+    idempotencyKey: "test-api-capture-review-note",
+    createdAt: "2026-07-23T12:17:00Z",
+    receivedAt: "2026-07-23T12:17:01Z",
+  });
+  const beforeEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+  const previousCwd = process.cwd();
+
+  try {
+    process.chdir(moduleDir);
+    const response = await route.POST(
+      new Request("http://localhost/api/local/capture-review", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          captureId: note.event.entityId,
+          candidateType: "next_action_candidate",
+          reviewedAt: "2026-07-23T12:18:00Z",
+          idempotencyKey: "test-api-capture-review",
+        }),
+      }),
+    );
+    const body = await response.json();
+    const afterEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+    const reviewEvent = afterEvents.find(
+      (event) => event.idempotencyKey === "test-api-capture-review",
+    );
+    const derived = ledger.getReplayDerivedLedger({
+      ...ledger.stateLedger,
+      events: afterEvents,
+    });
+    const capture = derived.ledger.captures.find((item) => item.id === body.captureId);
+
+    assert.equal(response.status, 200);
+    assert.equal(body.ok, true);
+    assert.equal(body.appended, true);
+    assert.equal(afterEvents.length, beforeEvents.length + 1);
+    assert.equal(reviewEvent.actorId, "person-serj");
+    assert.equal(reviewEvent.source, "local_command");
+    assert.equal(reviewEvent.action, "capture.review_marked");
+    assert.equal(reviewEvent.after.candidateType, "next_action_candidate");
+    assert.equal(capture.classification, "next_action_candidate");
+    assert.equal(capture.reviewStatus, "triaged");
+    assert.deepEqual(capture.linkedEntityIds, []);
+
+    const retryResponse = await route.POST(
+      new Request("http://localhost/api/local/capture-review", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          captureId: note.event.entityId,
+          candidateType: "next_action_candidate",
+          reviewedAt: "2026-07-23T12:18:00Z",
+          idempotencyKey: "test-api-capture-review",
+        }),
+      }),
+    );
+    const retryBody = await retryResponse.json();
+    const afterRetryEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+
+    assert.equal(retryResponse.status, 200);
+    assert.equal(retryBody.ok, true);
+    assert.equal(retryBody.appended, false);
+    assert.equal(retryBody.eventId, body.eventId);
+    assert.equal(afterRetryEvents.length, afterEvents.length);
   } finally {
     process.chdir(previousCwd);
   }

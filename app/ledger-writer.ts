@@ -6,6 +6,7 @@ import {
   replayLedgerEvents,
   stateLedger,
   validateEventLog,
+  type CaptureRecord,
   type LedgerEvent,
   type StateLedger,
 } from "./ledger";
@@ -47,6 +48,20 @@ type CaptureNoteWriteInput = {
 };
 
 type CaptureNoteWriteResult = ProjectNextActionWriteResult;
+
+type CaptureReviewMarkedWriteInput = {
+  ledger?: StateLedger;
+  eventsPath: string;
+  actorId: string;
+  captureId: string;
+  candidateType: Exclude<CaptureRecord["candidateType"], null>;
+  idempotencyKey: string;
+  reviewedAt: string;
+  traceId?: string | null;
+  eventSource?: string;
+};
+
+type CaptureReviewMarkedWriteResult = ProjectNextActionWriteResult;
 
 type LockHandle = Awaited<ReturnType<typeof open>>;
 
@@ -234,6 +249,54 @@ export function buildCaptureNoteEvent({
     source: eventSource,
     idempotencyKey,
     redactionStatus,
+    retentionClass: "operational",
+    previousEventHash: previousEvent?.eventHash ?? null,
+    eventHash: "",
+  };
+
+  event.eventHash = calculateEventHash(event);
+  return event;
+}
+
+export function buildCaptureReviewMarkedEvent({
+  ledger = stateLedger,
+  actorId,
+  captureId,
+  candidateType,
+  idempotencyKey,
+  reviewedAt,
+  traceId = null,
+  eventSource = "local_writer",
+}: Omit<CaptureReviewMarkedWriteInput, "eventsPath">) {
+  const previousEvent = ledger.events.at(-1);
+  const capture = ledger.captures.find((item) => item.id === captureId);
+  const event: LedgerEvent = {
+    schemaVersion: 1,
+    sequence: ledger.events.length + 1,
+    id: eventIdFromIdempotencyKey(idempotencyKey),
+    timestamp: reviewedAt,
+    actorId,
+    action: "capture.review_marked",
+    entityType: "capture",
+    entityId: captureId,
+    before: {
+      classification: capture?.classification ?? null,
+      candidateType: capture?.candidateType ?? null,
+      reviewStatus: capture?.reviewStatus ?? null,
+      reviewedAt: capture?.reviewedAt ?? null,
+    },
+    after: {
+      captureId,
+      reviewStatus: "triaged",
+      candidateType,
+      reviewedAt,
+    },
+    evidenceIds: [],
+    approvalIds: [],
+    traceId,
+    source: eventSource,
+    idempotencyKey,
+    redactionStatus: "not_required",
     retentionClass: "operational",
     previousEventHash: previousEvent?.eventHash ?? null,
     eventHash: "",
@@ -469,6 +532,107 @@ export async function appendCaptureNoteEvent({
       receivedAt,
       traceId,
       redactionStatus,
+      eventSource,
+    });
+
+    const existingEvent = currentEvents.find((item) => item.idempotencyKey === idempotencyKey);
+    if (existingEvent) {
+      if (comparableIdempotencyPayload(existingEvent) !== comparableIdempotencyPayload(event)) {
+        return {
+          appended: false,
+          event: existingEvent,
+          errors: [`idempotency conflict for ${idempotencyKey}`],
+          ignoredEventIds: [],
+        };
+      }
+
+      return {
+        appended: false,
+        event: existingEvent,
+        errors: [],
+        ignoredEventIds: [existingEvent.id],
+      };
+    }
+
+    const existingErrors = validateEventLog(currentEvents, getReferenceSets(ledgerForWrite));
+    if (existingErrors.length > 0) {
+      return {
+        appended: false,
+        event: null,
+        errors: existingErrors,
+        ignoredEventIds: [],
+      };
+    }
+
+    const replayResult = replayLedgerEvents(ledgerForWrite, [event]);
+
+    if (replayResult.errors.length > 0) {
+      return {
+        appended: false,
+        event,
+        errors: replayResult.errors,
+        ignoredEventIds: replayResult.ignoredEventIds,
+      };
+    }
+
+    const needsLeadingNewline =
+      currentEventsSource.trim().length > 0 && !currentEventsSource.endsWith("\n");
+    await appendFile(
+      eventsPath,
+      `${needsLeadingNewline ? "\n" : ""}${JSON.stringify(event)}\n`,
+      "utf8",
+    );
+
+    return {
+      appended: true,
+      event,
+      errors: [],
+      ignoredEventIds: [],
+    };
+  });
+}
+
+export async function appendCaptureReviewMarkedEvent({
+  ledger = stateLedger,
+  eventsPath,
+  actorId,
+  captureId,
+  candidateType,
+  idempotencyKey,
+  reviewedAt,
+  traceId = null,
+  eventSource = "local_writer",
+}: CaptureReviewMarkedWriteInput): Promise<CaptureReviewMarkedWriteResult> {
+  return withEventsLock(eventsPath, async () => {
+    const currentEventsSource = await readFile(eventsPath, "utf8");
+    const currentEvents = parseLedgerEvents(currentEventsSource);
+    const replayedCurrent = replayLedgerEvents(
+      { ...resetApprovalsForEventReplay(ledger), events: [] },
+      currentEvents,
+    );
+
+    if (replayedCurrent.errors.length > 0) {
+      return {
+        appended: false,
+        event: null,
+        errors: replayedCurrent.errors,
+        ignoredEventIds: [],
+      };
+    }
+
+    const ledgerForWrite: StateLedger = {
+      ...replayedCurrent.ledger,
+      events: currentEvents,
+    };
+
+    const event = buildCaptureReviewMarkedEvent({
+      ledger: ledgerForWrite,
+      actorId,
+      captureId,
+      candidateType,
+      idempotencyKey,
+      reviewedAt,
+      traceId,
       eventSource,
     });
 
