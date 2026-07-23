@@ -1,8 +1,8 @@
 import {
-  focusStack,
   integrations,
   todaySignals,
 } from "./seed";
+import { NextActionForm } from "./NextActionForm";
 import {
   agentRuns,
   blockerQueue,
@@ -24,6 +24,9 @@ const verificationLoad = evidenceQueue.filter(
 const sanityChecks = getSanityChecks();
 const recommendedSteps = getRecommendedSteps();
 const phoneReviewQueue = getPhoneReviewQueue();
+const primaryProject = projects.find(
+  (project) => project.priority === "core" && project.state === "active",
+) ?? projects[0];
 
 export default function Home() {
   return (
@@ -78,22 +81,22 @@ export default function Home() {
           <article className="command-panel primary-panel">
             <div className="panel-heading">
               <p className="eyebrow">Tonight focus</p>
-              <span className="status-pill core">Core</span>
+              <span className={`status-pill ${primaryProject.priority}`}>
+                {primaryProject.priorityLabel}
+              </span>
             </div>
-            <h3>{focusStack.project}</h3>
-            <p className="mission-copy">{focusStack.intent}</p>
+            <h3>{primaryProject.name}</h3>
+            <p className="mission-copy">{primaryProject.purpose}</p>
             <div className="next-action">
               <span>Next physical action</span>
-              <strong>{focusStack.nextAction}</strong>
+              <strong>{primaryProject.nextAction}</strong>
             </div>
-            <div className="action-row">
-              <button type="button" aria-label="Start tonight focus">
-                Start focus
-              </button>
-              <button type="button" className="secondary-action" aria-label="Attach evidence">
-                Attach evidence
-              </button>
-            </div>
+            <p className="planned-control">Evidence attachment is planned for the next command block.</p>
+            <NextActionForm projects={projects.map((project) => ({
+              id: project.id,
+              name: project.name,
+              nextAction: project.nextAction,
+            }))} />
           </article>
 
           <article className="command-panel metric-panel">
@@ -196,10 +199,10 @@ export default function Home() {
               <p className="eyebrow">Portfolio</p>
               <h2 id="portfolio-title">Four active lanes, no infinite prelude.</h2>
             </div>
-            <div className="segmented-control" aria-label="Project filter">
-              <button type="button" className="active">Active</button>
-              <button type="button">Paused</button>
-              <button type="button">Archived</button>
+            <div className="segmented-status" aria-label="Project state overview">
+              <span className="active">Active</span>
+              <span>Paused</span>
+              <span>Archived</span>
             </div>
           </div>
 
@@ -267,9 +270,7 @@ export default function Home() {
                   <span>{blocker.project}</span>
                   <h3>{blocker.question}</h3>
                   <p>{blocker.impact}</p>
-                  <button type="button" aria-label={`Resolve blocker for ${blocker.project}`}>
-                    Resolve
-                  </button>
+                  <small className="planned-control">Resolution command is planned.</small>
                 </article>
               ))}
             </div>
@@ -282,7 +283,7 @@ export default function Home() {
               <p className="eyebrow">Evidence queue</p>
               <h2 id="evidence-title">Claims are not green until proof is fresh.</h2>
             </div>
-            <button type="button" className="secondary-action">Run verifier</button>
+            <span className="planned-control">Verifier command is planned.</span>
           </div>
           <div className="evidence-table" role="table" aria-label="Evidence queue">
             <div className="table-row table-head" role="row">

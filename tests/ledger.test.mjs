@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -35,6 +35,7 @@ async function transpileModule(sourcePath, targetPath, rewriteImports = false) {
     );
     source = source.replace('from "./ledger"', 'from "./ledger.js"');
     source = source.replace('from "./ledger-writer"', 'from "./ledger-writer.js"');
+    source = source.replace('from "../../../local-command"', 'from "./local-command.js"');
   }
   const output = ts.transpileModule(source, {
     compilerOptions: {
@@ -149,6 +150,28 @@ async function loadLocalCommand() {
   };
 }
 
+async function loadLocalApiRoute() {
+  const loaded = await loadLocalCommand();
+  const moduleDir = loaded.eventsPath.replace(/\\events\.jsonl$/, "").replace(/\/events\.jsonl$/, "");
+  const dataDir = join(moduleDir, "data");
+  const eventsSource = await readFile(new URL("../data/events.jsonl", import.meta.url), "utf8");
+
+  await mkdir(dataDir);
+  await writeFile(join(dataDir, "events.jsonl"), eventsSource, "utf8");
+  await transpileModule(
+    new URL("../app/api/local/next-action/route.ts", import.meta.url),
+    join(moduleDir, "next-action-route.js"),
+    true,
+  );
+
+  return {
+    ...loaded,
+    eventsPath: join(dataDir, "events.jsonl"),
+    moduleDir,
+    route: await import(pathToFileURL(join(moduleDir, "next-action-route.js")).href),
+  };
+}
+
 test("sanity checks find stale evidence and unproven agent claims", async () => {
   const { getSanityChecks } = await loadLedger();
   const checks = getSanityChecks();
@@ -169,7 +192,7 @@ test("recommended steps are bounded and evidence-oriented", async () => {
   assert.ok(steps.some((step) => step.action.startsWith("Attach proof")));
 });
 
-test("phone review queue exposes actionable short-session cards", async () => {
+test("phone review queue exposes short-session review cards", async () => {
   const { getPhoneReviewQueue } = await loadLedger();
   const queue = getPhoneReviewQueue();
   const types = queue.map((item) => item.type);
@@ -301,6 +324,26 @@ test("custom ledger validation does not look at default module state", async () 
   assert.ok(
     errors.some((error) =>
       error.includes("references unknown evidence evidence-local-v0-2-verify"),
+    ),
+  );
+});
+
+test("verified claims require every declared verified evidence type", async () => {
+  const { stateLedger, validateLedger } = await loadLedger();
+  const claims = stateLedger.claims.map((claim) =>
+    claim.id === "claim-v0-2-local-verify"
+      ? { ...claim, linkedEvidenceIds: ["evidence-local-v0-2-verify"] }
+      : claim,
+  );
+
+  const errors = validateLedger({
+    ...stateLedger,
+    claims,
+  });
+
+  assert.ok(
+    errors.some((error) =>
+      error.includes("claim claim-v0-2-local-verify missing verified evidence type local_url"),
     ),
   );
 });
@@ -916,4 +959,41 @@ test("local command rejects invalid input before writer execution", async () => 
   assert.ok(result.errors.some((error) => error.includes("nextAction is required")));
   assert.ok(result.errors.some((error) => error.includes("timestamp must be a valid date")));
   assert.equal(afterEvents.length, beforeEvents.length);
+});
+
+test("local API route writes through the canonical temp event ledger", async () => {
+  const { eventsPath, ledger, moduleDir, route } = await loadLocalApiRoute();
+  const beforeEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+  const previousCwd = process.cwd();
+
+  try {
+    process.chdir(moduleDir);
+    const response = await route.POST(
+      new Request("http://localhost/api/local/next-action", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          projectId: "project-agency-os",
+          nextAction: "API route confirms the browser write surface.",
+        }),
+      }),
+    );
+    const body = await response.json();
+    const afterEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+    const derived = ledger.getReplayDerivedLedger({
+      ...ledger.stateLedger,
+      events: afterEvents,
+    });
+    const project = derived.ledger.projects.find((item) => item.id === "project-agency-os");
+
+    assert.equal(response.status, 200);
+    assert.equal(body.ok, true);
+    assert.equal(body.appended, true);
+    assert.equal(afterEvents.length, beforeEvents.length + 1);
+    assert.equal(afterEvents.at(-1).actorId, "person-serj");
+    assert.equal(afterEvents.at(-1).source, "local_command");
+    assert.equal(project.nextAction, "API route confirms the browser write surface.");
+  } finally {
+    process.chdir(previousCwd);
+  }
 });

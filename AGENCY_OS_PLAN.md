@@ -1017,3 +1017,222 @@ Next safest step:
 - Ask independent critic whether the remaining work is still useful without a
   human product choice. If yes, likely add minimal runtime schema validation or
   redaction fixtures; if no, stop and ask which visible surface should be first.
+
+## PLAN FIRST - 2026-07-23 Browser-Local Write Honesty
+
+Block: Close honesty tails on the first visible write path.
+
+Goal:
+- Make the browser-local next-action update checkpoint-grade instead of merely
+  visible.
+
+In scope:
+- Derive the primary focus panel from ledger-facing project state.
+- Add an integration-style test for `POST /api/local/next-action` using a
+  temporary event ledger.
+- Update evidence/protocol/architecture documents.
+- Refresh comparison notes against current adjacent products and repositories.
+
+Out of scope:
+- Production deployment.
+- Auth.
+- GitHub/Telegram/OpenClaw integrations.
+- New entity write commands beyond project next action.
+- Cryptographic event signing.
+
+Done criteria:
+- Browser route writes to a temporary event log in tests.
+- Replay confirms the route-updated next action.
+- Hero/focus does not depend on the old static focus seed.
+- `npm run verify` passes.
+- Docs name what is proven and what remains unproven.
+
+Evidence:
+- `app/page.tsx`
+- `app/NextActionForm.tsx`
+- `app/api/local/next-action/route.ts`
+- `tests/ledger.test.mjs`
+- `docs/CURRENT_EVIDENCE.md`
+- `docs/AGENCY_OS_ARCHITECTURE.md`
+- `docs/RESEARCH_AND_COMPARISON.md`
+
+## PLAN UPDATE - 2026-07-23 Browser-Local Write Honesty
+
+Changed:
+- Primary focus now derives from ledger-facing project state instead of
+  `focusStack`.
+- Added a route integration test that posts to `/api/local/next-action` against
+  a temporary `data/events.jsonl`, verifies exactly one appended event, and
+  confirms the new next action through replay-derived state.
+- Updated the evidence log with Claim 18 for the browser-local write path.
+- Expanded the architecture document with the product backbone, system-of-record
+  ladder, module map, fact confirmation contract and artifact trail.
+- Updated research/comparison notes with current Buzz, Trailmark, action-ledger,
+  auditable-AI and 2026 governance implications.
+
+Verified:
+- `npm run verify` passes: lint, typecheck, build and 39 tests.
+- `npm run audit:prod` still fails on Next transitive `postcss` and `sharp`
+  advisories, so production remains blocked.
+
+Still missing:
+- Most UI buttons remain inert.
+- Reducer coverage is still narrow.
+- No approval rejection lifecycle.
+- No export/backup/restore.
+- No real GitHub/Telegram/OpenClaw importers.
+- No cryptographic signing.
+
+Next safest step:
+- Run another independent critic against the updated architecture and code. If
+  the critic still scores below target, patch documents or code only where the
+  criticism is concrete and not a product choice that needs the human.
+
+## PLAN FIRST - 2026-07-23 UI Honesty Sweep
+
+Block: Remove false affordances from the visible dashboard.
+
+Goal:
+- Stop the UI from implying actions that do not have command models yet.
+
+In scope:
+- Convert inert dashboard buttons and filters into non-interactive status or
+  planned-work labels.
+- Rename "actionable phone review cards" where they are review cards, not
+  write actions.
+- Add a rendered/source test that blocks active controls in `app/page.tsx`.
+- Clarify the UI honesty gate in architecture/docs.
+
+Out of scope:
+- Evidence attach command.
+- Resolve blocker command.
+- Verifier command.
+- Portfolio filter behavior.
+- Phone review write commands.
+
+Done criteria:
+- The only active browser write control is the next-action form.
+- `app/page.tsx` has no `<button>` elements.
+- Inert action text is replaced by planned/status text.
+- `npm run verify` passes.
+
+Evidence:
+- `app/page.tsx`
+- `app/globals.css`
+- `tests/rendered-html.test.mjs`
+- `README.md`
+- `docs/CURRENT_EVIDENCE.md`
+- `docs/WORK_AND_EVIDENCE_PROTOCOL.md`
+- `docs/AGENCY_OS_ARCHITECTURE.md`
+
+## PLAN UPDATE - 2026-07-23 UI Honesty Sweep
+
+Changed:
+- Removed inert `Attach evidence`, portfolio filter, `Resolve` and
+  `Run verifier` buttons from the dashboard.
+- Replaced them with status/planned labels.
+- Added a rendered/source contract that `app/page.tsx` contains no buttons and
+  no obsolete pseudo-control classes.
+- Updated README and evidence/protocol docs to describe phone review cards as
+  queues/status, not active write actions.
+- Reclassified the "visible active control without command model" rule as a UI
+  honesty gate backed by tests for v0.2.
+
+Verified:
+- `npm run verify` passes: lint, typecheck, build and 39 tests.
+
+Next safest step:
+- Run `npm run verify`, then run an independent critic again.
+
+## PLAN FIRST - 2026-07-23 Evidence Contract Cleanup
+
+Block: Make verified claims prove their declared evidence contract.
+
+Goal:
+- Close the mismatch where a verified claim required `local_url` evidence but
+  only linked command output.
+
+In scope:
+- Add validation for required verified evidence types.
+- Add missing structured local URL evidence for the v0.2 local claim.
+- Add a regression test for missing required evidence type.
+- Update stale event/data model docs called out by the critic.
+- Make the project state overview look non-interactive.
+
+Out of scope:
+- Evidence upload UI.
+- Automated URL probing.
+- Freshness expiry engine.
+- Hosted authentication.
+
+Done criteria:
+- A verified claim missing a required verified evidence type fails validation.
+- The current v0.2 verified claim satisfies `command_output` and `local_url`.
+- Docs no longer say the first write path is not wired to UI/API.
+- `npm run verify` passes.
+
+Evidence:
+- `app/ledger.ts`
+- `data/claims.json`
+- `data/evidence.json`
+- `tests/ledger.test.mjs`
+- `docs/DATA_MODEL_AND_INVARIANTS.md`
+- `docs/EVENT_LOG_INTEGRITY.md`
+
+## PLAN UPDATE - 2026-07-23 Evidence Contract Cleanup
+
+Changed:
+- `validateLedger()` now requires verified claims to link verified evidence for
+  every declared required evidence type.
+- Added `evidence-local-v0-2-url` and linked it to the verified local v0.2
+  claim.
+- Added a regression test for missing required evidence type.
+- Updated stale event/data model docs about the current browser-local write
+  path.
+- Restyled project state overview so Active/Paused/Archived reads as status,
+  not as an inert segmented control.
+
+Verified:
+- `npm run verify` passes: lint, typecheck, build and 40 tests.
+
+Still missing:
+- Production audit remains blocked.
+- No automatic evidence collection or freshness expiry enforcement.
+- No visual screenshot artifact.
+- No hosted auth or backup/export/restore.
+
+Next safest step:
+- Run independent critic cycle 3. If the score is at least 95, commit this
+  checkpoint. If not, only patch concrete factual gaps; stop for human choice
+  if the remaining concerns are product direction.
+
+## PLAN UPDATE - 2026-07-23 Independent Critic Round 3
+
+Result:
+- Independent critic score: 96/100.
+- The critic judged the v0.2 honesty-tail checkpoint coherent enough to commit.
+
+Verified:
+- `npm run verify` passes: lint, typecheck, build and 40 tests.
+- Production audit remains a documented blocker through Next transitive
+  `postcss` and `sharp` advisories.
+
+Why the checkpoint clears:
+- False UI actions are removed or rendered as planned/status labels.
+- The first browser-local write path is real and tested against a temporary
+  event ledger.
+- Verified claims must satisfy required evidence types.
+- Architecture docs now cover product backbone, module map, source-of-truth
+  ladder, evidence contract, work trace policy and market comparison.
+
+Residual risks for future milestones:
+- Only `project.next_action_updated` has full write/replay coverage.
+- Phone review cards are status queues, not write actions.
+- No hosted auth, backup/export/restore, importer fixtures, screenshot artifact
+  or cryptographic event signing.
+- The local write path is fixed to `person-serj`; broader actor/session design
+  remains a product decision.
+
+Next safest step:
+- Commit this checkpoint, then choose the next branch: phone review write,
+  evidence attach, backup/export, or GitHub importer.

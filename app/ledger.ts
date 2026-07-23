@@ -477,6 +477,20 @@ export function validateLedger(ledger: StateLedger = stateLedger): string[] {
         errors.push(`claim ${claim.id} references unknown evidence ${id}`);
       }
     }
+    if (claim.status === "verified") {
+      const linkedVerifiedTypes = new Set(
+        claim.linkedEvidenceIds
+          .map((id) => evidenceById.get(id))
+          .filter((evidence) => evidence?.verificationStatus === "verified")
+          .map((evidence) => evidence?.type),
+      );
+
+      for (const requiredType of claim.requiredEvidenceTypes) {
+        if (!linkedVerifiedTypes.has(requiredType)) {
+          errors.push(`claim ${claim.id} missing verified evidence type ${requiredType}`);
+        }
+      }
+    }
   }
 
   for (const blocker of ledger.blockers) {
@@ -1077,6 +1091,7 @@ export const ledgerEvents = derivedStateLedger.events.map((event) => {
 });
 
 export const projects = derivedStateLedger.projects.map((project) => ({
+  id: project.id,
   name: project.name,
   purpose: project.purpose,
   stage: project.stage,

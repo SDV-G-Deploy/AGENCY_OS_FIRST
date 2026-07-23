@@ -42,7 +42,7 @@ Evidence:
   - ledger rule tests
 
 Observed test result:
-- 38 tests passed.
+- 40 tests passed.
 
 Strength: strong for current static/local code quality.
 
@@ -246,8 +246,9 @@ Evidence:
   event changes derived project `nextAction` without changing the snapshot.
 - `npm run verify` passes with 35 tests.
 
-Strength: strong for local replay-derived display state. It does not yet prove
-a visible UI/API write action.
+Strength: strong for local replay-derived display state. By itself, this claim
+does not prove a visible UI/API write action; Claim 18 covers the first narrow
+browser-local path.
 
 ### Claim 17: The first human-only local write command exists
 
@@ -260,10 +261,47 @@ Evidence:
   result through replay-derived state.
 - `tests/ledger.test.mjs` covers success, blocked agent actor and invalid
   input.
-- `npm run verify` passes with 38 tests.
+- `npm run verify` passes with 40 tests.
 
 Strength: strong for a local command surface. It does not yet prove browser UI,
 HTTP API or external integrations.
+
+### Claim 18: The first browser-local next-action write surface exists
+
+Evidence:
+- `app/NextActionForm.tsx` renders a local form for selecting a project and
+  submitting a new next action.
+- `app/api/local/next-action/route.ts` accepts POST input, fixes the actor to
+  `person-serj`, fixes the event path to `data/events.jsonl`, and calls the
+  command layer.
+- `app/page.tsx` now derives the primary focus project from ledger-facing
+  project state instead of the old static seed.
+- `tests/rendered-html.test.mjs` verifies that the form appears in rendered
+  HTML and that the route does not accept caller-provided actor or event path.
+- `tests/ledger.test.mjs` verifies the route against a temporary event ledger:
+  POST succeeds, appends exactly one event, uses the human actor, and replay
+  confirms the new next action.
+- `npm run verify` passes with 40 tests.
+
+Strength: strong for the first local browser-to-ledger write path. It does not
+yet prove hosted persistence, real mobile QA, authentication, or general write
+coverage beyond project next action.
+
+### Claim 19: Verified claims must satisfy their required evidence types
+
+Evidence:
+- `data/claims.json` links the local v0.2 verified claim to both
+  `command_output` and `local_url` evidence.
+- `data/evidence.json` includes a separate verified `local_url` evidence record
+  for the local app URL.
+- `validateLedger()` now checks that a verified claim has linked verified
+  evidence for every declared `requiredEvidenceTypes` entry.
+- `tests/ledger.test.mjs` verifies that removing the `local_url` evidence link
+  from the verified claim creates a validation error.
+- `npm run verify` passes with 40 tests.
+
+Strength: strong for the first claim/evidence-type contract. It does not yet
+prove automated evidence collection or freshness expiry enforcement.
 
 ## Files Changed For Honesty Closure
 
@@ -298,16 +336,28 @@ HTTP API or external integrations.
   scope.
 - `app/ledger.ts`: dashboard-facing exports now derive state through replay.
 - `app/local-command.ts`: first human-only local command surface.
+- `app/NextActionForm.tsx`: first browser-local write form.
+- `app/api/local/next-action/route.ts`: local API route into the command layer.
+- `app/page.tsx`: primary focus now derives from ledger-facing project state.
+- `tests/ledger.test.mjs`: route integration test against a temporary event
+  ledger and required evidence type validation.
+- `data/claims.json`: local verified claim now links all required evidence
+  types.
+- `data/evidence.json`: added local URL evidence for the current MVP claim.
+- `docs/DATA_MODEL_AND_INVARIANTS.md`: documented claim evidence-type
+  invariant.
+- `docs/EVENT_LOG_INTEGRITY.md`: updated current write-path status.
 
 ## Known Gaps
 
 - The app is still mostly read-only.
-- Buttons are not wired to write actions.
+- The next-action update form is the only active browser write control. Other
+  visible queues are intentionally rendered as status/review cards until their
+  command models exist.
 - State now comes from local JSON ledger files and events load from JSONL. A
-  first pure replay path and append writer exist for one action, but there is no
-  visible UI/API action or full reducer coverage yet. Dashboard-facing state now
-  uses replay-derived state. A local human-only command exists, but no browser
-  UI or HTTP API uses it yet.
+  first pure replay path and append writer exist for one action. A local
+  human-only command plus browser/API path uses that action, but full reducer
+  coverage does not exist yet.
 - Writer has lock and idempotency conflict checks, but no durable
   `approval.rejected` lifecycle event yet.
 - Dependency audit blocks production deployment.
@@ -319,7 +369,7 @@ HTTP API or external integrations.
 ## Next Evidence To Create
 
 Before the next product feature:
-- commit the current baseline or otherwise preserve it;
+- commit the current browser-local write checkpoint;
 - make one phone review action create an append-only event;
-- implement a visible UI/API command path and broader reducer replay;
+- broaden reducer replay beyond project next action;
 - capture a screenshot or browser QA artifact after the next visible UI change.

@@ -37,14 +37,20 @@ test("server-renders the Agency OS dashboard shell", async () => {
   assert.match(html, /State Ledger/);
   assert.match(html, /Sanity checks/);
   assert.match(html, /Recommended next steps/);
+  assert.match(html, /New next action/);
+  assert.match(html, /Local-only write through the event ledger/);
+  assert.match(html, /Evidence attachment is planned/);
+  assert.doesNotMatch(html, />Attach evidence</);
+  assert.doesNotMatch(html, />Run verifier</);
   assert.match(html, /Attach URL, commit, screenshot, file path or test result/);
   assert.match(html, /Review agent claims/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Your site is taking shape/i);
 });
 
 test("keeps the first MVP focused on state, proof and agent runs", async () => {
-  const [page, projectsData, evidenceData, ledger, layout, packageJson] = await Promise.all([
+  const [page, route, projectsData, evidenceData, ledger, layout, packageJson] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/local/next-action/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../data/projects.json", import.meta.url), "utf8"),
     readFile(new URL("../data/evidence.json", import.meta.url), "utf8"),
     readFile(new URL("../app/ledger.ts", import.meta.url), "utf8"),
@@ -73,7 +79,13 @@ test("keeps the first MVP focused on state, proof and agent runs", async () => {
   assert.match(page, /7 minute phone mode/);
   assert.match(page, /ledgerEvents/);
   assert.match(page, /phone-action-list/);
+  assert.match(page, /NextActionForm/);
+  assert.doesNotMatch(page, /<button/);
+  assert.doesNotMatch(page, /segmented-control|secondary-action|action-row/);
   assert.match(page, /from "\.\/ledger"/);
+  assert.match(route, /actorId: "person-serj"/);
+  assert.match(route, /resolve\(process\.cwd\(\), "data\/events\.jsonl"\)/);
+  assert.doesNotMatch(route, /payload\.actorId|payload\.eventsPath/);
   assert.match(layout, /Agency OS - Project Portfolio Staging/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
 });

@@ -29,8 +29,9 @@ Current implementation status:
 - file-backed append writer exists for `project.next_action_updated`;
 - dashboard-facing state is derived from `data/*.json` snapshots plus replayed
   events;
+- the first browser-local write surface exists for human next-action updates;
 - current entity snapshots still live in `data/*.json`;
-- full reducer replay and visible write surfaces are not implemented yet.
+- full reducer replay across all entity types is not implemented yet.
 
 ## Identity
 
@@ -93,6 +94,23 @@ Invariant:
 - verified evidence must have `verifiedBy`.
 - missing evidence cannot verify a claim.
 - stale evidence cannot keep a project green.
+
+### Claim
+
+Required fields:
+- `id`;
+- `projectId`;
+- `subjectType`;
+- `subjectId`;
+- `claim`;
+- `status`;
+- `requiredEvidenceTypes`;
+- `linkedEvidenceIds`.
+
+Invariant:
+- a verified claim must link verified evidence for every required evidence
+  type.
+- linked evidence IDs must exist.
 
 ### Decision
 

@@ -1,6 +1,6 @@
 # Work And Evidence Protocol
 
-Status: draft v0.2  
+Status: draft v0.3  
 Last updated: 2026-07-23
 
 ## Purpose
@@ -142,16 +142,20 @@ must remain blocked until this is resolved or explicitly accepted.
 
 ## Known Current Gaps
 
-- Buttons are visible but inert.
-- State is local-file based, not durable user-editable data.
+- The local next-action form is the first browser-backed write path. Other
+  review queues are status-only until backed by command models.
+- State is local-file based. One user-editable path exists, but most entities
+  still require direct file edits or future commands.
 - PLAN FIRST entries from the first night were stated in chat but not preserved
   as durable artifacts.
 - Event hash-chain validation is implemented for the local JSONL ledger.
 - A guarded local append writer exists for `project.next_action_updated`.
 - Durable `approval.approved` and `approval.used` events exist for the first
   approved agent write path.
-- Full reducer coverage, visible write surfaces and approval rejection lifecycle
+- Full reducer coverage, phone review writes and approval rejection lifecycle
   are not implemented yet.
+- Agent registry lifecycle, export/backup/restore and cost visibility are
+  documented needs, not implemented controls.
 
 ## Future Artifact Layout
 
@@ -166,6 +170,30 @@ tasks/log/YYYY-MM-DD-slug/
   plan-update-1.md
   critic-review-1.md
 ```
+
+Recommended product architecture layout:
+
+```text
+docs/
+  AGENCY_OS_ARCHITECTURE.md
+  DATA_MODEL_AND_INVARIANTS.md
+  EVENT_LOG_INTEGRITY.md
+  SECURITY_AND_APPROVALS.md
+  APPROVAL_POLICY_MATRIX.md
+  REDACTION_AND_IMPORT_BOUNDARIES.md
+  RELEASE_GATES.md
+  RESEARCH_AND_COMPARISON.md
+  CURRENT_EVIDENCE.md
+```
+
+Recommended work trace after a block:
+- plan-first artifact;
+- changed files;
+- verification command and result;
+- evidence log update;
+- known gaps;
+- independent critic review for medium/high-risk architecture changes;
+- git commit hash once checkpoint-worthy.
 
 Recommended append-only event file:
 

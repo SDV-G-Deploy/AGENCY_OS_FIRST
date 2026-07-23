@@ -43,6 +43,213 @@ Intent -> Plan -> Action -> Evidence -> Verification -> State Update -> Review
 
 If a step leaves no durable trace, Agency OS must not treat it as complete.
 
+## Current Product Backbone
+
+The product backbone is intentionally small:
+
+1. Local global dashboard.
+2. Local State Ledger records in JSON.
+3. Append-only event log in JSONL.
+4. Pure replay reducer for deriving current state.
+5. Guarded writer and command layer for the first human-only state update.
+6. Browser-local form/API for updating one project's next action.
+7. Verification suite that proves build, render, ledger rules, replay, writer,
+   command and API write path.
+
+The current app is not yet a hosted production system. It is a local staging
+environment that can show the product shape and safely prove one state mutation
+path.
+
+## System Of Record Ladder
+
+Agency OS must separate what is canonical from what is merely convenient.
+
+1. Source records:
+   - `data/projects.json`;
+   - `data/work-items.json`;
+   - `data/evidence.json`;
+   - `data/agent-runs.json`;
+   - `data/blockers.json`;
+   - `data/decisions.json`;
+   - `data/approvals.json`;
+   - `data/actors.json`;
+   - `data/traces.json`.
+
+2. Event record:
+   - `data/events.jsonl`;
+   - append-only;
+   - sequenced;
+   - idempotent;
+   - hash-linked for local tamper-evidence;
+   - never treated as cryptographic security by itself.
+
+3. Derived state:
+   - `getReplayDerivedLedger()`;
+   - dashboard-facing exports in `app/ledger.ts`;
+   - sanity checks, recommended steps and phone queue.
+
+4. Presentation:
+   - `app/page.tsx`;
+   - `app/NextActionForm.tsx`;
+   - CSS and rendered HTML tests.
+
+Presentation must not become the source of truth. If the UI disagrees with the
+ledger, the UI is wrong.
+
+## Module Map
+
+### Data Ingestion
+
+Reads local JSON/JSONL, parses external imports, normalizes IDs and rejects
+malformed records.
+
+Current implementation:
+- JSON imports in `app/ledger.ts`;
+- JSONL raw import and `parseLedgerEvents()`.
+
+Future implementation:
+- GitHub importer;
+- Codex task importer;
+- OpenClaw agent-run importer;
+- Telegram capture importer.
+
+### Integrity And Replay
+
+Validates event shape, reference links, sequence, idempotency and hash chain,
+then derives current state through reducers.
+
+Current implementation:
+- `validateEventLog()`;
+- `validateLedger()`;
+- `calculateEventHash()`;
+- `replayLedgerEvents()`.
+
+Future implementation:
+- reducer coverage for evidence, blockers, decisions, agent runs and approval
+  rejection;
+- stronger hash/signature boundary if hosted or shared.
+
+### Command And Write Layer
+
+Accepts bounded intent from a person or approved agent, validates it, writes an
+event, then proves the derived state changed as expected.
+
+Current implementation:
+- `appendProjectNextActionEvent()`;
+- `runProjectNextActionCommand()`;
+- `POST /api/local/next-action`;
+- browser form for one human-only next-action update.
+
+Future implementation:
+- evidence attach command;
+- blocker resolution command;
+- approve/reject command;
+- capture note command;
+- import command.
+
+### Review Engine
+
+Turns state into a small set of decisions and checks.
+
+Current implementation:
+- `getSanityChecks()`;
+- `getRecommendedSteps()`;
+- `getPhoneReviewQueue()`.
+
+Future implementation:
+- daily brief;
+- evening update;
+- weekly review;
+- stale project retirement suggestions;
+- cost and agent-sprawl checks.
+
+### Evidence Registry
+
+Links claims to durable artifacts and makes verification status explicit.
+
+Current implementation:
+- evidence records;
+- evidence freshness;
+- claim-without-proof sanity checks.
+
+Future implementation:
+- file/screenshot/test-output attachments;
+- GitHub PR/check/deploy evidence;
+- Codex task evidence;
+- exportable audit bundles.
+
+### Identity, Permissions And Approvals
+
+Treats humans, agents and external tools as separate actors with explicit
+scope.
+
+Current implementation:
+- actors table;
+- person-only local command;
+- scoped single-use approval;
+- durable `approval.approved` and `approval.used` events.
+
+Future implementation:
+- approval rejection;
+- actor tokens;
+- permission manifest per agent;
+- external-action policies;
+- agent retirement and token removal.
+
+### Artifact Trail
+
+Keeps the "what happened and why" record outside chat.
+
+Current implementation:
+- `AGENCY_OS_PLAN.md`;
+- `docs/CURRENT_EVIDENCE.md`;
+- `tasks/log/...`;
+- git commits.
+
+Future implementation:
+- task/block artifact registry;
+- report files per block;
+- artifact hashes;
+- searchable local index.
+
+## Fact Confirmation Contract
+
+A fact in Agency OS must say what proves it.
+
+Project status is confirmed by:
+- event replay;
+- linked evidence freshness;
+- blocker/decision state;
+- last verified change.
+
+Work completion is confirmed by:
+- definition of done;
+- verification method;
+- linked evidence;
+- passed check or human verification.
+
+Agent work is confirmed by:
+- agent run objective and scope;
+- result claim;
+- changed files or external actions;
+- evidence;
+- verifier distinct from the submitting agent for medium/high-risk work.
+
+Approval is confirmed by:
+- approval request record;
+- durable approval event from a person actor;
+- matching requested actor/action/scope/risk/entity;
+- durable use event when the approval is consumed.
+
+Recommended next steps are confirmed by:
+- explicit rule output;
+- source entity;
+- reason;
+- target evidence to produce.
+
+Anything not backed by one of these paths remains a claim, not a confirmed
+state.
+
 ## Product Skeleton
 
 ### 1. Command Center
@@ -209,8 +416,12 @@ Initial rules:
 - work item without verification method;
 - repeated plan updates without shipped evidence;
 - high-risk dependency/security issue;
-- visible action button without backing action model;
 - external action without approval policy.
+
+UI honesty gate:
+- visible active controls must have a backing command model;
+- controls without backing commands render as status or planned-work labels;
+- rendered/source tests guard this until UI metadata exists in the ledger.
 
 ### 9. Capture Surfaces
 
@@ -241,13 +452,18 @@ Agent/API:
 
 Stack:
 - Vinext / Next / React / TypeScript;
-- static local seed;
+- local JSON records;
+- append-only JSONL event log;
+- replay-derived dashboard state;
 - computed ledger rules;
+- one local browser write path for project next action;
 - node tests;
 - local browser.
 
 Current gates:
 - `npm run verify` passes: lint, typecheck, build and tests;
+- `tests/ledger.test.mjs` covers the local API write path against a temporary
+  event ledger;
 - production dependency audit currently has an upstream Next/PostCSS advisory
   blocker and must remain visible before deployment.
 

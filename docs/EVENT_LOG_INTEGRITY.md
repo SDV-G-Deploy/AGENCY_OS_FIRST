@@ -29,7 +29,8 @@ Current implementation status:
 - approved agent writes require durable `approval.approved` and append a durable
   `approval.used` companion event;
 - `approval.approved` rejects non-person approvers and changed request details;
-- it is not yet wired to the UI or API;
+- the first browser-local UI/API path is wired for human
+  `project.next_action_updated`;
 - dashboard-facing state derives from replayed events over snapshots;
 - a human-only local command can append a `project.next_action_updated` event
   and confirm replay-derived state;
@@ -58,8 +59,9 @@ Every event must eventually include:
 - `previousEventHash`;
 - `eventHash`.
 
-Current v0.2 events have this minimal envelope. The next gap is writer/reducer
-enforcement: new state changes are not yet forced through this envelope.
+Current v0.2 events have this minimal envelope. The first next-action write is
+forced through this envelope; other state-changing actions still need command
+models and reducer coverage.
 
 ## Hash Chain
 

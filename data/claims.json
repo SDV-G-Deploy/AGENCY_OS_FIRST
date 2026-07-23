@@ -7,7 +7,7 @@
     "claim": "Agency OS v0.2 renders locally and passes the local verification gate.",
     "status": "verified",
     "requiredEvidenceTypes": ["command_output", "local_url"],
-    "linkedEvidenceIds": ["evidence-local-v0-2-verify"]
+    "linkedEvidenceIds": ["evidence-local-v0-2-verify", "evidence-local-v0-2-url"]
   },
   {
     "id": "claim-ai1geo-user-value",

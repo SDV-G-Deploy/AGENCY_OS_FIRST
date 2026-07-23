@@ -15,6 +15,21 @@
     "knownGaps": ["production dependency audit is not clean"]
   },
   {
+    "id": "evidence-local-v0-2-url",
+    "claimId": "claim-v0-2-local-verify",
+    "projectId": "project-agency-os",
+    "type": "local_url",
+    "source": "local",
+    "urlOrPath": "http://localhost:5173/",
+    "createdAt": "2026-07-23T00:00:00+03:00",
+    "submittedBy": "agent-codex",
+    "verifiedBy": "system-local-verifier",
+    "verificationStatus": "verified",
+    "freshnessExpiresAt": null,
+    "hash": null,
+    "knownGaps": ["local URL evidence does not prove production availability"]
+  },
+  {
     "id": "evidence-ai1geo-external-signal-needed",
     "claimId": "claim-ai1geo-user-value",
     "projectId": "project-ai1geo",
