@@ -4,6 +4,9 @@ Status: draft v0.4 planning baseline
 Last updated: 2026-07-23
 
 Related product documents:
+- [Agent Start Brief](AGENT_START_BRIEF.md)
+- [Next Agent Handoff](NEXT_AGENT_HANDOFF.md)
+- [Agent Context Protocol](AGENT_CONTEXT_PROTOCOL.md)
 - [Product DNA](PRODUCT_DNA.md)
 - [Product Development Flow](PRODUCT_DEVELOPMENT_FLOW.md)
 - [Research And Comparison Notes](RESEARCH_AND_COMPARISON.md)

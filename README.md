@@ -47,6 +47,9 @@ npm run audit:prod
 
 ## Architecture And Evidence
 
+- [Agent Start Brief](docs/AGENT_START_BRIEF.md)
+- [Next Agent Handoff](docs/NEXT_AGENT_HANDOFF.md)
+- [Agent Context Protocol](docs/AGENT_CONTEXT_PROTOCOL.md)
 - [Product DNA](docs/PRODUCT_DNA.md)
 - [Product Development Flow](docs/PRODUCT_DEVELOPMENT_FLOW.md)
 - [Agency OS Architecture](docs/AGENCY_OS_ARCHITECTURE.md)
@@ -62,6 +65,10 @@ npm run audit:prod
 
 Durable planning artifacts start in
 `tasks/log/2026-07-23-agency-os-v0-2-honesty-closure/`.
+
+Agents should not read every large document by default. Start from
+`docs/AGENT_START_BRIEF.md` and `docs/NEXT_AGENT_HANDOFF.md`, then escalate
+using `docs/AGENT_CONTEXT_PROTOCOL.md`.
 
 The first local data skeleton lives in `data/` and uses stable IDs. Dashboard
 event history now loads from append-only-oriented `data/events.jsonl`.

@@ -1391,3 +1391,84 @@ Residual future risks:
 
 Next safest step:
 - Commit this product DNA checkpoint.
+
+## PLAN FIRST - 2026-07-23 Agent Context Handoff Protocol
+
+Block: Reduce agent context load without losing product memory.
+
+Goal:
+- Replace "every agent reads every large doc" with a compact start brief,
+  current handoff and tiered escalation protocol.
+
+In scope:
+- Inspect current doc sizes and handoff gaps.
+- Re-check Trailmark's artifact-first/right-sized context approach.
+- Add agent start brief.
+- Add current next-agent handoff.
+- Add context tier protocol.
+- Link the protocol from README and work/development docs.
+
+Out of scope:
+- Implement v0.3 capture.
+- Build routing database.
+- Clone Trailmark wholesale.
+- Add mandatory subagents for every block.
+
+Done criteria:
+- Future agents have a small default reading set.
+- Full docs are read only by tier.
+- Every non-trivial run has an exit handoff.
+- `npm run verify` remains green.
+
+Evidence:
+- `docs/AGENT_START_BRIEF.md`
+- `docs/NEXT_AGENT_HANDOFF.md`
+- `docs/AGENT_CONTEXT_PROTOCOL.md`
+- README/workflow links.
+
+## PLAN UPDATE - 2026-07-23 Agent Context Handoff Protocol
+
+Changed:
+- Added compact `docs/AGENT_START_BRIEF.md`.
+- Added current `docs/NEXT_AGENT_HANDOFF.md`.
+- Added tiered `docs/AGENT_CONTEXT_PROTOCOL.md`.
+- Updated README, architecture, product flow and work/evidence protocol to
+  make compact context the default.
+
+Research note:
+- Trailmark's README supports the concern: it emphasizes artifact-first work,
+  block reports, registry-backed memory and right-sized cadence instead of
+  mandatory heavy subagent context reloads.
+
+Verified:
+- `npm run verify` passes: lint, typecheck, build and 42 tests.
+
+Next safest step:
+- Run `npm run verify`, then ask an independent critic whether the context
+  protocol is lean enough and safe enough.
+
+## PLAN UPDATE - 2026-07-23 Agent Context Critic
+
+Result:
+- First independent context critic score: 90/100.
+- After freshness/conflict fix, follow-up critic score: 96/100.
+
+Changed after criticism:
+- Added handoff freshness metadata: branch, commit, working tree state and last
+  verified command/result.
+- Added source-of-truth conflict order:
+  code/tests, command output, current handoff, start brief, focused docs, older
+  plan history.
+- Clarified Tier 0 as lightweight: no critic, no broad evidence ceremony and
+  handoff update only when next step/touched surface changes.
+
+Verified:
+- `npm run verify` passes: lint, typecheck, build and 42 tests.
+
+Decision:
+- Use compact agent context by default:
+  `docs/AGENT_START_BRIEF.md` + `docs/NEXT_AGENT_HANDOFF.md` + relevant files.
+- Read full product/archive docs only by context tier.
+
+Next safest step:
+- Commit the context protocol checkpoint.

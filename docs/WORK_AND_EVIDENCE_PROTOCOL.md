@@ -17,6 +17,14 @@ No work is fully trusted until it leaves:
 
 ## Required Block Cycle
 
+Before the block, choose context tier from
+`docs/AGENT_CONTEXT_PROTOCOL.md`. Do not load the whole product archive unless
+the tier requires it.
+
+For Tier 0 work, keep evidence lightweight: command/result and handoff update
+only when the next step or touched surface changes. Full verifier identity,
+freshness, hashes and independent review are for medium/high-risk work.
+
 ### 1. PLAN FIRST
 
 Save or state before a meaningful block:
@@ -170,6 +178,15 @@ tasks/log/YYYY-MM-DD-slug/
   plan-update-1.md
   critic-review-1.md
 ```
+
+Current cross-agent handoff lives in:
+
+```text
+docs/NEXT_AGENT_HANDOFF.md
+```
+
+It should be updated after any non-trivial block so the next agent can start
+from compact current state instead of rereading the full archive.
 
 Recommended product architecture layout:
 

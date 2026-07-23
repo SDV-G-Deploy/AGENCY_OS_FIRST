@@ -438,14 +438,17 @@ Buyer/user promise:
 
 For each major product block:
 
-1. PLAN FIRST.
-2. Implement one bounded change.
-3. Verify locally.
-4. Update evidence/docs.
-5. Run independent critic.
-6. Patch concrete factual gaps.
-7. Repeat until critic score >= 95 or remaining issues require human choice.
-8. Commit checkpoint.
+1. Choose context tier from `docs/AGENT_CONTEXT_PROTOCOL.md`.
+2. Read `docs/AGENT_START_BRIEF.md` and `docs/NEXT_AGENT_HANDOFF.md`.
+3. PLAN FIRST.
+4. Implement one bounded change.
+5. Verify locally.
+6. Update evidence/docs.
+7. Update `docs/NEXT_AGENT_HANDOFF.md`.
+8. Run independent critic when tier requires it.
+9. Patch concrete factual gaps.
+10. Repeat until critic score >= 95 or remaining issues require human choice.
+11. Commit checkpoint.
 
 ## Next Branch Candidates
 
