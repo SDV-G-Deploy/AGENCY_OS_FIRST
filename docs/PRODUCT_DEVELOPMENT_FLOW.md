@@ -34,9 +34,10 @@ Already true:
 - first reducer path exists;
 - first writer path exists;
 - first browser-local command exists;
+- first `capture.note_created` data/reducer slice exists;
 - false UI actions are removed;
 - claim/evidence required-type contract is enforced;
-- `npm run verify` passes with 42 tests;
+- `npm run verify` passes with 47 tests;
 - independent critic reached 96/100 for the honesty checkpoint.
 
 Not true yet:

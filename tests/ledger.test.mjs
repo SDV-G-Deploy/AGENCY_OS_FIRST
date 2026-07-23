@@ -415,6 +415,48 @@ function makeProjectNextActionEvent(calculateEventHash, ledger, overrides = {}) 
   return event;
 }
 
+function makeCaptureNoteEvent(calculateEventHash, ledger, overrides = {}) {
+  const previousEvent = ledger.events.at(-1);
+  const { after: afterOverrides, ...eventOverrides } = overrides;
+  const baseAfter = {
+    id: "capture-test-note",
+    projectId: "project-agency-os",
+    actorId: "person-serj",
+    source: "phone",
+    body: "Captured from a short phone session.",
+    createdAt: "2026-07-23T11:00:00Z",
+    receivedAt: "2026-07-23T11:00:02Z",
+    redactionStatus: "pending_scan",
+    classification: "inbox",
+    linkedEntityIds: [],
+    reviewStatus: "uncategorized",
+  };
+  const event = {
+    schemaVersion: 1,
+    sequence: ledger.events.length + 1,
+    id: "event-test-capture-note",
+    timestamp: "2026-07-23T11:00:02Z",
+    actorId: "person-serj",
+    action: "capture.note_created",
+    entityType: "capture",
+    entityId: "capture-test-note",
+    before: null,
+    after: { ...baseAfter, ...(afterOverrides ?? {}) },
+    evidenceIds: [],
+    approvalIds: [],
+    traceId: null,
+    source: "test",
+    idempotencyKey: "test-capture-note",
+    redactionStatus: "pending_scan",
+    retentionClass: "operational",
+    previousEventHash: previousEvent?.eventHash ?? null,
+    eventHash: "",
+    ...eventOverrides,
+  };
+  event.eventHash = calculateEventHash(event);
+  return event;
+}
+
 function makeApprovalApprovedEvent(calculateEventHash, ledger, overrides = {}) {
   const previousEvent = ledger.events.at(-1);
   const event = {
@@ -591,26 +633,378 @@ test("replay rejects append events with invalid hash before applying state", asy
   assert.equal(replayedProject.nextAction, originalProject.nextAction);
 });
 
+test("replay applies a valid capture note without mutating snapshots", async () => {
+  const { calculateEventHash, replayLedgerEvents, stateLedger } = await loadLedger();
+  const event = makeCaptureNoteEvent(calculateEventHash, stateLedger);
+
+  const result = replayLedgerEvents(stateLedger, [event]);
+
+  assert.deepEqual(result.errors, []);
+  assert.deepEqual(result.appliedEventIds, ["event-test-capture-note"]);
+  assert.equal(result.ledger.captures.length, stateLedger.captures.length + 1);
+  assert.equal(stateLedger.captures.length, 0);
+  assert.deepEqual(result.ledger.captures.at(-1), {
+    id: "capture-test-note",
+    projectId: "project-agency-os",
+    actorId: "person-serj",
+    source: "phone",
+    body: "Captured from a short phone session.",
+    createdAt: "2026-07-23T11:00:00Z",
+    receivedAt: "2026-07-23T11:00:02Z",
+    redactionStatus: "pending_scan",
+    classification: "inbox",
+    linkedEntityIds: [],
+    reviewStatus: "uncategorized",
+  });
+});
+
+test("replay accepts inbox capture notes", async () => {
+  const { calculateEventHash, replayLedgerEvents, stateLedger } = await loadLedger();
+  const event = makeCaptureNoteEvent(calculateEventHash, stateLedger, {
+    id: "event-test-inbox-capture-note",
+    entityId: "capture-test-inbox-note",
+    idempotencyKey: "test-inbox-capture-note",
+    after: {
+      id: "capture-test-inbox-note",
+      projectId: "inbox",
+      body: "This does not have a project yet.",
+    },
+  });
+
+  const result = replayLedgerEvents(stateLedger, [event]);
+
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.ledger.captures.at(-1).projectId, "inbox");
+});
+
+test("replay rejects invalid capture note fields", async () => {
+  const { calculateEventHash, replayLedgerEvents, stateLedger } = await loadLedger();
+  const missingBody = makeCaptureNoteEvent(calculateEventHash, stateLedger, {
+    id: "event-test-capture-missing-body",
+    entityId: "capture-test-missing-body",
+    idempotencyKey: "test-capture-missing-body",
+    after: {
+      id: "capture-test-missing-body",
+      body: "",
+    },
+  });
+  const missingProject = makeCaptureNoteEvent(calculateEventHash, stateLedger, {
+    id: "event-test-capture-missing-project",
+    entityId: "capture-test-missing-project",
+    idempotencyKey: "test-capture-missing-project",
+    after: {
+      id: "capture-test-missing-project",
+      projectId: "",
+    },
+  });
+  const invalidSource = makeCaptureNoteEvent(calculateEventHash, stateLedger, {
+    id: "event-test-capture-invalid-source",
+    entityId: "capture-test-invalid-source",
+    idempotencyKey: "test-capture-invalid-source",
+    after: {
+      id: "capture-test-invalid-source",
+      source: "unknown-tool",
+    },
+  });
+  const invalidClassification = makeCaptureNoteEvent(calculateEventHash, stateLedger, {
+    id: "event-test-capture-invalid-classification",
+    entityId: "capture-test-invalid-classification",
+    idempotencyKey: "test-capture-invalid-classification",
+    after: {
+      id: "capture-test-invalid-classification",
+      classification: "evidence_candidate",
+    },
+  });
+  const invalidReviewStatus = makeCaptureNoteEvent(calculateEventHash, stateLedger, {
+    id: "event-test-capture-invalid-review-status",
+    entityId: "capture-test-invalid-review-status",
+    idempotencyKey: "test-capture-invalid-review-status",
+    after: {
+      id: "capture-test-invalid-review-status",
+      reviewStatus: "converted",
+    },
+  });
+  const linkedEntities = makeCaptureNoteEvent(calculateEventHash, stateLedger, {
+    id: "event-test-capture-linked-entities",
+    entityId: "capture-test-linked-entities",
+    idempotencyKey: "test-capture-linked-entities",
+    after: {
+      id: "capture-test-linked-entities",
+      linkedEntityIds: ["evidence-local-v0-2-verify"],
+    },
+  });
+  const malformedLinkedEntities = makeCaptureNoteEvent(calculateEventHash, stateLedger, {
+    id: "event-test-capture-malformed-links",
+    entityId: "capture-test-malformed-links",
+    idempotencyKey: "test-capture-malformed-links",
+    after: {
+      id: "capture-test-malformed-links",
+      linkedEntityIds: ["ok", 42],
+    },
+  });
+  const invalidEntityType = makeCaptureNoteEvent(calculateEventHash, stateLedger, {
+    id: "event-test-capture-invalid-entity-type",
+    entityType: "project",
+    entityId: "capture-test-invalid-entity-type",
+    idempotencyKey: "test-capture-invalid-entity-type",
+    after: {
+      id: "capture-test-invalid-entity-type",
+    },
+  });
+  const mismatchedActor = makeCaptureNoteEvent(calculateEventHash, stateLedger, {
+    id: "event-test-capture-mismatched-actor",
+    entityId: "capture-test-mismatched-actor",
+    idempotencyKey: "test-capture-mismatched-actor",
+    after: {
+      id: "capture-test-mismatched-actor",
+      actorId: "agent-codex",
+    },
+  });
+  const mismatchedId = makeCaptureNoteEvent(calculateEventHash, stateLedger, {
+    id: "event-test-capture-mismatched-id",
+    entityId: "capture-test-mismatched-id",
+    idempotencyKey: "test-capture-mismatched-id",
+    after: {
+      id: "capture-test-different-id",
+    },
+  });
+  const notCreateBefore = makeCaptureNoteEvent(calculateEventHash, stateLedger, {
+    id: "event-test-capture-before-state",
+    entityId: "capture-test-before-state",
+    idempotencyKey: "test-capture-before-state",
+    before: { reviewStatus: "uncategorized" },
+    after: {
+      id: "capture-test-before-state",
+    },
+  });
+  const badTimestamp = makeCaptureNoteEvent(calculateEventHash, stateLedger, {
+    id: "event-test-capture-bad-timestamp",
+    entityId: "capture-test-bad-timestamp",
+    idempotencyKey: "test-capture-bad-timestamp",
+    after: {
+      id: "capture-test-bad-timestamp",
+      createdAt: "not-a-date",
+    },
+  });
+  const envelopeMismatch = makeCaptureNoteEvent(calculateEventHash, stateLedger, {
+    id: "event-test-capture-envelope-mismatch",
+    entityId: "capture-test-envelope-mismatch",
+    idempotencyKey: "test-capture-envelope-mismatch",
+    redactionStatus: "redacted",
+    after: {
+      id: "capture-test-envelope-mismatch",
+      redactionStatus: "pending_scan",
+    },
+  });
+  const notRequired = makeCaptureNoteEvent(calculateEventHash, stateLedger, {
+    id: "event-test-capture-not-required",
+    entityId: "capture-test-not-required",
+    idempotencyKey: "test-capture-not-required",
+    redactionStatus: "not_required",
+    after: {
+      id: "capture-test-not-required",
+      redactionStatus: "not_required",
+    },
+  });
+  const agentCapture = makeCaptureNoteEvent(calculateEventHash, stateLedger, {
+    id: "event-test-agent-capture",
+    actorId: "agent-codex",
+    entityId: "capture-test-agent",
+    idempotencyKey: "test-agent-capture",
+    after: {
+      id: "capture-test-agent",
+      actorId: "agent-codex",
+    },
+  });
+
+  const missingBodyResult = replayLedgerEvents(stateLedger, [missingBody]);
+  const missingProjectResult = replayLedgerEvents(stateLedger, [missingProject]);
+  const invalidSourceResult = replayLedgerEvents(stateLedger, [invalidSource]);
+  const invalidClassificationResult = replayLedgerEvents(stateLedger, [invalidClassification]);
+  const invalidReviewStatusResult = replayLedgerEvents(stateLedger, [invalidReviewStatus]);
+  const linkedEntitiesResult = replayLedgerEvents(stateLedger, [linkedEntities]);
+  const malformedLinkedEntitiesResult = replayLedgerEvents(stateLedger, [malformedLinkedEntities]);
+  const invalidEntityTypeResult = replayLedgerEvents(stateLedger, [invalidEntityType]);
+  const mismatchedActorResult = replayLedgerEvents(stateLedger, [mismatchedActor]);
+  const mismatchedIdResult = replayLedgerEvents(stateLedger, [mismatchedId]);
+  const notCreateBeforeResult = replayLedgerEvents(stateLedger, [notCreateBefore]);
+  const badTimestampResult = replayLedgerEvents(stateLedger, [badTimestamp]);
+  const envelopeMismatchResult = replayLedgerEvents(stateLedger, [envelopeMismatch]);
+  const notRequiredResult = replayLedgerEvents(stateLedger, [notRequired]);
+  const agentResult = replayLedgerEvents(stateLedger, [agentCapture]);
+
+  assert.ok(missingBodyResult.errors.some((error) => error.includes("missing body")));
+  assert.ok(missingProjectResult.errors.some((error) => error.includes("missing projectId")));
+  assert.ok(
+    invalidSourceResult.errors.some((error) =>
+      error.includes("invalid capture source unknown-tool"),
+    ),
+  );
+  assert.ok(
+    invalidClassificationResult.errors.some((error) =>
+      error.includes("capture create must start as inbox"),
+    ),
+  );
+  assert.ok(
+    invalidReviewStatusResult.errors.some((error) =>
+      error.includes("capture create must start uncategorized"),
+    ),
+  );
+  assert.ok(
+    linkedEntitiesResult.errors.some((error) =>
+      error.includes("capture create cannot link entities"),
+    ),
+  );
+  assert.ok(
+    malformedLinkedEntitiesResult.errors.some((error) =>
+      error.includes("linkedEntityIds must be a string array"),
+    ),
+  );
+  assert.ok(
+    invalidEntityTypeResult.errors.some((error) =>
+      error.includes("must target a capture entity"),
+    ),
+  );
+  assert.ok(
+    mismatchedActorResult.errors.some((error) =>
+      error.includes("actorId must match capture actor"),
+    ),
+  );
+  assert.ok(
+    mismatchedIdResult.errors.some((error) =>
+      error.includes("capture id must match entity id"),
+    ),
+  );
+  assert.ok(
+    notCreateBeforeResult.errors.some((error) =>
+      error.includes("capture create must have null before state"),
+    ),
+  );
+  assert.ok(badTimestampResult.errors.some((error) => error.includes("invalid createdAt")));
+  assert.ok(
+    envelopeMismatchResult.errors.some((error) =>
+      error.includes("capture redaction status must match event envelope"),
+    ),
+  );
+  assert.ok(
+    notRequiredResult.errors.some((error) =>
+      error.includes("invalid capture redaction status not_required"),
+    ),
+  );
+  assert.ok(agentResult.errors.some((error) => error.includes("requires person capture actor")));
+  assert.deepEqual(missingBodyResult.appliedEventIds, []);
+  assert.deepEqual(missingProjectResult.appliedEventIds, []);
+  assert.deepEqual(invalidSourceResult.appliedEventIds, []);
+  assert.deepEqual(invalidClassificationResult.appliedEventIds, []);
+  assert.deepEqual(invalidReviewStatusResult.appliedEventIds, []);
+  assert.deepEqual(linkedEntitiesResult.appliedEventIds, []);
+  assert.deepEqual(malformedLinkedEntitiesResult.appliedEventIds, []);
+  assert.deepEqual(invalidEntityTypeResult.appliedEventIds, []);
+  assert.deepEqual(mismatchedActorResult.appliedEventIds, []);
+  assert.deepEqual(mismatchedIdResult.appliedEventIds, []);
+  assert.deepEqual(notCreateBeforeResult.appliedEventIds, []);
+  assert.deepEqual(badTimestampResult.appliedEventIds, []);
+  assert.deepEqual(envelopeMismatchResult.appliedEventIds, []);
+  assert.deepEqual(notRequiredResult.appliedEventIds, []);
+  assert.deepEqual(agentResult.appliedEventIds, []);
+});
+
+test("replay ignores exact duplicate capture note idempotency", async () => {
+  const { calculateEventHash, replayLedgerEvents, stateLedger } = await loadLedger();
+  const event = makeCaptureNoteEvent(calculateEventHash, stateLedger);
+
+  const result = replayLedgerEvents(stateLedger, [event, { ...event }]);
+
+  assert.deepEqual(result.errors, []);
+  assert.deepEqual(result.appliedEventIds, ["event-test-capture-note"]);
+  assert.deepEqual(result.ignoredEventIds, ["event-test-capture-note"]);
+  assert.equal(result.ledger.captures.length, 1);
+});
+
+test("capture review summaries hide blocked-sensitive body text", async () => {
+  const { calculateEventHash, getPhoneReviewQueue, getUncategorizedCaptures, replayLedgerEvents, stateLedger } =
+    await loadLedger();
+  const pending = makeCaptureNoteEvent(calculateEventHash, stateLedger, {
+    id: "event-test-capture-pending",
+    entityId: "capture-test-pending",
+    idempotencyKey: "test-capture-pending",
+    after: {
+      id: "capture-test-pending",
+      body: "Pending raw note should be masked.",
+      receivedAt: "2026-07-23T11:01:00Z",
+    },
+  });
+  const clean = makeCaptureNoteEvent(
+    calculateEventHash,
+    { ...stateLedger, events: [...stateLedger.events, pending] },
+    {
+      id: "event-test-capture-clean",
+      entityId: "capture-test-clean",
+      idempotencyKey: "test-capture-clean",
+      redactionStatus: "no_secrets_detected",
+      after: {
+        id: "capture-test-clean",
+        body: "Clean note can appear in capture review.",
+        receivedAt: "2026-07-23T11:02:00Z",
+        redactionStatus: "no_secrets_detected",
+      },
+    },
+  );
+  const sensitive = makeCaptureNoteEvent(
+    calculateEventHash,
+    { ...stateLedger, events: [...stateLedger.events, pending, clean] },
+    {
+      id: "event-test-capture-sensitive",
+      entityId: "capture-test-sensitive",
+      idempotencyKey: "test-capture-sensitive",
+      redactionStatus: "blocked_sensitive",
+      after: {
+        id: "capture-test-sensitive",
+        body: "SECRET_SHOULD_NOT_RENDER",
+        receivedAt: "2026-07-23T11:03:00Z",
+        redactionStatus: "blocked_sensitive",
+      },
+    },
+  );
+
+  const result = replayLedgerEvents(stateLedger, [pending, clean, sensitive]);
+  const summaries = getUncategorizedCaptures(result.ledger);
+  const phoneCapture = getPhoneReviewQueue(result.ledger).find((item) => item.id === "phone-capture");
+
+  assert.deepEqual(result.errors, []);
+  assert.deepEqual(
+    summaries.map((capture) => capture.id),
+    ["capture-test-clean", "capture-test-pending"],
+  );
+  assert.equal(summaries[0].summary, "Clean note can appear in capture review.");
+  assert.equal(summaries[1].summary, "Pending scan");
+  assert.equal(JSON.stringify(summaries).includes("SECRET_SHOULD_NOT_RENDER"), false);
+  assert.equal(JSON.stringify(result.ledger.captures).includes("SECRET_SHOULD_NOT_RENDER"), false);
+  assert.equal(JSON.stringify(getPhoneReviewQueue(result.ledger)).includes("SECRET_SHOULD_NOT_RENDER"), false);
+  assert.equal(phoneCapture.count, 3);
+  assert.equal(phoneCapture.evidenceHint, "Clean note can appear in capture review.");
+});
+
 test("replay rejects unsupported state-changing event actions", async () => {
   const { calculateEventHash, replayLedgerEvents, stateLedger } = await loadLedger();
   const event = makeProjectNextActionEvent(calculateEventHash, stateLedger, {
-    id: "event-test-unsupported-capture-note",
-    action: "capture.note_created",
+    id: "event-test-unsupported-capture-note-update",
+    action: "capture.note_updated",
     entityType: "capture",
     entityId: "capture-test-note",
     after: {
       projectId: "project-agency-os",
       source: "phone",
-      body: "Raw capture should wait for reducer support.",
+      body: "Only create is supported in this slice.",
     },
-    idempotencyKey: "test-unsupported-capture-note",
+    idempotencyKey: "test-unsupported-capture-note-update",
   });
 
   const result = replayLedgerEvents(stateLedger, [event]);
 
   assert.ok(
     result.errors.some((error) =>
-      error.includes("unsupported state-changing action capture.note_created"),
+      error.includes("unsupported state-changing action capture.note_updated"),
     ),
   );
   assert.deepEqual(result.appliedEventIds, []);

@@ -352,6 +352,32 @@ Decision:
 Strength: strong for next-branch readiness. It does not prove the future branch
 implementation itself.
 
+### Claim 23: The first capture note replay slice exists
+
+Evidence:
+- Branch: `feature/capture-note-created`.
+- `app/ledger.ts` defines `CaptureRecord` and keeps captures as derived ledger
+  state.
+- `replayLedgerEvents()` applies `capture.note_created`.
+- Capture replay requires a person actor, project or Inbox, source, body,
+  timestamps, classification, review status, linked entity IDs and explicit
+  raw-capture redaction status.
+- Capture create starts only as `inbox`, `uncategorized` and without linked
+  entities. Conversion/classification requires a later event.
+- `redactionStatus: not_required` is rejected for capture notes.
+- `blocked_sensitive` capture body text is replaced in public derived capture
+  records, hidden from `getUncategorizedCaptures()` and absent from phone review
+  queue JSON.
+- `tests/ledger.test.mjs` covers valid capture replay, Inbox capture, invalid
+  capture fields, capture-specific duplicate idempotency, stricter create
+  invariants, blocked-sensitive summary/body hiding and unsupported
+  `capture.note_updated` fail-closed behavior.
+- Command: `npm run verify`
+- Result: pass with lint, typecheck, build and 47 tests.
+
+Strength: strong for data/reducer replay. It does not prove a writer, command,
+API route, phone form, Telegram action or capture-to-evidence conversion.
+
 ## Files Changed For Honesty Closure
 
 - `package.json`: added `typecheck`, `audit:prod`, `verify`; moved Next to

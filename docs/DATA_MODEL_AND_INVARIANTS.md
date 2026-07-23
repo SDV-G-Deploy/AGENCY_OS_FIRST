@@ -31,6 +31,8 @@ Current implementation status:
   events;
 - the first browser-local write surface exists for human next-action updates;
 - current entity snapshots still live in `data/*.json`;
+- `capture.note_created` replay creates derived capture records without a
+  separate `data/captures.json` snapshot;
 - full reducer replay across all entity types is not implemented yet.
 
 ## Identity
@@ -136,12 +138,14 @@ Required fields for `capture.note_created`:
 Invariant:
 - raw capture text starts as `pending_scan`, `no_secrets_detected`,
   `redacted` or `blocked_sensitive`; it must not default to `not_required`.
+- `capture.note_created` starts only as `classification: inbox`,
+  `reviewStatus: uncategorized` and empty `linkedEntityIds`.
 - blocked sensitive captures do not appear in normal dashboard text.
 - a capture does not verify a claim by itself.
 - converting a capture to evidence, blocker, decision or next action requires a
   separate event.
-- `capture.note_created` must fail replay until a reducer explicitly supports
-  it.
+- `capture.note_created` is supported by replay and must keep raw capture text
+  quarantined until a later classification/conversion event.
 
 ### Decision
 

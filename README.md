@@ -20,12 +20,14 @@ chat workspace and not a full task manager. Its job is to keep state honest.
 - Phone review cards for verify, unblock, approve and capture queues.
 - Replay-derived dashboard state over the append-only event log.
 - First local browser form/API for updating one project's next action.
+- First `capture.note_created` data/reducer slice with quarantine-safe capture
+  summaries.
 - Product DNA and v0.3 phone-first capture plan.
 
 ## Next useful layer
 
-1. Add one phone-first capture action that appends an event.
-2. Broaden reducer replay beyond `project.next_action_updated`.
+1. Add a local writer/command/API for `capture.note_created`.
+2. Add a minimal phone-first capture form.
 3. Add approval rejection and expiry UI.
 4. Add runtime schema validation and redaction/import fixtures.
 5. Add export, backup and restore for the local ledger.

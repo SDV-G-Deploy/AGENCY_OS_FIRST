@@ -1598,3 +1598,73 @@ Decision:
 
 Next safest step:
 - Commit this readiness-audit checkpoint, then start the first v0.3 branch.
+
+## PLAN FIRST - 2026-07-23 Capture Note Reducer Slice
+
+Block: `capture.note_created` data/reducer support.
+
+Goal:
+- Implement the first capture note model and replay path without adding a
+  writer, UI or integration.
+
+In scope:
+- `CaptureRecord` or derived capture collection.
+- `capture.note_created` replay.
+- Person-only actor validation.
+- Project or Inbox validation.
+- Source, body, timestamp, classification, review status and linked entity
+  validation.
+- Redaction/quarantine behavior for `pending_scan` and `blocked_sensitive`.
+- Strict create state: inbox classification, uncategorized review status and no
+  linked entities.
+- Tests.
+
+Out of scope:
+- Phone form.
+- Local writer/command/API.
+- Telegram.
+- GitHub/Codex/OpenClaw importers.
+- Hosted auth or deployment.
+- Conversion to evidence, blocker, decision or next action.
+
+Done criteria:
+- Valid capture notes replay into derived ledger captures.
+- Invalid capture notes do not apply.
+- Blocked-sensitive body text is hidden from normal capture summaries.
+- Unsupported capture state changes still fail closed.
+- `npm run verify` passes.
+
+Evidence expected:
+- `app/ledger.ts`.
+- `tests/ledger.test.mjs`.
+- `docs/CURRENT_EVIDENCE.md`.
+- `docs/NEXT_AGENT_HANDOFF.md`.
+
+## PLAN UPDATE - 2026-07-23 Capture Note Reducer Slice
+
+Changed:
+- Added `CaptureRecord` and capture validation to the State Ledger.
+- Added replay support for `capture.note_created`.
+- Added `getUncategorizedCaptures()` for the last visible uncategorized capture
+  summaries.
+- Updated the phone capture review card to point at uncategorized captures when
+  present.
+- Updated tests for valid capture, Inbox capture, invalid fields,
+  duplicate idempotency, blocked-sensitive hiding and unsupported
+  `capture.note_updated`.
+- Tightened the create contract after independent critique: create now requires
+  null `before`, valid timestamps, inbox/uncategorized/no links, matching
+  actor/id/redaction envelope and hides blocked-sensitive body text from public
+  derived captures.
+- Updated README, data model and evidence docs.
+
+Verified:
+- `npm run verify` passes: lint, typecheck, build and 47 tests.
+
+Skipped:
+- No writer, command, API route, phone form, Telegram, GitHub/Codex/OpenClaw
+  importer, auth, deployment or capture conversion.
+
+Next safest step:
+- Add a local writer/command/API for `capture.note_created`, then add the
+  minimal phone-first form in a separate bounded slice if the writer is stable.

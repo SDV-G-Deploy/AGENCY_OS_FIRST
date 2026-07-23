@@ -21,6 +21,24 @@ type RedactionStatus =
   | "no_secrets_detected"
   | "blocked_sensitive";
 type RetentionClass = "audit" | "operational" | "temporary";
+type CaptureSource =
+  | "phone"
+  | "laptop"
+  | "codex"
+  | "chatgpt"
+  | "claude"
+  | "github"
+  | "openc-law"
+  | "openclaw"
+  | "telegram"
+  | "manual";
+type CaptureClassification =
+  | "inbox"
+  | "evidence_candidate"
+  | "blocker_candidate"
+  | "decision_candidate"
+  | "next_action_candidate";
+type CaptureReviewStatus = "uncategorized" | "triaged" | "converted" | "dismissed";
 
 export type ProjectRecord = {
   id: string;
@@ -133,6 +151,20 @@ export type ApprovalRecord = {
   linkedEvidenceIds: string[];
 };
 
+export type CaptureRecord = {
+  id: string;
+  projectId: string;
+  actorId: string;
+  source: CaptureSource;
+  body: string;
+  createdAt: string;
+  receivedAt: string;
+  redactionStatus: Exclude<RedactionStatus, "not_required">;
+  classification: CaptureClassification;
+  linkedEntityIds: string[];
+  reviewStatus: CaptureReviewStatus;
+};
+
 export type ActorRecord = {
   id: string;
   displayName: string;
@@ -189,6 +221,7 @@ export type StateLedger = {
   approvals: ApprovalRecord[];
   blockers: BlockerRecord[];
   traces: TraceRecord[];
+  captures: CaptureRecord[];
   events: LedgerEvent[];
 };
 
@@ -231,6 +264,16 @@ export type PhoneReviewAction = {
   count?: number;
 };
 
+export type CaptureReviewSummary = {
+  id: string;
+  project: string;
+  source: CaptureSource;
+  receivedAt: string;
+  redactionStatus: CaptureRecord["redactionStatus"];
+  reviewStatus: CaptureReviewStatus;
+  summary: string;
+};
+
 const allowedRedactionStatuses = new Set<RedactionStatus>([
   "not_required",
   "pending_scan",
@@ -243,6 +286,38 @@ const allowedRetentionClasses = new Set<RetentionClass>([
   "operational",
   "temporary",
 ]);
+const allowedCaptureRedactionStatuses = new Set<CaptureRecord["redactionStatus"]>([
+  "pending_scan",
+  "redacted",
+  "no_secrets_detected",
+  "blocked_sensitive",
+]);
+const allowedCaptureSources = new Set<CaptureSource>([
+  "phone",
+  "laptop",
+  "codex",
+  "chatgpt",
+  "claude",
+  "github",
+  "openc-law",
+  "openclaw",
+  "telegram",
+  "manual",
+]);
+const allowedCaptureClassifications = new Set<CaptureClassification>([
+  "inbox",
+  "evidence_candidate",
+  "blocker_candidate",
+  "decision_candidate",
+  "next_action_candidate",
+]);
+const allowedCaptureReviewStatuses = new Set<CaptureReviewStatus>([
+  "uncategorized",
+  "triaged",
+  "converted",
+  "dismissed",
+]);
+const inboxProjectId = "inbox";
 
 export function parseLedgerEvents(source: string): LedgerEvent[] {
   return source
@@ -379,6 +454,7 @@ export const stateLedger: StateLedger = {
   approvals: approvalsData as ApprovalRecord[],
   blockers: blockersData as BlockerRecord[],
   traces: tracesData as TraceRecord[],
+  captures: [],
   events: parseLedgerEvents(eventsJsonl),
 };
 
@@ -508,6 +584,33 @@ export function validateLedger(ledger: StateLedger = stateLedger): string[] {
     }
     if (approval.approverId && !actorIds.has(approval.approverId)) {
       errors.push(`approval ${approval.id} references unknown approver ${approval.approverId}`);
+    }
+  }
+
+  for (const capture of ledger.captures) {
+    if (capture.projectId !== inboxProjectId && !projectIds.has(capture.projectId)) {
+      errors.push(`capture ${capture.id} references unknown project ${capture.projectId}`);
+    }
+    if (!actorIds.has(capture.actorId)) {
+      errors.push(`capture ${capture.id} references unknown actor ${capture.actorId}`);
+    }
+    if (!allowedCaptureSources.has(capture.source)) {
+      errors.push(`capture ${capture.id} has invalid source ${capture.source}`);
+    }
+    if (!hasText(capture.body)) {
+      errors.push(`capture ${capture.id} is missing body`);
+    }
+    if (!allowedCaptureRedactionStatuses.has(capture.redactionStatus)) {
+      errors.push(`capture ${capture.id} has invalid redaction status ${capture.redactionStatus}`);
+    }
+    if (!allowedCaptureClassifications.has(capture.classification)) {
+      errors.push(`capture ${capture.id} has invalid classification ${capture.classification}`);
+    }
+    if (!allowedCaptureReviewStatuses.has(capture.reviewStatus)) {
+      errors.push(`capture ${capture.id} has invalid review status ${capture.reviewStatus}`);
+    }
+    if (!Array.isArray(capture.linkedEntityIds)) {
+      errors.push(`capture ${capture.id} linkedEntityIds must be an array`);
     }
   }
 
@@ -678,6 +781,35 @@ function idempotencyPayloadHash(event: LedgerEvent) {
   return stableStringify(payload);
 }
 
+function readStringField(
+  event: LedgerEvent,
+  field: string,
+  errors: string[],
+  required = true,
+) {
+  const value = event.after?.[field];
+  if (typeof value === "string" && value.trim().length > 0) {
+    return value;
+  }
+  if (required) {
+    errors.push(`event ${event.id} missing ${field}`);
+  }
+  return null;
+}
+
+function readStringArrayField(event: LedgerEvent, field: string, errors: string[]) {
+  const value = event.after?.[field];
+  if (Array.isArray(value) && value.every((item) => typeof item === "string")) {
+    return value;
+  }
+  errors.push(`event ${event.id} ${field} must be a string array`);
+  return null;
+}
+
+function isValidTimestamp(value: string) {
+  return !Number.isNaN(Date.parse(value));
+}
+
 const stateChangingActionPattern = /^(project|capture|evidence|agent_run|blocker|decision|approval|work_item)\..*[._](created|updated|submitted|verified|resolved|recorded|approved|used|rejected|deleted|archived)$/;
 
 function isStateChangingAction(action: string) {
@@ -692,6 +824,7 @@ export function replayLedgerEvents(
   const ledger = cloneLedger(initialLedger);
   const projectById = new Map(ledger.projects.map((project) => [project.id, project]));
   const actorById = new Map(ledger.actors.map((actor) => [actor.id, actor]));
+  const captureById = new Map(ledger.captures.map((capture) => [capture.id, capture]));
   const seenIdempotency = new Map<string, string>();
   const appliedEventIds: string[] = [];
   const ignoredEventIds: string[] = [];
@@ -743,8 +876,124 @@ export function replayLedgerEvents(
   }
 
   for (const event of eventsToApply) {
-    if (event.redactionStatus === "pending_scan" || event.redactionStatus === "blocked_sensitive") {
+    if (
+      event.action !== "capture.note_created" &&
+      (event.redactionStatus === "pending_scan" || event.redactionStatus === "blocked_sensitive")
+    ) {
       errors.push(`event ${event.id} cannot be applied with redaction status ${event.redactionStatus}`);
+      continue;
+    }
+
+    if (event.action === "capture.note_created") {
+      const captureErrorStart = errors.length;
+      const actor = actorById.get(event.actorId);
+      const captureId = readStringField(event, "id", errors) ?? event.entityId;
+      const projectId = readStringField(event, "projectId", errors);
+      const actorId = readStringField(event, "actorId", errors);
+      const source = readStringField(event, "source", errors);
+      const body = readStringField(event, "body", errors);
+      const createdAt = readStringField(event, "createdAt", errors);
+      const receivedAt = readStringField(event, "receivedAt", errors);
+      const redactionStatus = readStringField(event, "redactionStatus", errors);
+      const classification = readStringField(event, "classification", errors);
+      const reviewStatus = readStringField(event, "reviewStatus", errors);
+      const linkedEntityIds = readStringArrayField(event, "linkedEntityIds", errors);
+
+      if (errors.length > captureErrorStart) {
+        continue;
+      }
+      if (event.before !== null) {
+        errors.push(`event ${event.id} capture create must have null before state`);
+        continue;
+      }
+      if (event.entityType !== "capture") {
+        errors.push(`event ${event.id} must target a capture entity`);
+        continue;
+      }
+      if (!actor) {
+        errors.push(`event ${event.id} references unknown actor ${event.actorId}`);
+        continue;
+      }
+      if (actor.actorType !== "person") {
+        errors.push(`event ${event.id} requires person capture actor`);
+        continue;
+      }
+      if (actorId !== event.actorId) {
+        errors.push(`event ${event.id} actorId must match capture actor`);
+        continue;
+      }
+      if (captureId !== event.entityId) {
+        errors.push(`event ${event.id} capture id must match entity id`);
+        continue;
+      }
+      if (captureById.has(event.entityId)) {
+        errors.push(`event ${event.id} references existing capture ${event.entityId}`);
+        continue;
+      }
+      if (projectId !== inboxProjectId && (!projectId || !projectById.has(projectId))) {
+        errors.push(`event ${event.id} references unknown project ${projectId}`);
+        continue;
+      }
+      if (!source || !allowedCaptureSources.has(source as CaptureSource)) {
+        errors.push(`event ${event.id} has invalid capture source ${source}`);
+        continue;
+      }
+      if (!redactionStatus || !allowedCaptureRedactionStatuses.has(redactionStatus as CaptureRecord["redactionStatus"])) {
+        errors.push(`event ${event.id} has invalid capture redaction status ${redactionStatus}`);
+        continue;
+      }
+      if (event.redactionStatus !== redactionStatus) {
+        errors.push(`event ${event.id} capture redaction status must match event envelope`);
+        continue;
+      }
+      if (!isValidTimestamp(createdAt ?? "")) {
+        errors.push(`event ${event.id} has invalid createdAt`);
+        continue;
+      }
+      if (!isValidTimestamp(receivedAt ?? "")) {
+        errors.push(`event ${event.id} has invalid receivedAt`);
+        continue;
+      }
+      if (!classification || !allowedCaptureClassifications.has(classification as CaptureClassification)) {
+        errors.push(`event ${event.id} has invalid capture classification ${classification}`);
+        continue;
+      }
+      if (classification !== "inbox") {
+        errors.push(`event ${event.id} capture create must start as inbox`);
+        continue;
+      }
+      if (!reviewStatus || !allowedCaptureReviewStatuses.has(reviewStatus as CaptureReviewStatus)) {
+        errors.push(`event ${event.id} has invalid capture review status ${reviewStatus}`);
+        continue;
+      }
+      if (reviewStatus !== "uncategorized") {
+        errors.push(`event ${event.id} capture create must start uncategorized`);
+        continue;
+      }
+      if (linkedEntityIds && linkedEntityIds.length > 0) {
+        errors.push(`event ${event.id} capture create cannot link entities`);
+        continue;
+      }
+      if (!body || !createdAt || !receivedAt || !projectId || !linkedEntityIds) {
+        continue;
+      }
+
+      const capture: CaptureRecord = {
+        id: event.entityId,
+        projectId,
+        actorId: event.actorId,
+        source: source as CaptureSource,
+        body: redactionStatus === "blocked_sensitive" ? "Blocked sensitive capture" : body,
+        createdAt,
+        receivedAt,
+        redactionStatus: redactionStatus as CaptureRecord["redactionStatus"],
+        classification: classification as CaptureClassification,
+        linkedEntityIds,
+        reviewStatus: reviewStatus as CaptureReviewStatus,
+      };
+      ledger.captures.push(capture);
+      captureById.set(capture.id, capture);
+      appliedEventIds.push(event.id);
       continue;
     }
 
@@ -1031,9 +1280,48 @@ export function getRecommendedSteps(ledger: StateLedger = derivedStateLedger): R
   return [...missingEvidence, ...blockerSteps].slice(0, 4);
 }
 
+function captureSummary(capture: CaptureRecord) {
+  if (capture.redactionStatus === "pending_scan") {
+    return "Pending scan";
+  }
+  if (capture.redactionStatus === "blocked_sensitive") {
+    return "Blocked sensitive capture";
+  }
+  return capture.body;
+}
+
+export function getUncategorizedCaptures(
+  ledger: StateLedger = derivedStateLedger,
+  limit = 3,
+): CaptureReviewSummary[] {
+  const { projectById } = createIndexes(ledger);
+
+  return ledger.captures
+    .filter(
+      (capture) =>
+        capture.reviewStatus === "uncategorized" &&
+        capture.redactionStatus !== "blocked_sensitive",
+    )
+    .sort((left, right) => right.receivedAt.localeCompare(left.receivedAt))
+    .slice(0, limit)
+    .map((capture) => ({
+      id: capture.id,
+      project:
+        capture.projectId === inboxProjectId
+          ? "Inbox"
+          : projectById.get(capture.projectId)?.name ?? capture.projectId,
+      source: capture.source,
+      receivedAt: capture.receivedAt,
+      redactionStatus: capture.redactionStatus,
+      reviewStatus: capture.reviewStatus,
+      summary: captureSummary(capture),
+    }));
+}
+
 export function getPhoneReviewQueue(ledger: StateLedger = derivedStateLedger): PhoneReviewAction[] {
   const { actorById, projectById } = createIndexes(ledger);
   const sanityChecks = getSanityChecks(ledger);
+  const uncategorizedCaptures = getUncategorizedCaptures(ledger);
   const missingEvidenceCount = ledger.claims.filter(
     (claim) => claim.status !== "verified",
   ).length;
@@ -1080,11 +1368,13 @@ export function getPhoneReviewQueue(ledger: StateLedger = derivedStateLedger): P
     {
       id: "phone-capture",
       type: "capture",
-      label: "Capture drift",
-      detail: "Record any project that feels active but has no fresh state.",
-      target: "Portfolio",
-      evidenceHint: "Create a blocker, next action, pause decision or evidence request.",
-      count: sanityChecks.length,
+      label: "Triage captures",
+      detail: "Review raw notes that are not evidence, blockers or decisions yet.",
+      target: uncategorizedCaptures[0]?.project ?? "Portfolio",
+      evidenceHint:
+        uncategorizedCaptures[0]?.summary ??
+        "Create a blocker, next action, pause decision or evidence request.",
+      count: ledger.captures.filter((capture) => capture.reviewStatus === "uncategorized").length || sanityChecks.length,
     },
   ];
 }

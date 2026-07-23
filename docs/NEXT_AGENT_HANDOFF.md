@@ -6,18 +6,18 @@ Last updated: 2026-07-23
 ## Handoff Freshness
 
 Branch:
-- `feature/local-event-reducer`
+- `feature/capture-note-created`
 
 Commit:
-- current context-protocol checkpoint; run `git log -1 --oneline` for the exact
-  commit hash.
+- current capture reducer checkpoint; run `git log -1 --oneline` for the exact
+  commit hash after this handoff is committed.
 
 Working tree state after this handoff checkpoint:
 - expected clean.
 
 Last verified command/result:
 - `npm run verify`
-- pass: lint, typecheck, build and 42 tests.
+- pass: lint, typecheck, build and 47 tests.
 
 Conflict rule:
 - if this handoff conflicts with current code/tests, trust code/tests, inspect
@@ -67,19 +67,19 @@ Stack/tooling checkpoint:
 Pre-development readiness checkpoint:
 - `docs/PRE_DEVELOPMENT_READINESS_AUDIT.md` clears only the first supervised
   v0.3 branch.
-- The next branch remains `capture.note_created` data/reducer slice.
+- The first `capture.note_created` data/reducer slice is now implemented.
 
 ## Next Chewable Step
 
-Implement the first data/reducer slice for `capture.note_created`.
+Implement the local writer/command/API slice for `capture.note_created`.
 
 Recommended scope:
-- add capture record type or derived capture collection;
-- support `capture.note_created` in replay;
-- enforce person actor, project-or-Inbox, source, body and redaction status;
-- display last 3 uncategorized captures in data adapter or planned UI state;
-- add tests for valid capture, missing project/source/body, blocked sensitive,
-  duplicate idempotency and replay output.
+- add `buildCaptureNoteEvent()` and `appendCaptureNoteEvent()`;
+- add a local command wrapper that is person-only;
+- add a local API route that fixes actor and canonical event path;
+- preserve the existing capture replay contract;
+- add tests for write success, duplicate idempotency, invalid existing log,
+  invalid raw-capture redaction status and blocked agent actor.
 
 Out of scope:
 - full phone UI;
@@ -88,6 +88,7 @@ Out of scope:
 - hosted auth;
 - production deploy;
 - converting capture to evidence/blocker/decision.
+- broad storage, framework or auth changes.
 
 ## Minimum Files To Read Next
 
@@ -103,6 +104,8 @@ Out of scope:
 - `docs/REDACTION_AND_IMPORT_BOUNDARIES.md` section:
   - `Raw Capture Quarantine`
 - `app/ledger.ts`
+- `app/ledger-writer.ts`
+- `app/local-command.ts`
 - `tests/ledger.test.mjs`
 
 ## Usually Skip Unless Needed

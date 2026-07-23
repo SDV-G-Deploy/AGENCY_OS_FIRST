@@ -32,7 +32,7 @@ Latest product DNA checkpoint:
 
 Current local gate:
 - `npm run verify`
-- Expected result: lint, typecheck, build and 42 tests pass.
+- Expected result: lint, typecheck, build and 47 tests pass.
 
 Production gate:
 - `npm run audit:prod` is still blocked by Next transitive
@@ -48,6 +48,7 @@ Production gate:
 - Guarded writer for `project.next_action_updated`.
 - Human-only local command.
 - Browser-local next-action form/API.
+- `capture.note_created` data/reducer replay slice.
 - Claim required evidence type validation.
 - Unknown state-changing event actions fail closed.
 
@@ -68,8 +69,10 @@ Action contract:
 - source required;
 - raw text treated as untrusted;
 - redaction status cannot default to `not_required`;
-- unsupported state-changing action must fail replay until reducer support
-  exists.
+- create starts as `classification: inbox`, `reviewStatus: uncategorized` and
+  empty `linkedEntityIds`;
+- unsupported capture state changes still fail closed unless a reducer supports
+  them.
 
 ## Read More Only When Needed
 
