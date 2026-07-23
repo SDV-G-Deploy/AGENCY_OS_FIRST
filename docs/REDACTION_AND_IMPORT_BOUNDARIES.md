@@ -118,6 +118,21 @@ Rules:
 - a capture is not evidence until a later event explicitly converts or links it;
 - imported chat/Codex/OpenClaw text follows the same quarantine path.
 
+Review marking:
+- `capture.review_marked` is the normal v0.3 triage action after
+  `capture.note_created`;
+- actor must be a person;
+- allowed transition is only `reviewStatus: uncategorized` to
+  `reviewStatus: triaged`;
+- required fields are `captureId`, `reviewStatus: "triaged"`,
+  `candidateType` and `reviewedAt`;
+- `candidateType` may be `evidence_candidate`, `blocker_candidate`,
+  `decision_candidate` or `next_action_candidate`;
+- review marking does not convert a capture, create linked entities, verify a
+  claim or make raw text trusted;
+- blocked sensitive captures stay out of normal review marking unless a later
+  sensitive-review contract explicitly allows it.
+
 Allowed v0.3 display:
 - project name;
 - capture source;

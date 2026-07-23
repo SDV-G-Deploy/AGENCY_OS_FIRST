@@ -135,12 +135,28 @@ Required fields for `capture.note_created`:
 - `linkedEntityIds`;
 - `reviewStatus`: uncategorized, triaged, converted, dismissed.
 
+Required fields for `capture.review_marked`:
+- `captureId`;
+- `reviewStatus`: `triaged`;
+- `candidateType`: `evidence_candidate`, `blocker_candidate`,
+  `decision_candidate` or `next_action_candidate`;
+- `reviewedAt`.
+
 Invariant:
 - raw capture text starts as `pending_scan`, `no_secrets_detected`,
   `redacted` or `blocked_sensitive`; it must not default to `not_required`.
 - `capture.note_created` starts only as `classification: inbox`,
   `reviewStatus: uncategorized` and empty `linkedEntityIds`.
+- `capture.review_marked` is person-only for v0.3.
+- `capture.review_marked` only marks `reviewStatus: uncategorized` captures as
+  `reviewStatus: triaged`.
+- `capture.review_marked` updates classification to the selected
+  `candidateType` but does not create or link evidence, blockers, decisions,
+  tasks or next actions.
 - blocked sensitive captures do not appear in normal dashboard text.
+- blocked sensitive captures must not be reviewed through the normal
+  `capture.review_marked` flow; a separate sensitive-review path would need its
+  own contract.
 - a capture does not verify a claim by itself.
 - converting a capture to evidence, blocker, decision or next action requires a
   separate event.

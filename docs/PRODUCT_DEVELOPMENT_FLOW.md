@@ -251,11 +251,26 @@ Data contract for `capture.note_created`:
 - conversion: separate later events turn capture into evidence, blocker,
   decision or next action.
 
+Data contract for `capture.review_marked`:
+- actor: person only for v0.3;
+- required existing `captureId`;
+- required `reviewStatus: "triaged"`;
+- required `candidateType`: `evidence_candidate`, `blocker_candidate`,
+  `decision_candidate` or `next_action_candidate`;
+- required `reviewedAt`;
+- allowed transition: `uncategorized -> triaged`;
+- reducer output: the capture remains a capture, updates `classification` to the
+  selected candidate type and records the review timestamp;
+- conversion: no evidence, blocker, decision, task or next action is created or
+  linked by this event.
+
 Quarantine rule:
 - raw capture payload may be written only with redaction status
   `pending_scan`, `redacted`, `no_secrets_detected` or `blocked_sensitive`;
 - `blocked_sensitive` captures are hidden from normal dashboard summaries;
 - imported chat/task text follows the same rule.
+- `capture.review_marked` does not make raw text trusted, does not verify a
+  claim and does not allow normal review of `blocked_sensitive` captures.
 
 Done criteria:
 - a short phone session can capture one note into the ledger;

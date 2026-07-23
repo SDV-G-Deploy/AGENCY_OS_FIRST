@@ -6,7 +6,7 @@ Last updated: 2026-07-24
 ## Handoff Freshness
 
 Branch:
-- `feature/local-capture-smoke-test`
+- `feature/capture-triage-contract`
 
 Commit:
 - this handoff is included in the current slice commit; run
@@ -29,10 +29,9 @@ Agency OS now has a canonical local repo and GitHub remote:
 - local: `C:\Agency_os_first\AGENCY_OS_FIRST`;
 - GitHub: `https://github.com/SDV-G-Deploy/AGENCY_OS_FIRST`.
 
-Agency OS is on the supervised local capture smoke-test branch. The prior
-mobile capture placement slice has been fast-forwarded into local `main`, and
-this branch adds a safe manual capture smoke path that does not pollute the
-real event log.
+Agency OS is on the supervised capture triage contract branch. The prior local
+capture smoke-test slice has been merged into local `main`, and this branch
+defines the `capture.review_marked` contract before implementation.
 
 The next branch or continuation should stay inside the v0.3 phone-first capture
 path, starting from the contracts already written in:
@@ -147,6 +146,27 @@ Changed files in this slice:
 - `README.md`
 - `docs/NEXT_AGENT_HANDOFF.md`
 
+Capture triage contract checkpoint:
+- `capture.review_marked` is documented as the first normal review/triage event
+  after `capture.note_created`.
+- Actor is person-only for v0.3.
+- Allowed transition is `reviewStatus: uncategorized` to
+  `reviewStatus: triaged`.
+- Required fields are `captureId`, `reviewStatus: "triaged"`, `candidateType`
+  and `reviewedAt`.
+- `candidateType` values are `evidence_candidate`, `blocker_candidate`,
+  `decision_candidate` and `next_action_candidate`.
+- The event marks a candidate only: it does not convert captures, create linked
+  entities, verify claims or make raw text trusted.
+- `blocked_sensitive` captures remain hidden from normal summaries and are not
+  reviewed through the normal flow.
+
+Changed files in this slice:
+- `docs/DATA_MODEL_AND_INVARIANTS.md`
+- `docs/REDACTION_AND_IMPORT_BOUNDARIES.md`
+- `docs/PRODUCT_DEVELOPMENT_FLOW.md`
+- `docs/NEXT_AGENT_HANDOFF.md`
+
 Organizational checkpoint:
 - canonical repo moved to `C:\Agency_os_first\AGENCY_OS_FIRST`;
 - GitHub `main` was updated without force-push;
@@ -158,15 +178,17 @@ Organizational checkpoint:
 
 ## Next Chewable Step
 
-Propose the next capture triage contract without implementing conversion yet.
+Implement replay support for `capture.review_marked`.
 
 Recommended scope:
-- define the first supported capture review/triage event action name;
-- specify actor, allowed state transition, required fields and redaction
-  invariants;
-- decide how a capture becomes an evidence/blocker/decision/task candidate
-  without performing conversion in code;
-- update docs only unless the next implementation slice is explicitly approved.
+- validate unknown or invalid capture IDs;
+- validate actor is person-only;
+- validate transition only from uncategorized to triaged;
+- update derived capture `classification`, `reviewStatus`, candidate type and
+  reviewed timestamp;
+- preserve raw body quarantine;
+- block normal review of `blocked_sensitive` captures;
+- add focused replay tests only, with no writer/API/UI.
 
 Out of scope:
 - Telegram;
