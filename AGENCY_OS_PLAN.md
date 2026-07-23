@@ -359,3 +359,54 @@ Still failing:
 Next safest step:
 - Start a separate branch/task for the local append-only event reducer and one
   phone review action.
+
+## PLAN FIRST - 2026-07-23 Event Source Alignment
+
+Block: Make JSONL events the dashboard event source.
+
+Goal:
+- Close the critic-identified honesty gap where `data/events.jsonl` existed but
+  `app/ledger.ts` used hardcoded event copies.
+
+In scope:
+- Load ledger events from `data/events.jsonl`.
+- Ensure custom-ledger validation builds indexes from the passed ledger.
+- Add tests that would fail if either regression returns.
+
+Out of scope:
+- Event writer.
+- Reducer replay over snapshots.
+- Hash chain.
+- UI write actions.
+- External integrations.
+
+Done criteria:
+- `stateLedger.events` equals parsed `data/events.jsonl`.
+- `validateLedger(customLedger)` does not consult default module maps.
+- `npm run verify` passes.
+
+Evidence:
+- `app/ledger.ts` imports `data/events.jsonl?raw`.
+- `tests/ledger.test.mjs` covers JSONL loading and validation isolation.
+
+## PLAN UPDATE - 2026-07-23 Event Source Alignment
+
+Changed:
+- Removed hardcoded `rawEvents` from `app/ledger.ts`.
+- Added `parseLedgerEvents()` and raw JSONL import support.
+- Reworked ledger indexes so validation and derived functions can use the
+  ledger instance passed to them.
+- Added tests for JSONL event loading and custom-ledger validation isolation.
+
+Verified:
+- `npm run verify` passes: lint, typecheck, build and 11 tests.
+
+Still missing:
+- No event writer/reducer yet.
+- No hash chain yet.
+- No UI action appends events yet.
+
+Next safest step:
+- Document and then implement the minimal event integrity contract:
+  schemaVersion, sequence, previous hash, current hash, reducer replay,
+  approval linkage and redaction boundaries.

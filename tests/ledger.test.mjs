@@ -28,6 +28,11 @@ async function transpileModule(sourcePath, targetPath, rewriteImports = false) {
         `from "./${name}.js"`,
       );
     }
+
+    source = source.replace(
+      'from "../data/events.jsonl?raw"',
+      'from "./events-jsonl.js"',
+    );
   }
   const output = ts.transpileModule(source, {
     compilerOptions: {
@@ -58,6 +63,13 @@ async function loadLedger() {
       const source = await readFile(new URL(`../data/${name}.json`, import.meta.url), "utf8");
       await writeFile(join(moduleDir, `${name}.js`), `export default ${source};\n`, "utf8");
     }),
+  );
+
+  const eventsSource = await readFile(new URL("../data/events.jsonl", import.meta.url), "utf8");
+  await writeFile(
+    join(moduleDir, "events-jsonl.js"),
+    `export default ${JSON.stringify(eventsSource)};\n`,
+    "utf8",
   );
 
   await transpileModule(
@@ -99,6 +111,14 @@ test("phone review queue exposes actionable short-session cards", async () => {
   assert.ok(queue.every((item) => typeof item.count === "number"));
 });
 
+test("ledger events are loaded from the jsonl source", async () => {
+  const { parseLedgerEvents, stateLedger } = await loadLedger();
+  const eventsSource = await readFile(new URL("../data/events.jsonl", import.meta.url), "utf8");
+  const parsedEvents = parseLedgerEvents(eventsSource);
+
+  assert.deepEqual(stateLedger.events, parsedEvents);
+});
+
 test("ledger validation accepts the current local data skeleton", async () => {
   const { validateLedger } = await loadLedger();
 
@@ -131,6 +151,26 @@ test("agent-submitted evidence cannot be self-verified by the same agent", async
   const errors = validateLedger({ ...stateLedger, evidence });
 
   assert.ok(errors.some((error) => error.includes("self-verified by agent")));
+});
+
+test("custom ledger validation does not look at default module state", async () => {
+  const { stateLedger, validateLedger } = await loadLedger();
+  const evidence = stateLedger.evidence.map((item) =>
+    item.id === "evidence-local-v0-2-verify"
+      ? { ...item, id: "evidence-renamed-for-isolation-test" }
+      : item,
+  );
+
+  const errors = validateLedger({
+    ...stateLedger,
+    evidence,
+  });
+
+  assert.ok(
+    errors.some((error) =>
+      error.includes("references unknown evidence evidence-local-v0-2-verify"),
+    ),
+  );
 });
 
 test("external actions fail closed without a live approval", async () => {

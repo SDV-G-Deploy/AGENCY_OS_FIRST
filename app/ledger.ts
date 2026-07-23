@@ -5,6 +5,7 @@ import blockersData from "../data/blockers.json";
 import claimsData from "../data/claims.json";
 import decisionsData from "../data/decisions.json";
 import evidenceData from "../data/evidence.json";
+import eventsJsonl from "../data/events.jsonl?raw";
 import projectsData from "../data/projects.json";
 import tracesData from "../data/traces.json";
 import workItemsData from "../data/work-items.json";
@@ -211,50 +212,13 @@ export type PhoneReviewAction = {
   count?: number;
 };
 
-const rawEvents = [
-  {
-    id: "event-v0-2-plan-created",
-    timestamp: "2026-07-22T22:35:00Z",
-    actorId: "agent-codex",
-    action: "plan_first_recorded",
-    entityType: "task",
-    entityId: "task-agency-os-v0-2",
-    before: null,
-    after: { artifactPath: "AGENCY_OS_PLAN.md" },
-    evidenceIds: [],
-    source: "codex_thread",
-    idempotencyKey: "2026-07-22-v0-2-plan-created",
-  },
-  {
-    id: "event-v0-2-ledger-added",
-    timestamp: "2026-07-22T22:55:00Z",
-    actorId: "agent-codex",
-    action: "state_ledger_added",
-    entityType: "project",
-    entityId: "project-agency-os",
-    before: null,
-    after: { files: ["app/ledger.ts", "app/page.tsx", "app/globals.css"] },
-    evidenceIds: ["evidence-local-v0-2-verify"],
-    source: "local_files",
-    idempotencyKey: "2026-07-22-v0-2-ledger-added",
-  },
-  {
-    id: "event-v0-2-honesty-closure",
-    timestamp: "2026-07-23T00:00:00Z",
-    actorId: "agent-codex",
-    action: "honesty_closure_recorded",
-    entityType: "task",
-    entityId: "task-agency-os-v0-2",
-    before: null,
-    after: {
-      artifactPath: "docs/CURRENT_EVIDENCE.md",
-      knownBlocker: "production_dependency_audit",
-    },
-    evidenceIds: ["evidence-local-v0-2-verify"],
-    source: "local_files",
-    idempotencyKey: "2026-07-23-honesty-closure",
-  },
-] satisfies LedgerEvent[];
+export function parseLedgerEvents(source: string): LedgerEvent[] {
+  return source
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => JSON.parse(line) as LedgerEvent);
+}
 
 export const stateLedger: StateLedger = {
   actors: actorsData as ActorRecord[],
@@ -267,29 +231,35 @@ export const stateLedger: StateLedger = {
   approvals: approvalsData as ApprovalRecord[],
   blockers: blockersData as BlockerRecord[],
   traces: tracesData as TraceRecord[],
-  events: rawEvents,
+  events: parseLedgerEvents(eventsJsonl),
 };
 
-const projectById = new Map(stateLedger.projects.map((project) => [project.id, project]));
-const evidenceById = new Map(stateLedger.evidence.map((evidence) => [evidence.id, evidence]));
-const actorById = new Map(stateLedger.actors.map((actor) => [actor.id, actor]));
+function createIndexes(ledger: StateLedger) {
+  return {
+    actorById: new Map(ledger.actors.map((actor) => [actor.id, actor])),
+    evidenceById: new Map(ledger.evidence.map((evidence) => [evidence.id, evidence])),
+    projectById: new Map(ledger.projects.map((project) => [project.id, project])),
+  };
+}
+
+const defaultIndexes = createIndexes(stateLedger);
 
 function hasText(value: string | undefined) {
   return Boolean(value && value.trim().length > 0);
 }
 
-function projectEvidence(projectId: string) {
-  return stateLedger.evidence.filter((evidence) => evidence.projectId === projectId);
+function projectEvidence(projectId: string, ledger: StateLedger = stateLedger) {
+  return ledger.evidence.filter((evidence) => evidence.projectId === projectId);
 }
 
-function projectHasFreshEvidence(projectId: string) {
-  return projectEvidence(projectId).some(
+function projectHasFreshEvidence(projectId: string, ledger: StateLedger = stateLedger) {
+  return projectEvidence(projectId, ledger).some(
     (evidence) => evidence.verificationStatus === "verified",
   );
 }
 
-function projectFreshnessLabel(projectId: string) {
-  const records = projectEvidence(projectId);
+function projectFreshnessLabel(projectId: string, ledger: StateLedger = stateLedger) {
+  const records = projectEvidence(projectId, ledger);
   if (records.some((evidence) => evidence.verificationStatus === "verified")) {
     return "fresh";
   }
@@ -301,6 +271,7 @@ function projectFreshnessLabel(projectId: string) {
 
 export function validateLedger(ledger: StateLedger = stateLedger): string[] {
   const errors: string[] = [];
+  const { actorById, evidenceById } = createIndexes(ledger);
   const projectIds = new Set(ledger.projects.map((project) => project.id));
   const actorIds = new Set(ledger.actors.map((actor) => actor.id));
   const evidenceIds = new Set(ledger.evidence.map((evidence) => evidence.id));
@@ -455,12 +426,12 @@ export function getSanityChecks(ledger: StateLedger = stateLedger): SanityCheck[
   const activeProjects = ledger.projects.filter((project) => project.state === "active");
 
   for (const project of ledger.projects) {
-    if (!projectHasFreshEvidence(project.id)) {
+    if (!projectHasFreshEvidence(project.id, ledger)) {
       checks.push({
         id: `stale-evidence-${project.id}`,
-        severity: projectFreshnessLabel(project.id) === "missing" ? "critical" : "warning",
+        severity: projectFreshnessLabel(project.id, ledger) === "missing" ? "critical" : "warning",
         title: "Evidence is not fresh",
-        detail: `Freshness is ${projectFreshnessLabel(project.id)} from linked evidence records.`,
+        detail: `Freshness is ${projectFreshnessLabel(project.id, ledger)} from linked evidence records.`,
         project: project.name,
       });
     }
@@ -527,6 +498,7 @@ export function getSanityChecks(ledger: StateLedger = stateLedger): SanityCheck[
 }
 
 export function getRecommendedSteps(ledger: StateLedger = stateLedger): RecommendedStep[] {
+  const { projectById } = createIndexes(ledger);
   const missingEvidence = ledger.claims
     .filter((claim) => claim.status !== "verified")
     .slice(0, 2)
@@ -559,6 +531,7 @@ export function getRecommendedSteps(ledger: StateLedger = stateLedger): Recommen
 }
 
 export function getPhoneReviewQueue(ledger: StateLedger = stateLedger): PhoneReviewAction[] {
+  const { actorById, projectById } = createIndexes(ledger);
   const sanityChecks = getSanityChecks(ledger);
   const missingEvidenceCount = ledger.claims.filter(
     (claim) => claim.status !== "verified",
@@ -616,7 +589,7 @@ export function getPhoneReviewQueue(ledger: StateLedger = stateLedger): PhoneRev
 }
 
 export const ledgerEvents = stateLedger.events.map((event) => {
-  const actor = actorById.get(event.actorId);
+  const actor = defaultIndexes.actorById.get(event.actorId);
   return {
     id: event.id,
     actor: actor?.displayName ?? event.actorId,
@@ -648,7 +621,7 @@ export const projects = stateLedger.projects.map((project) => ({
 }));
 
 export const workItems = stateLedger.workItems.map((item) => {
-  const project = projectById.get(item.projectId);
+  const project = defaultIndexes.projectById.get(item.projectId);
   return {
     project: project?.name ?? item.projectId,
     title: item.title,
@@ -662,7 +635,7 @@ export const workItems = stateLedger.workItems.map((item) => {
 export const blockerQueue = stateLedger.blockers
   .filter((blocker) => blocker.state === "open")
   .map((blocker) => {
-    const project = projectById.get(blocker.projectId);
+    const project = defaultIndexes.projectById.get(blocker.projectId);
     return {
       project: project?.name ?? blocker.projectId,
       question: blocker.question,
@@ -671,9 +644,9 @@ export const blockerQueue = stateLedger.blockers
   });
 
 export const evidenceQueue = stateLedger.claims.map((claim) => {
-  const project = projectById.get(claim.projectId);
+  const project = defaultIndexes.projectById.get(claim.projectId);
   const evidence = claim.linkedEvidenceIds
-    .map((id) => evidenceById.get(id))
+    .map((id) => defaultIndexes.evidenceById.get(id))
     .find(Boolean);
   const status =
     claim.status === "verified"
@@ -692,9 +665,9 @@ export const evidenceQueue = stateLedger.claims.map((claim) => {
 });
 
 export const agentRuns = stateLedger.agentRuns.map((run) => {
-  const actor = actorById.get(run.agentId);
+  const actor = defaultIndexes.actorById.get(run.agentId);
   const linkedEvidence = run.linkedEvidenceIds
-    .map((id) => evidenceById.get(id))
+    .map((id) => defaultIndexes.evidenceById.get(id))
     .filter(Boolean)
     .map((evidence) => evidence?.id)
     .join(", ");

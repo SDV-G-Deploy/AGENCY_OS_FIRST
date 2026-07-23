@@ -42,7 +42,7 @@ Evidence:
   - ledger rule tests
 
 Observed test result:
-- 9 tests passed.
+- 11 tests passed.
 
 Strength: strong for current static/local code quality.
 
@@ -86,6 +86,19 @@ Decision:
 
 Strength: strong evidence of an unresolved blocker.
 
+### Claim 6: Ledger events are now loaded from JSONL
+
+Evidence:
+- `app/ledger.ts` imports `data/events.jsonl?raw`.
+- `parseLedgerEvents()` builds `stateLedger.events` from that source.
+- `tests/ledger.test.mjs` asserts that `stateLedger.events` equals parsed
+  `data/events.jsonl`.
+- `tests/rendered-html.test.mjs` asserts the old `const rawEvents` source does
+  not exist.
+
+Strength: strong for event source alignment. It does not yet prove append-only
+write integrity or reducer replay.
+
 ## Files Changed For Honesty Closure
 
 - `package.json`: added `typecheck`, `audit:prod`, `verify`; moved Next to
@@ -104,13 +117,14 @@ Strength: strong evidence of an unresolved blocker.
   adapters now read from `data/*.json`.
 - `tests/ledger.test.mjs`: tests validation, duplicate idempotency keys,
   self-verification rejection and fail-closed external approvals.
+- `types/raw-imports.d.ts`: declares raw JSONL imports for the app bundle.
 
 ## Known Gaps
 
 - The app is still mostly read-only.
 - Buttons are not wired to write actions.
-- State now comes from local JSON ledger files, but there is no reducer/writer
-  for append-only events yet.
+- State now comes from local JSON ledger files and events load from JSONL, but
+  there is no reducer/writer for append-only event replay yet.
 - Dependency audit blocks production deployment.
 - No visual screenshot artifact is saved in the repo yet.
 - The baseline has one local commit, but no remote backup has been created.
@@ -120,4 +134,5 @@ Strength: strong evidence of an unresolved blocker.
 Before the next product feature:
 - commit the current baseline or otherwise preserve it;
 - make one phone review action create an append-only event;
+- add event schema versioning and hash-chain integrity;
 - capture a screenshot or browser QA artifact after the next visible UI change.
