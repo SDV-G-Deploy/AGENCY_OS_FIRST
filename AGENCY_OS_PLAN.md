@@ -745,3 +745,58 @@ Next safest step:
 - Add durable `approval.used` event emission for approved agent writes, or add a
   local command wrapper that writes and then replays the updated event log into
   derived state.
+
+## PLAN FIRST - 2026-07-23 Durable Approval Use
+
+Block: Make single-use approval durable across writer calls.
+
+Goal:
+- Prevent an approved agent write from reusing the same single-use approval in a
+  later writer invocation.
+
+In scope:
+- Add replay support for `approval.used`.
+- Make agent writer append a companion `approval.used` event after successful
+  approved project write.
+- Replay current event log before building a new event, so writer state includes
+  previous durable approval usage and current replayed `nextAction`.
+- Test reuse of the same approval across two separate writer calls.
+
+Out of scope:
+- Full approval lifecycle events such as `approval.approved`.
+- UI/API write surface.
+- Redaction scanner.
+- Cryptographic hash upgrade.
+
+Done criteria:
+- Approved agent write appends a project event and an `approval.used` event.
+- Second writer call with the same single-use approval is blocked.
+- `npm run verify` passes.
+
+Evidence:
+- `app/ledger.ts` handles `approval.used`.
+- `app/ledger-writer.ts` emits companion approval-use events.
+- `tests/ledger.test.mjs` verifies durable single-use behavior.
+
+## PLAN UPDATE - 2026-07-23 Durable Approval Use
+
+Changed:
+- Added reducer support for `approval.used`.
+- Writer now replays existing events before building the next write.
+- Approved agent writes append a durable `approval.used` companion event.
+- Added test coverage for blocking reuse of a single-use approval across
+  separate writer calls.
+
+Verified:
+- `npm run verify` passes: lint, typecheck, build and 31 tests.
+
+Still missing:
+- No visible UI/API command surface.
+- No full `approval.approved` event lifecycle.
+- Redaction scanner/import fixtures are not implemented.
+- Dashboard state is not yet visibly derived from replayed appended events.
+
+Next safest step:
+- Add a local command/API wrapper that invokes the writer and then displays
+  replay-derived state, or implement `approval.approved` lifecycle before
+  granting agent writes from the UI.

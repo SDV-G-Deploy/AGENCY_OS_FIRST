@@ -149,6 +149,49 @@ export function buildProjectNextActionEvent({
   return event;
 }
 
+function buildApprovalUsedEvent({
+  ledger,
+  approvalId,
+  usedByEventId,
+  timestamp,
+  idempotencyKey,
+}: {
+  ledger: StateLedger;
+  approvalId: string;
+  usedByEventId: string;
+  timestamp: string;
+  idempotencyKey: string;
+}) {
+  const previousEvent = ledger.events.at(-1);
+  const event: LedgerEvent = {
+    schemaVersion: 1,
+    sequence: ledger.events.length + 1,
+    id: eventIdFromIdempotencyKey(idempotencyKey),
+    timestamp,
+    actorId: "system-local-verifier",
+    action: "approval.used",
+    entityType: "approval",
+    entityId: approvalId,
+    before: null,
+    after: {
+      usedAt: timestamp,
+      usedByEventId,
+    },
+    evidenceIds: [],
+    approvalIds: [],
+    traceId: null,
+    source: "local_writer",
+    idempotencyKey,
+    redactionStatus: "not_required",
+    retentionClass: "audit",
+    previousEventHash: previousEvent?.eventHash ?? null,
+    eventHash: "",
+  };
+
+  event.eventHash = calculateEventHash(event);
+  return event;
+}
+
 export async function appendProjectNextActionEvent({
   ledger = stateLedger,
   eventsPath,
@@ -165,8 +208,18 @@ export async function appendProjectNextActionEvent({
   return withEventsLock(eventsPath, async () => {
   const currentEventsSource = await readFile(eventsPath, "utf8");
   const currentEvents = parseLedgerEvents(currentEventsSource);
+  const replayedCurrent = replayLedgerEvents({ ...ledger, events: [] }, currentEvents);
+  if (replayedCurrent.errors.length > 0) {
+    return {
+      appended: false,
+      event: null,
+      errors: replayedCurrent.errors,
+      ignoredEventIds: [],
+    };
+  }
+
   const ledgerForWrite: StateLedger = {
-    ...ledger,
+    ...replayedCurrent.ledger,
     events: currentEvents,
   };
 
@@ -223,10 +276,43 @@ export async function appendProjectNextActionEvent({
     };
   }
 
+  const eventsToAppend = [event];
+  const approvalsUsedByEvent = replayResult.ledger.approvals.filter(
+    (approval) => approval.usedByEventId === event.id,
+  );
+
+  for (const approval of approvalsUsedByEvent) {
+    eventsToAppend.push(
+      buildApprovalUsedEvent({
+        ledger: {
+          ...ledgerForWrite,
+          events: [...currentEvents, ...eventsToAppend],
+        },
+        approvalId: approval.id,
+        usedByEventId: event.id,
+        timestamp,
+        idempotencyKey: `${idempotencyKey}:approval-used:${approval.id}`,
+      }),
+    );
+  }
+
+  const fullReplayResult = replayLedgerEvents(ledgerForWrite, eventsToAppend);
+
+  if (fullReplayResult.errors.length > 0) {
+    return {
+      appended: false,
+      event,
+      errors: fullReplayResult.errors,
+      ignoredEventIds: fullReplayResult.ignoredEventIds,
+    };
+  }
+
   const needsLeadingNewline = currentEventsSource.trim().length > 0 && !currentEventsSource.endsWith("\n");
   await appendFile(
     eventsPath,
-    `${needsLeadingNewline ? "\n" : ""}${JSON.stringify(event)}\n`,
+    `${needsLeadingNewline ? "\n" : ""}${eventsToAppend
+      .map((item) => JSON.stringify(item))
+      .join("\n")}\n`,
     "utf8",
   );
 

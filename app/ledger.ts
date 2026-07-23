@@ -716,6 +716,27 @@ export function replayLedgerEvents(
     }
 
     if (event.action !== "project.next_action_updated") {
+      if (event.action === "approval.used") {
+        const approval = ledger.approvals.find((item) => item.id === event.entityId);
+        const usedAt = event.after?.usedAt;
+        const usedByEventId = event.after?.usedByEventId;
+
+        if (event.entityType !== "approval" || !approval) {
+          errors.push(`event ${event.id} references unknown approval ${event.entityId}`);
+          continue;
+        }
+        if (typeof usedAt !== "string" || typeof usedByEventId !== "string") {
+          errors.push(`event ${event.id} missing approval use details`);
+          continue;
+        }
+
+        approval.state = "used";
+        approval.usedAt = usedAt;
+        approval.usedByEventId = usedByEventId;
+        appliedEventIds.push(event.id);
+        continue;
+      }
+
       ignoredEventIds.push(event.id);
       continue;
     }

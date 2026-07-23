@@ -42,7 +42,7 @@ Evidence:
   - ledger rule tests
 
 Observed test result:
-- 30 tests passed.
+- 31 tests passed.
 
 Strength: strong for current static/local code quality.
 
@@ -191,6 +191,21 @@ Evidence:
 Strength: strong for local single-file writer hardening. It does not yet prove
 multi-process crash recovery or durable approval lifecycle events.
 
+### Claim 13: Single-use approval is durable across writer calls
+
+Evidence:
+- `app/ledger.ts` handles `approval.used` during replay.
+- `app/ledger-writer.ts` appends a companion `approval.used` event after an
+  approved agent project write.
+- Writer replays existing events before building a new event, so previous
+  approval-use events affect later writes.
+- `tests/ledger.test.mjs` verifies that a second writer call using the same
+  single-use approval is blocked.
+- `npm run verify` passes with 31 tests.
+
+Strength: strong for the first durable approval-use path. It does not yet prove
+the full approval approval/request/reject lifecycle.
+
 ## Files Changed For Honesty Closure
 
 - `package.json`: added `typecheck`, `audit:prod`, `verify`; moved Next to
@@ -231,7 +246,7 @@ multi-process crash recovery or durable approval lifecycle events.
   first pure replay path and append writer exist for one action, but there is no
   visible UI/API action or full reducer coverage yet.
 - Writer has lock and idempotency conflict checks, but no durable
-  `approval.used` companion event yet.
+  `approval.approved` lifecycle event yet.
 - Dependency audit blocks production deployment.
 - No visual screenshot artifact is saved in the repo yet.
 - The baseline has one local commit, but no remote backup has been created.

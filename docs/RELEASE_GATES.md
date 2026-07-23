@@ -59,7 +59,7 @@ Current status:
 - a local file-backed writer exists for `project.next_action_updated` with
   lock-file serialization and idempotency conflict checks;
 - approval linkage is partial but scoped/single-use replay enforcement exists
-  for the first agent write path;
+  for the first agent write path, including durable `approval.used` events;
 - redaction is documented but not enforced.
 
 ## Integration Gate

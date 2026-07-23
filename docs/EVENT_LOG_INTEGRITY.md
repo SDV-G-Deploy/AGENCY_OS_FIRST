@@ -26,6 +26,7 @@ For v0.3:
 Current implementation status:
 - the first local file-backed writer exists for `project.next_action_updated`;
 - the writer uses a lock file and idempotency payload comparison;
+- approved agent writes append a durable `approval.used` companion event;
 - it is not yet wired to the UI or API;
 - it does not regenerate current snapshot files after append.
 
