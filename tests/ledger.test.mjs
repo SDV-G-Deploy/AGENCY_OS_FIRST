@@ -479,6 +479,41 @@ function makeCaptureNoteEvent(calculateEventHash, ledger, overrides = {}) {
   return event;
 }
 
+function makeCaptureReviewMarkedEvent(calculateEventHash, ledger, overrides = {}) {
+  const previousEvent = ledger.events.at(-1);
+  const { after: afterOverrides, ...eventOverrides } = overrides;
+  const baseAfter = {
+    captureId: "capture-test-note",
+    reviewStatus: "triaged",
+    candidateType: "evidence_candidate",
+    reviewedAt: "2026-07-23T11:10:00Z",
+  };
+  const event = {
+    schemaVersion: 1,
+    sequence: ledger.events.length + 1,
+    id: "event-test-capture-review-marked",
+    timestamp: "2026-07-23T11:10:00Z",
+    actorId: "person-serj",
+    action: "capture.review_marked",
+    entityType: "capture",
+    entityId: "capture-test-note",
+    before: null,
+    after: { ...baseAfter, ...(afterOverrides ?? {}) },
+    evidenceIds: [],
+    approvalIds: [],
+    traceId: null,
+    source: "test",
+    idempotencyKey: "test-capture-review-marked",
+    redactionStatus: "not_required",
+    retentionClass: "operational",
+    previousEventHash: previousEvent?.eventHash ?? null,
+    eventHash: "",
+    ...eventOverrides,
+  };
+  event.eventHash = calculateEventHash(event);
+  return event;
+}
+
 function makeApprovalApprovedEvent(calculateEventHash, ledger, overrides = {}) {
   const previousEvent = ledger.events.at(-1);
   const event = {
@@ -679,6 +714,8 @@ test("replay applies a valid capture note without mutating snapshots", async () 
     receivedAt: "2026-07-23T11:00:02Z",
     redactionStatus: "pending_scan",
     classification: "inbox",
+    candidateType: null,
+    reviewedAt: null,
     linkedEntityIds: [],
     reviewStatus: "uncategorized",
   });
@@ -701,6 +738,179 @@ test("replay accepts inbox capture notes", async () => {
 
   assert.deepEqual(result.errors, []);
   assert.equal(result.ledger.captures.at(-1).projectId, "inbox");
+});
+
+test("replay marks an uncategorized capture as a triaged candidate", async () => {
+  const { calculateEventHash, replayLedgerEvents, stateLedger } = await loadLedger();
+  const createEvent = makeCaptureNoteEvent(calculateEventHash, stateLedger);
+  const reviewEvent = makeCaptureReviewMarkedEvent(
+    calculateEventHash,
+    { ...stateLedger, events: [...stateLedger.events, createEvent] },
+  );
+
+  const result = replayLedgerEvents(stateLedger, [createEvent, reviewEvent]);
+  const capture = result.ledger.captures.find((item) => item.id === "capture-test-note");
+
+  assert.deepEqual(result.errors, []);
+  assert.deepEqual(result.appliedEventIds, [
+    "event-test-capture-note",
+    "event-test-capture-review-marked",
+  ]);
+  assert.equal(capture.classification, "evidence_candidate");
+  assert.equal(capture.candidateType, "evidence_candidate");
+  assert.equal(capture.reviewStatus, "triaged");
+  assert.equal(capture.reviewedAt, "2026-07-23T11:10:00Z");
+  assert.equal(capture.body, "Captured from a short phone session.");
+  assert.deepEqual(capture.linkedEntityIds, []);
+});
+
+test("replay rejects invalid capture review markings", async () => {
+  const { calculateEventHash, replayLedgerEvents, stateLedger } = await loadLedger();
+  const createEvent = makeCaptureNoteEvent(calculateEventHash, stateLedger);
+  const ledgerAfterCreate = { ...stateLedger, events: [...stateLedger.events, createEvent] };
+  const unknownCapture = makeCaptureReviewMarkedEvent(calculateEventHash, ledgerAfterCreate, {
+    id: "event-test-review-unknown-capture",
+    entityId: "capture-does-not-exist",
+    idempotencyKey: "test-review-unknown-capture",
+    after: {
+      captureId: "capture-does-not-exist",
+    },
+  });
+  const agentActor = makeCaptureReviewMarkedEvent(calculateEventHash, ledgerAfterCreate, {
+    id: "event-test-review-agent-actor",
+    actorId: "agent-codex",
+    idempotencyKey: "test-review-agent-actor",
+  });
+  const mismatchedCaptureId = makeCaptureReviewMarkedEvent(calculateEventHash, ledgerAfterCreate, {
+    id: "event-test-review-mismatched-capture-id",
+    idempotencyKey: "test-review-mismatched-capture-id",
+    after: {
+      captureId: "capture-other",
+    },
+  });
+  const invalidReviewStatus = makeCaptureReviewMarkedEvent(calculateEventHash, ledgerAfterCreate, {
+    id: "event-test-review-invalid-status",
+    idempotencyKey: "test-review-invalid-status",
+    after: {
+      reviewStatus: "converted",
+    },
+  });
+  const invalidCandidateType = makeCaptureReviewMarkedEvent(calculateEventHash, ledgerAfterCreate, {
+    id: "event-test-review-invalid-candidate",
+    idempotencyKey: "test-review-invalid-candidate",
+    after: {
+      candidateType: "inbox",
+    },
+  });
+  const invalidReviewedAt = makeCaptureReviewMarkedEvent(calculateEventHash, ledgerAfterCreate, {
+    id: "event-test-review-invalid-reviewed-at",
+    idempotencyKey: "test-review-invalid-reviewed-at",
+    after: {
+      reviewedAt: "not-a-date",
+    },
+  });
+  const invalidEntityType = makeCaptureReviewMarkedEvent(calculateEventHash, ledgerAfterCreate, {
+    id: "event-test-review-invalid-entity-type",
+    entityType: "project",
+    idempotencyKey: "test-review-invalid-entity-type",
+  });
+
+  const unknownResult = replayLedgerEvents(stateLedger, [createEvent, unknownCapture]);
+  const agentResult = replayLedgerEvents(stateLedger, [createEvent, agentActor]);
+  const mismatchResult = replayLedgerEvents(stateLedger, [createEvent, mismatchedCaptureId]);
+  const statusResult = replayLedgerEvents(stateLedger, [createEvent, invalidReviewStatus]);
+  const candidateResult = replayLedgerEvents(stateLedger, [createEvent, invalidCandidateType]);
+  const reviewedAtResult = replayLedgerEvents(stateLedger, [createEvent, invalidReviewedAt]);
+  const entityTypeResult = replayLedgerEvents(stateLedger, [createEvent, invalidEntityType]);
+
+  assert.ok(unknownResult.errors.some((error) => error.includes("references unknown capture")));
+  assert.ok(agentResult.errors.some((error) => error.includes("requires person capture review actor")));
+  assert.ok(mismatchResult.errors.some((error) => error.includes("captureId must match entity id")));
+  assert.ok(statusResult.errors.some((error) => error.includes("capture review must mark triaged")));
+  assert.ok(candidateResult.errors.some((error) => error.includes("invalid capture candidate type inbox")));
+  assert.ok(reviewedAtResult.errors.some((error) => error.includes("invalid reviewedAt")));
+  assert.ok(entityTypeResult.errors.some((error) => error.includes("must target a capture entity")));
+  assert.deepEqual(unknownResult.appliedEventIds, ["event-test-capture-note"]);
+  assert.deepEqual(agentResult.appliedEventIds, ["event-test-capture-note"]);
+  assert.deepEqual(mismatchResult.appliedEventIds, ["event-test-capture-note"]);
+  assert.deepEqual(statusResult.appliedEventIds, ["event-test-capture-note"]);
+  assert.deepEqual(candidateResult.appliedEventIds, ["event-test-capture-note"]);
+  assert.deepEqual(reviewedAtResult.appliedEventIds, ["event-test-capture-note"]);
+  assert.deepEqual(entityTypeResult.appliedEventIds, ["event-test-capture-note"]);
+});
+
+test("replay only reviews uncategorized non-sensitive captures", async () => {
+  const { calculateEventHash, replayLedgerEvents, stateLedger } = await loadLedger();
+  const createEvent = makeCaptureNoteEvent(calculateEventHash, stateLedger);
+  const firstReview = makeCaptureReviewMarkedEvent(
+    calculateEventHash,
+    { ...stateLedger, events: [...stateLedger.events, createEvent] },
+  );
+  const secondReview = makeCaptureReviewMarkedEvent(
+    calculateEventHash,
+    { ...stateLedger, events: [...stateLedger.events, createEvent, firstReview] },
+    {
+      id: "event-test-capture-review-again",
+      idempotencyKey: "test-capture-review-again",
+      sequence: firstReview.sequence + 1,
+      previousEventHash: firstReview.eventHash,
+      after: {
+        candidateType: "blocker_candidate",
+        reviewedAt: "2026-07-23T11:11:00Z",
+      },
+    },
+  );
+  const sensitiveCreate = makeCaptureNoteEvent(calculateEventHash, stateLedger, {
+    id: "event-test-sensitive-create-for-review",
+    entityId: "capture-test-sensitive-review",
+    idempotencyKey: "test-sensitive-create-for-review",
+    redactionStatus: "blocked_sensitive",
+    after: {
+      id: "capture-test-sensitive-review",
+      body: "SECRET_SHOULD_STAY_HIDDEN",
+      redactionStatus: "blocked_sensitive",
+    },
+  });
+  const sensitiveReview = makeCaptureReviewMarkedEvent(
+    calculateEventHash,
+    { ...stateLedger, events: [...stateLedger.events, sensitiveCreate] },
+    {
+      id: "event-test-sensitive-review",
+      entityId: "capture-test-sensitive-review",
+      idempotencyKey: "test-sensitive-review",
+      after: {
+        captureId: "capture-test-sensitive-review",
+      },
+    },
+  );
+
+  const secondResult = replayLedgerEvents(stateLedger, [createEvent, firstReview, secondReview]);
+  const sensitiveResult = replayLedgerEvents(stateLedger, [sensitiveCreate, sensitiveReview]);
+  const reviewedCapture = secondResult.ledger.captures.find((item) => item.id === "capture-test-note");
+  const sensitiveCapture = sensitiveResult.ledger.captures.find(
+    (item) => item.id === "capture-test-sensitive-review",
+  );
+
+  assert.ok(
+    secondResult.errors.some((error) =>
+      error.includes("capture review requires uncategorized capture"),
+    ),
+  );
+  assert.deepEqual(secondResult.appliedEventIds, [
+    "event-test-capture-note",
+    "event-test-capture-review-marked",
+  ]);
+  assert.equal(reviewedCapture.classification, "evidence_candidate");
+  assert.equal(reviewedCapture.reviewStatus, "triaged");
+  assert.ok(
+    sensitiveResult.errors.some((error) =>
+      error.includes("cannot review blocked sensitive capture in normal flow"),
+    ),
+  );
+  assert.deepEqual(sensitiveResult.appliedEventIds, ["event-test-sensitive-create-for-review"]);
+  assert.equal(sensitiveCapture.body, "Blocked sensitive capture");
+  assert.equal(sensitiveCapture.reviewStatus, "uncategorized");
+  assert.equal(sensitiveCapture.classification, "inbox");
 });
 
 test("replay rejects invalid capture note fields", async () => {

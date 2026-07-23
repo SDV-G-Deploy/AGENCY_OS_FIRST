@@ -6,7 +6,7 @@ Last updated: 2026-07-24
 ## Handoff Freshness
 
 Branch:
-- `feature/capture-triage-contract`
+- `feature/capture-review-replay`
 
 Commit:
 - this handoff is included in the current slice commit; run
@@ -17,7 +17,7 @@ Working tree state after this handoff checkpoint:
 
 Last verified command/result:
 - `npm run verify`
-- pass: lint, typecheck, build and 55 tests.
+- pass: lint, typecheck, build and 58 tests.
 
 Conflict rule:
 - if this handoff conflicts with current code/tests, trust code/tests, inspect
@@ -29,9 +29,9 @@ Agency OS now has a canonical local repo and GitHub remote:
 - local: `C:\Agency_os_first\AGENCY_OS_FIRST`;
 - GitHub: `https://github.com/SDV-G-Deploy/AGENCY_OS_FIRST`.
 
-Agency OS is on the supervised capture triage contract branch. The prior local
-capture smoke-test slice has been merged into local `main`, and this branch
-defines the `capture.review_marked` contract before implementation.
+Agency OS is on the supervised capture review replay branch. The prior capture
+triage contract slice has been merged into local `main`, and this branch
+implements replay support for `capture.review_marked`.
 
 The next branch or continuation should stay inside the v0.3 phone-first capture
 path, starting from the contracts already written in:
@@ -167,6 +167,24 @@ Changed files in this slice:
 - `docs/PRODUCT_DEVELOPMENT_FLOW.md`
 - `docs/NEXT_AGENT_HANDOFF.md`
 
+Capture review replay checkpoint:
+- `CaptureRecord` now carries nullable `candidateType` and `reviewedAt` fields
+  in derived state.
+- Replay applies valid `capture.review_marked` events for existing captures.
+- Replay validates person-only actor, capture entity target, matching
+  `captureId`, `reviewStatus: "triaged"`, valid candidate type, valid
+  `reviewedAt` and `uncategorized -> triaged` transition.
+- Normal review of `blocked_sensitive` captures is rejected.
+- Review marking preserves raw body quarantine, creates no linked entities and
+  does not convert captures to evidence/blockers/decisions/tasks.
+- Focused tests cover successful marking, invalid markings, repeat review and
+  blocked-sensitive rejection.
+
+Changed files in this slice:
+- `app/ledger.ts`
+- `tests/ledger.test.mjs`
+- `docs/NEXT_AGENT_HANDOFF.md`
+
 Organizational checkpoint:
 - canonical repo moved to `C:\Agency_os_first\AGENCY_OS_FIRST`;
 - GitHub `main` was updated without force-push;
@@ -178,17 +196,15 @@ Organizational checkpoint:
 
 ## Next Chewable Step
 
-Implement replay support for `capture.review_marked`.
+Add the local person-only command/API seam for marking a capture candidate.
 
 Recommended scope:
-- validate unknown or invalid capture IDs;
-- validate actor is person-only;
-- validate transition only from uncategorized to triaged;
-- update derived capture `classification`, `reviewStatus`, candidate type and
-  reviewed timestamp;
-- preserve raw body quarantine;
-- block normal review of `blocked_sensitive` captures;
-- add focused replay tests only, with no writer/API/UI.
+- add `buildCaptureReviewMarkedEvent()` / append writer support if needed;
+- add a local command wrapper that is person-only;
+- add a local POST route that fixes actor to `person-serj`;
+- use temp-log tests only and do not mutate real `data/events.jsonl`;
+- keep UI unchanged unless a tiny static affordance is needed for tests/docs;
+- do not create linked entities or conversion events.
 
 Out of scope:
 - Telegram;
@@ -219,6 +235,9 @@ Out of scope:
 - `app/CaptureNoteForm.tsx`
 - `app/page.tsx`
 - `app/ledger.ts`
+- `app/ledger-writer.ts`
+- `app/local-command.ts`
+- `app/api/local/capture-note/route.ts`
 - `scripts/smoke-capture-note.mjs`
 - `tests/ledger.test.mjs`
 - `tests/capture-smoke.test.mjs`

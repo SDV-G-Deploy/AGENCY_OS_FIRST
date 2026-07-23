@@ -38,6 +38,7 @@ type CaptureClassification =
   | "blocker_candidate"
   | "decision_candidate"
   | "next_action_candidate";
+type CaptureCandidateType = Exclude<CaptureClassification, "inbox">;
 type CaptureReviewStatus = "uncategorized" | "triaged" | "converted" | "dismissed";
 
 export type ProjectRecord = {
@@ -161,6 +162,8 @@ export type CaptureRecord = {
   receivedAt: string;
   redactionStatus: Exclude<RedactionStatus, "not_required">;
   classification: CaptureClassification;
+  candidateType: CaptureCandidateType | null;
+  reviewedAt: string | null;
   linkedEntityIds: string[];
   reviewStatus: CaptureReviewStatus;
 };
@@ -606,6 +609,15 @@ export function validateLedger(ledger: StateLedger = stateLedger): string[] {
     if (!allowedCaptureClassifications.has(capture.classification)) {
       errors.push(`capture ${capture.id} has invalid classification ${capture.classification}`);
     }
+    if (
+      capture.candidateType !== null &&
+      !allowedCaptureClassifications.has(capture.candidateType)
+    ) {
+      errors.push(`capture ${capture.id} has invalid candidate type ${capture.candidateType}`);
+    }
+    if (capture.reviewedAt !== null && !isValidTimestamp(capture.reviewedAt)) {
+      errors.push(`capture ${capture.id} has invalid reviewedAt`);
+    }
     if (!allowedCaptureReviewStatuses.has(capture.reviewStatus)) {
       errors.push(`capture ${capture.id} has invalid review status ${capture.reviewStatus}`);
     }
@@ -988,11 +1000,74 @@ export function replayLedgerEvents(
         receivedAt,
         redactionStatus: redactionStatus as CaptureRecord["redactionStatus"],
         classification: classification as CaptureClassification,
+        candidateType: null,
+        reviewedAt: null,
         linkedEntityIds,
         reviewStatus: reviewStatus as CaptureReviewStatus,
       };
       ledger.captures.push(capture);
       captureById.set(capture.id, capture);
+      appliedEventIds.push(event.id);
+      continue;
+    }
+
+    if (event.action === "capture.review_marked") {
+      const reviewErrorStart = errors.length;
+      const actor = actorById.get(event.actorId);
+      const capture = captureById.get(event.entityId);
+      const captureId = readStringField(event, "captureId", errors) ?? event.entityId;
+      const reviewStatus = readStringField(event, "reviewStatus", errors);
+      const candidateType = readStringField(event, "candidateType", errors);
+      const reviewedAt = readStringField(event, "reviewedAt", errors);
+
+      if (errors.length > reviewErrorStart) {
+        continue;
+      }
+      if (event.entityType !== "capture") {
+        errors.push(`event ${event.id} must target a capture entity`);
+        continue;
+      }
+      if (!actor) {
+        errors.push(`event ${event.id} references unknown actor ${event.actorId}`);
+        continue;
+      }
+      if (actor.actorType !== "person") {
+        errors.push(`event ${event.id} requires person capture review actor`);
+        continue;
+      }
+      if (!capture) {
+        errors.push(`event ${event.id} references unknown capture ${event.entityId}`);
+        continue;
+      }
+      if (captureId !== event.entityId) {
+        errors.push(`event ${event.id} captureId must match entity id`);
+        continue;
+      }
+      if (capture.redactionStatus === "blocked_sensitive") {
+        errors.push(`event ${event.id} cannot review blocked sensitive capture in normal flow`);
+        continue;
+      }
+      if (capture.reviewStatus !== "uncategorized") {
+        errors.push(`event ${event.id} capture review requires uncategorized capture`);
+        continue;
+      }
+      if (reviewStatus !== "triaged") {
+        errors.push(`event ${event.id} capture review must mark triaged`);
+        continue;
+      }
+      if (!candidateType || candidateType === "inbox" || !allowedCaptureClassifications.has(candidateType as CaptureClassification)) {
+        errors.push(`event ${event.id} has invalid capture candidate type ${candidateType}`);
+        continue;
+      }
+      if (!isValidTimestamp(reviewedAt ?? "")) {
+        errors.push(`event ${event.id} has invalid reviewedAt`);
+        continue;
+      }
+
+      capture.classification = candidateType as CaptureCandidateType;
+      capture.candidateType = candidateType as CaptureCandidateType;
+      capture.reviewedAt = reviewedAt;
+      capture.reviewStatus = "triaged";
       appliedEventIds.push(event.id);
       continue;
     }
