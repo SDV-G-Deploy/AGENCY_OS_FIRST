@@ -1,6 +1,6 @@
 # Pre-Development Readiness Audit
 
-Status: ready for first supervised v0.3 branch  
+Status: first v0.3 reducer branch complete; ready for next supervised branch
 Last updated: 2026-07-23
 
 ## Question
@@ -15,10 +15,10 @@ Yes, for one supervised bounded local development branch.
 No, for broad autonomous parallel development, production deployment, real
 external integrations or hosted users.
 
-The next branch should be:
+The next branch should now be:
 
 ```text
-capture.note_created data/reducer slice
+capture.note_created writer/command/API slice
 ```
 
 ## Readiness Matrix
@@ -137,7 +137,8 @@ false claim.
 Agency OS is understood enough for the next correct engineering move:
 
 ```text
-Implement capture.note_created as the first phone-first local truth event.
+Implement capture.note_created writer/command/API as the first local capture
+write path.
 ```
 
 Starting that branch now is rational.

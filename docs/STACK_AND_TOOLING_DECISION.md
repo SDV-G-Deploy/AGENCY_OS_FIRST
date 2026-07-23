@@ -83,7 +83,7 @@ product model.
 ### Production dependency audit
 
 `npm run audit:prod` currently fails on Next transitive dependencies:
-- `postcss <8.5.10`;
+- `postcss <=8.5.11`;
 - `sharp <0.35.0`.
 
 Do not deploy to production until this is resolved by a safe dependency path or

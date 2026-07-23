@@ -9,8 +9,7 @@ Branch:
 - `main`
 
 Commit:
-- current organizational checkpoint; run `git log -1 --oneline` for the exact
-  commit hash after this handoff is committed.
+- run `git log -1 --oneline` for the current checkpoint commit.
 
 Working tree state after this handoff checkpoint:
 - expected clean.
@@ -78,6 +77,9 @@ Organizational checkpoint:
 - GitHub `main` was updated without force-push;
 - public repo safety scan found no tracked env/key/large-artifact blockers, but
   product strategy docs are public by design.
+- root `AGENTS.md` exists for new Codex chats.
+- GitHub Actions verify workflow exists as the simple manual build/verify
+  button.
 
 ## Next Chewable Step
 

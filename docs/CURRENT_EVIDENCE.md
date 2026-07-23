@@ -74,7 +74,7 @@ Evidence:
 - Current npm registry latest for `next`: `16.2.11`.
 - Current dependency: `next@16.2.11`.
 - Remaining advisories reported through Next's bundled/transitive dependencies:
-  - `postcss <8.5.10`;
+  - `postcss <=8.5.11`;
   - `sharp <0.35.0`;
   - Next advisory range reported by npm audit.
 
