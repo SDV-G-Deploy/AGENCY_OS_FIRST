@@ -6,10 +6,10 @@ Last updated: 2026-07-23
 ## Handoff Freshness
 
 Branch:
-- `feature/capture-note-created`
+- `main`
 
 Commit:
-- current capture reducer checkpoint; run `git log -1 --oneline` for the exact
+- current organizational checkpoint; run `git log -1 --oneline` for the exact
   commit hash after this handoff is committed.
 
 Working tree state after this handoff checkpoint:
@@ -25,9 +25,13 @@ Conflict rule:
 
 ## Current Position
 
-Agency OS is ready for one supervised bounded local coding branch, but not for
-broad autonomous expansion. Agents should not reload all large product
-documents by default.
+Agency OS now has a canonical local repo and GitHub remote:
+- local: `C:\Agency_os_first\AGENCY_OS_FIRST`;
+- GitHub: `https://github.com/SDV-G-Deploy/AGENCY_OS_FIRST`.
+
+Agency OS is ready for one supervised bounded local coding branch from `main`,
+but not for broad autonomous expansion. Agents should not reload all large
+product documents by default.
 
 The next branch should implement the v0.3 phone-first capture slice, starting
 from the contracts already written in:
@@ -69,6 +73,12 @@ Pre-development readiness checkpoint:
   v0.3 branch.
 - The first `capture.note_created` data/reducer slice is now implemented.
 
+Organizational checkpoint:
+- canonical repo moved to `C:\Agency_os_first\AGENCY_OS_FIRST`;
+- GitHub `main` was updated without force-push;
+- public repo safety scan found no tracked env/key/large-artifact blockers, but
+  product strategy docs are public by design.
+
 ## Next Chewable Step
 
 Implement the local writer/command/API slice for `capture.note_created`.
@@ -98,6 +108,7 @@ Out of scope:
   - `v0.3 Wedge Contract`
   - `Stage 2: First Phone Write`
 - `docs/PRE_DEVELOPMENT_READINESS_AUDIT.md`
+- `docs/WORKFLOW_FOR_PHONE_AND_AGENTS.md`
 - `docs/STACK_AND_TOOLING_DECISION.md`
 - `docs/DATA_MODEL_AND_INVARIANTS.md` section:
   - `Capture`

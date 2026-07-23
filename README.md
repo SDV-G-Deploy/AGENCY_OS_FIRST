@@ -7,6 +7,22 @@ The first version is intentionally small: one visual dashboard over projects,
 work items, evidence, agent runs, blockers and integration lanes. It is not a
 chat workspace and not a full task manager. Its job is to keep state honest.
 
+## Canonical Repo
+
+Local:
+
+```text
+C:\Agency_os_first\AGENCY_OS_FIRST
+```
+
+GitHub:
+
+```text
+https://github.com/SDV-G-Deploy/AGENCY_OS_FIRST
+```
+
+Future Codex work should start from this canonical local repo.
+
 ## Current local kit scope
 
 - Command Center with the main focus and portfolio health.
@@ -56,6 +72,7 @@ npm run audit:prod
 - [Product Development Flow](docs/PRODUCT_DEVELOPMENT_FLOW.md)
 - [Pre-Development Readiness Audit](docs/PRE_DEVELOPMENT_READINESS_AUDIT.md)
 - [Stack And Tooling Decision](docs/STACK_AND_TOOLING_DECISION.md)
+- [Workflow For Phone And Agents](docs/WORKFLOW_FOR_PHONE_AND_AGENTS.md)
 - [Agency OS Architecture](docs/AGENCY_OS_ARCHITECTURE.md)
 - [Work And Evidence Protocol](docs/WORK_AND_EVIDENCE_PROTOCOL.md)
 - [Research And Comparison Notes](docs/RESEARCH_AND_COMPARISON.md)

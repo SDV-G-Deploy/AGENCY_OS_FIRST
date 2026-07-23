@@ -24,8 +24,14 @@ Do not build:
 
 ## Current Checkpoint
 
+Canonical local repo:
+- `C:\Agency_os_first\AGENCY_OS_FIRST`
+
+GitHub remote:
+- `https://github.com/SDV-G-Deploy/AGENCY_OS_FIRST`
+
 Branch:
-- `feature/local-event-reducer`
+- `main`
 
 Latest product DNA checkpoint:
 - `72c0293 docs: lock Agency OS product DNA and v0.3 phone capture path`
@@ -83,6 +89,7 @@ Always read:
 
 Read selectively:
 - `docs/PRODUCT_DEVELOPMENT_FLOW.md` for the current stage/slice;
+- `docs/WORKFLOW_FOR_PHONE_AND_AGENTS.md` for branch/chat workflow questions;
 - `docs/STACK_AND_TOOLING_DECISION.md` before changing framework, storage,
   deployment, packaging or autonomous-agent branch scope;
 - `docs/DATA_MODEL_AND_INVARIANTS.md` for entity contracts;
