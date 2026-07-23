@@ -42,7 +42,7 @@ Evidence:
   - ledger rule tests
 
 Observed test result:
-- 21 tests passed.
+- 23 tests passed.
 
 Strength: strong for current static/local code quality.
 
@@ -142,6 +142,20 @@ Evidence:
 
 Strength: strong for the first pure reducer path. It does not yet prove a file
 append writer, UI action, or full event replay coverage.
+
+### Claim 10: Replay now gates append candidates before applying state
+
+Evidence:
+- `replayLedgerEvents()` validates appended events as
+  `validateEventLog([...ledger.events, ...eventsToApply])`.
+- Replay idempotency checks are seeded from existing `ledger.events`.
+- `tests/ledger.test.mjs` verifies invalid event hash does not mutate state.
+- `tests/ledger.test.mjs` verifies reuse of an existing idempotency key is
+  rejected.
+- `npm run verify` passes with 23 tests.
+
+Strength: strong for replay preflight safety. It does not yet prove append-only
+file writing.
 
 ## Files Changed For Honesty Closure
 

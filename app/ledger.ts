@@ -663,6 +663,11 @@ export function replayLedgerEvents(
   const appliedEventIds: string[] = [];
   const ignoredEventIds: string[] = [];
   const errors: string[] = [];
+  const eventsToApply: LedgerEvent[] = [];
+
+  for (const event of ledger.events) {
+    seenIdempotency.set(event.idempotencyKey, idempotencyPayloadHash(event));
+  }
 
   for (const event of events) {
     const payloadHash = idempotencyPayloadHash(event);
@@ -677,7 +682,34 @@ export function replayLedgerEvents(
       continue;
     }
     seenIdempotency.set(event.idempotencyKey, payloadHash);
+    eventsToApply.push(event);
+  }
 
+  if (errors.length > 0) {
+    return {
+      ledger,
+      appliedEventIds,
+      ignoredEventIds,
+      errors,
+    };
+  }
+
+  const eventLogErrors = validateEventLog([...ledger.events, ...eventsToApply], {
+    evidenceIds: new Set(ledger.evidence.map((evidence) => evidence.id)),
+    approvalIds: new Set(ledger.approvals.map((approval) => approval.id)),
+    traceIds: new Set(ledger.traces.map((trace) => trace.id)),
+  });
+
+  if (eventLogErrors.length > 0) {
+    return {
+      ledger,
+      appliedEventIds,
+      ignoredEventIds,
+      errors: eventLogErrors,
+    };
+  }
+
+  for (const event of eventsToApply) {
     if (event.redactionStatus === "pending_scan" || event.redactionStatus === "blocked_sensitive") {
       errors.push(`event ${event.id} cannot be applied with redaction status ${event.redactionStatus}`);
       continue;

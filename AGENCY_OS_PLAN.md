@@ -580,3 +580,54 @@ Still missing:
 Next safest step:
 - Add a local append-event writer function for one phone review action, or add
   redaction/import fixture tests before opening any external input.
+
+## PLAN FIRST - 2026-07-23 Replay Gate Hardening
+
+Block: Require append-chain validation before replay applies state.
+
+Goal:
+- Prevent replay from applying malformed or already-used event payloads when a
+  caller forgets to validate first.
+
+In scope:
+- Seed replay idempotency from existing `ledger.events`.
+- Validate appended events as a continuation of the existing event chain.
+- Reject invalid event hashes before state mutation.
+- Reject idempotency keys already present in the ledger.
+
+Out of scope:
+- File append writer.
+- UI/API write path.
+- Wider reducer action set.
+- Redaction scanner.
+
+Done criteria:
+- Replay refuses bad hash before state changes.
+- Replay refuses changed payload with an existing idempotency key.
+- `npm run verify` passes.
+
+Evidence:
+- `replayLedgerEvents()` calls `validateEventLog([...ledger.events, ...eventsToApply])`.
+- `tests/ledger.test.mjs` includes invalid-hash and existing-idempotency replay
+  tests.
+
+## PLAN UPDATE - 2026-07-23 Replay Gate Hardening
+
+Changed:
+- Hardened `replayLedgerEvents()` so append candidates pass event-log
+  validation before reducer application.
+- Seeded idempotency checks from already recorded ledger events.
+- Added tests for invalid append hash and existing ledger idempotency reuse.
+
+Verified:
+- `npm run verify` passes: lint, typecheck, build and 23 tests.
+
+Still missing:
+- No file-backed append writer.
+- No durable `approval.used` event is written.
+- Redaction scanner/import fixture tests are not implemented.
+
+Next safest step:
+- Implement one append-only writer path for `project.next_action_updated`, with
+  preflight validation and replay confirmation, or stop if a human product
+  choice is needed before writes become visible.

@@ -275,10 +275,11 @@ test("external actions fail closed without a live approval", async () => {
   );
 });
 
-function makeProjectNextActionEvent(calculateEventHash, overrides = {}) {
+function makeProjectNextActionEvent(calculateEventHash, ledger, overrides = {}) {
+  const previousEvent = ledger.events.at(-1);
   const event = {
     schemaVersion: 1,
-    sequence: 1,
+    sequence: ledger.events.length + 1,
     id: "event-test-next-action",
     timestamp: "2026-07-23T09:00:00Z",
     actorId: "person-serj",
@@ -294,7 +295,7 @@ function makeProjectNextActionEvent(calculateEventHash, overrides = {}) {
     idempotencyKey: "test-next-action",
     redactionStatus: "not_required",
     retentionClass: "audit",
-    previousEventHash: null,
+    previousEventHash: previousEvent?.eventHash ?? null,
     eventHash: "",
     ...overrides,
   };
@@ -305,7 +306,7 @@ function makeProjectNextActionEvent(calculateEventHash, overrides = {}) {
 test("replay updates project next action without mutating the input snapshot", async () => {
   const { calculateEventHash, replayLedgerEvents, stateLedger } = await loadLedger();
   const originalNextAction = stateLedger.projects.find((project) => project.id === "project-agency-os").nextAction;
-  const event = makeProjectNextActionEvent(calculateEventHash);
+  const event = makeProjectNextActionEvent(calculateEventHash, stateLedger);
 
   const result = replayLedgerEvents(stateLedger, [event]);
   const replayedProject = result.ledger.projects.find((project) => project.id === "project-agency-os");
@@ -319,7 +320,7 @@ test("replay updates project next action without mutating the input snapshot", a
 
 test("replay ignores exact duplicate idempotency payloads", async () => {
   const { calculateEventHash, replayLedgerEvents, stateLedger } = await loadLedger();
-  const event = makeProjectNextActionEvent(calculateEventHash);
+  const event = makeProjectNextActionEvent(calculateEventHash, stateLedger);
 
   const result = replayLedgerEvents(stateLedger, [event, { ...event }]);
 
@@ -330,8 +331,8 @@ test("replay ignores exact duplicate idempotency payloads", async () => {
 
 test("replay rejects changed duplicate idempotency payloads", async () => {
   const { calculateEventHash, replayLedgerEvents, stateLedger } = await loadLedger();
-  const event = makeProjectNextActionEvent(calculateEventHash);
-  const changedDuplicate = makeProjectNextActionEvent(calculateEventHash, {
+  const event = makeProjectNextActionEvent(calculateEventHash, stateLedger);
+  const changedDuplicate = makeProjectNextActionEvent(calculateEventHash, stateLedger, {
     id: "event-test-next-action-changed",
     after: { nextAction: "Different action with same idempotency key." },
   });
@@ -347,7 +348,7 @@ test("replay rejects changed duplicate idempotency payloads", async () => {
 
 test("agent replay requires scoped approval", async () => {
   const { calculateEventHash, replayLedgerEvents, stateLedger } = await loadLedger();
-  const agentEvent = makeProjectNextActionEvent(calculateEventHash, {
+  const agentEvent = makeProjectNextActionEvent(calculateEventHash, stateLedger, {
     actorId: "agent-codex",
   });
 
@@ -372,15 +373,17 @@ test("agent replay applies scoped single-use approval once", async () => {
         : approval,
     ),
   };
-  const firstEvent = makeProjectNextActionEvent(calculateEventHash, {
+  const firstEvent = makeProjectNextActionEvent(calculateEventHash, approvedLedger, {
     id: "event-test-agent-next-action-1",
     actorId: "agent-codex",
     approvalIds: ["approval-first-scoped-write"],
     idempotencyKey: "test-agent-next-action-1",
     after: { nextAction: "Agent writes through scoped approval." },
   });
-  const secondEvent = makeProjectNextActionEvent(calculateEventHash, {
+  const secondEvent = makeProjectNextActionEvent(calculateEventHash, approvedLedger, {
     id: "event-test-agent-next-action-2",
+    sequence: firstEvent.sequence + 1,
+    previousEventHash: firstEvent.eventHash,
     actorId: "agent-codex",
     approvalIds: ["approval-first-scoped-write"],
     idempotencyKey: "test-agent-next-action-2",
@@ -396,4 +399,32 @@ test("agent replay applies scoped single-use approval once", async () => {
   assert.ok(result.errors.some((error) => error.includes("requires scoped approval")));
   assert.equal(usedApproval.state, "used");
   assert.equal(usedApproval.usedByEventId, "event-test-agent-next-action-1");
+});
+
+test("replay rejects append events with invalid hash before applying state", async () => {
+  const { calculateEventHash, replayLedgerEvents, stateLedger } = await loadLedger();
+  const badHashEvent = makeProjectNextActionEvent(calculateEventHash, stateLedger);
+  badHashEvent.eventHash = "fnv1a32:badbad00";
+
+  const result = replayLedgerEvents(stateLedger, [badHashEvent]);
+  const replayedProject = result.ledger.projects.find((project) => project.id === "project-agency-os");
+  const originalProject = stateLedger.projects.find((project) => project.id === "project-agency-os");
+
+  assert.ok(result.errors.some((error) => error.includes("invalid event hash")));
+  assert.equal(replayedProject.nextAction, originalProject.nextAction);
+});
+
+test("replay rejects idempotency keys that already exist in the ledger", async () => {
+  const { calculateEventHash, replayLedgerEvents, stateLedger } = await loadLedger();
+  const event = makeProjectNextActionEvent(calculateEventHash, stateLedger, {
+    idempotencyKey: "2026-07-23-honesty-closure",
+  });
+
+  const result = replayLedgerEvents(stateLedger, [event]);
+
+  assert.ok(
+    result.errors.some((error) =>
+      error.includes("duplicate idempotency key 2026-07-23-honesty-closure has different payload"),
+    ),
+  );
 });
