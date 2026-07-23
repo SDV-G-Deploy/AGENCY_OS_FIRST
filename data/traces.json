@@ -1,0 +1,18 @@
+[
+  {
+    "id": "trace-agency-os-v0-2-night",
+    "rootRunId": "agent-run-codex-v0-2",
+    "parentTraceId": null,
+    "startedAt": "2026-07-22T22:35:00Z",
+    "endedAt": "2026-07-22T23:15:00Z",
+    "handoffIds": [],
+    "toolCalls": ["shell", "apply_patch", "automation_update"],
+    "artifacts": [
+      "AGENCY_OS_PLAN.md",
+      "docs/CURRENT_EVIDENCE.md",
+      "tests/ledger.test.mjs"
+    ],
+    "redactionStatus": "no_secrets_detected",
+    "verificationDecision": "verified_local"
+  }
+]

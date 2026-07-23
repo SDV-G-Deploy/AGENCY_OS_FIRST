@@ -1,0 +1,22 @@
+[
+  {
+    "id": "blocker-first-scoped-write",
+    "projectId": "project-openc-law-teleclo",
+    "question": "Which agent gets first scoped write permission?",
+    "impact": "Without a tiny permission policy, agent actions stay trapped as chat claims.",
+    "ownerId": "person-serj",
+    "state": "open",
+    "createdAt": "2026-07-23T00:00:00+03:00",
+    "decisionId": "decision-first-scoped-write"
+  },
+  {
+    "id": "blocker-lab-selection",
+    "projectId": "project-lab-slot",
+    "question": "Which creative project survives as the single active lab?",
+    "impact": "The lab becomes useful only when other tempting branches are explicitly paused.",
+    "ownerId": "person-serj",
+    "state": "open",
+    "createdAt": "2026-07-23T00:00:00+03:00",
+    "decisionId": "decision-lab-selection"
+  }
+]

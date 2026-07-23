@@ -1,0 +1,38 @@
+[
+  {
+    "id": "work-canonical-portfolio-model",
+    "projectId": "project-agency-os",
+    "title": "Canonical portfolio model",
+    "ownerId": "agent-codex",
+    "status": "doing",
+    "priority": "high",
+    "definitionOfDone": "Projects have stable IDs, purpose, state, stage, next action, blockers and derived evidence freshness.",
+    "verificationMethod": "Schema validation and local verification gate.",
+    "linkedEvidenceIds": ["evidence-local-v0-2-verify"],
+    "linkedAgentRunIds": ["agent-run-codex-v0-2"]
+  },
+  {
+    "id": "work-local-capture-ledger",
+    "projectId": "project-agency-os",
+    "title": "Local capture ledger",
+    "ownerId": "agent-codex",
+    "status": "queued",
+    "priority": "high",
+    "definitionOfDone": "One phone review action appends a durable event and derived state reloads from data.",
+    "verificationMethod": "Reducer tests plus local UI smoke check.",
+    "linkedEvidenceIds": [],
+    "linkedAgentRunIds": []
+  },
+  {
+    "id": "work-agent-run-ingestion-api",
+    "projectId": "project-openc-law-teleclo",
+    "title": "Agent run ingestion API",
+    "ownerId": "agent-codex",
+    "status": "queued",
+    "priority": "medium",
+    "definitionOfDone": "Agent can submit objective, result claim, changed files and evidence as proposed state.",
+    "verificationMethod": "Append-only event plus approval tests.",
+    "linkedEvidenceIds": [],
+    "linkedAgentRunIds": []
+  }
+]

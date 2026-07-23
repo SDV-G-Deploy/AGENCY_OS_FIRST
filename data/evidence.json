@@ -1,0 +1,47 @@
+[
+  {
+    "id": "evidence-local-v0-2-verify",
+    "claimId": "claim-v0-2-local-verify",
+    "projectId": "project-agency-os",
+    "type": "command_output",
+    "source": "local",
+    "urlOrPath": "docs/CURRENT_EVIDENCE.md",
+    "createdAt": "2026-07-23T00:00:00+03:00",
+    "submittedBy": "agent-codex",
+    "verifiedBy": "system-local-verifier",
+    "verificationStatus": "verified",
+    "freshnessExpiresAt": null,
+    "hash": null,
+    "knownGaps": ["production dependency audit is not clean"]
+  },
+  {
+    "id": "evidence-ai1geo-external-signal-needed",
+    "claimId": "claim-ai1geo-user-value",
+    "projectId": "project-ai1geo",
+    "type": "missing",
+    "source": "manual",
+    "urlOrPath": null,
+    "createdAt": "2026-07-23T00:00:00+03:00",
+    "submittedBy": "agent-codex",
+    "verifiedBy": null,
+    "verificationStatus": "missing",
+    "freshnessExpiresAt": null,
+    "hash": null,
+    "knownGaps": ["needs one external signal or paid test"]
+  },
+  {
+    "id": "evidence-openc-law-policy-needed",
+    "claimId": "claim-agent-safe-state-update",
+    "projectId": "project-openc-law-teleclo",
+    "type": "missing",
+    "source": "manual",
+    "urlOrPath": null,
+    "createdAt": "2026-07-23T00:00:00+03:00",
+    "submittedBy": "agent-codex",
+    "verifiedBy": null,
+    "verificationStatus": "pending",
+    "freshnessExpiresAt": null,
+    "hash": null,
+    "knownGaps": ["needs scoped token and audit log"]
+  }
+]

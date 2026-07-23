@@ -1,0 +1,27 @@
+[
+  {
+    "id": "agent-run-codex-v0-2",
+    "agentId": "agent-codex",
+    "traceId": "trace-agency-os-v0-2-night",
+    "parentRunId": null,
+    "toolHarness": "Codex",
+    "objective": "Create the first local Agency OS dashboard and v0.2 State Ledger layer.",
+    "permissionScope": "local_project_write",
+    "startedAt": "2026-07-22T22:35:00Z",
+    "completedAt": "2026-07-22T23:15:00Z",
+    "resultClaim": "MVP renders with State Ledger, sanity checks, recommended next steps and phone review cards.",
+    "filesChanged": [
+      "app/page.tsx",
+      "app/ledger.ts",
+      "app/globals.css",
+      "tests/rendered-html.test.mjs",
+      "tests/ledger.test.mjs",
+      "README.md",
+      "AGENCY_OS_PLAN.md"
+    ],
+    "externalActions": [],
+    "linkedEvidenceIds": ["evidence-local-v0-2-verify"],
+    "verificationStatus": "verified",
+    "humanDecision": "pending_review"
+  }
+]

@@ -1,0 +1,34 @@
+[
+  {
+    "id": "decision-first-scoped-write",
+    "projectId": "project-openc-law-teleclo",
+    "question": "Which agent gets first scoped write permission?",
+    "context": "Agent actions should move from chat claims to reviewable state changes, but only after scope and rollback are defined.",
+    "optionsConsidered": [
+      "GitHub watcher can add read-only evidence",
+      "OpenClaw can propose state updates only",
+      "Codex can write local plan/evidence artifacts"
+    ],
+    "selectedOption": null,
+    "rationale": null,
+    "state": "open",
+    "decidedBy": null,
+    "decidedAt": null,
+    "reviewDate": "2026-07-24",
+    "linkedEvidenceIds": []
+  },
+  {
+    "id": "decision-lab-selection",
+    "projectId": "project-lab-slot",
+    "question": "Which creative project survives as the single active lab?",
+    "context": "The lab slot should preserve creative energy without competing with the core product.",
+    "optionsConsidered": [],
+    "selectedOption": null,
+    "rationale": null,
+    "state": "open",
+    "decidedBy": null,
+    "decidedAt": null,
+    "reviewDate": "2026-07-24",
+    "linkedEvidenceIds": []
+  }
+]

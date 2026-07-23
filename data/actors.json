@@ -1,0 +1,29 @@
+[
+  {
+    "id": "person-serj",
+    "displayName": "Serj",
+    "actorType": "person",
+    "trustLevel": "owner",
+    "allowedScopes": ["read", "propose", "scoped_write", "external_action"],
+    "credentialSource": "human",
+    "lastSeenAt": null
+  },
+  {
+    "id": "agent-codex",
+    "displayName": "Codex",
+    "actorType": "agent",
+    "trustLevel": "workspace_agent",
+    "allowedScopes": ["read", "propose", "local_project_write"],
+    "credentialSource": "codex_thread",
+    "lastSeenAt": "2026-07-23T00:00:00Z"
+  },
+  {
+    "id": "system-local-verifier",
+    "displayName": "Local verifier",
+    "actorType": "system",
+    "trustLevel": "local_system",
+    "allowedScopes": ["read", "verify_local"],
+    "credentialSource": "local_commands",
+    "lastSeenAt": "2026-07-23T00:00:00Z"
+  }
+]

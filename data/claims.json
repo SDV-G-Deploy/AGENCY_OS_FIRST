@@ -1,0 +1,32 @@
+[
+  {
+    "id": "claim-v0-2-local-verify",
+    "projectId": "project-agency-os",
+    "subjectType": "project",
+    "subjectId": "project-agency-os",
+    "claim": "Agency OS v0.2 renders locally and passes the local verification gate.",
+    "status": "verified",
+    "requiredEvidenceTypes": ["command_output", "local_url"],
+    "linkedEvidenceIds": ["evidence-local-v0-2-verify"]
+  },
+  {
+    "id": "claim-ai1geo-user-value",
+    "projectId": "project-ai1geo",
+    "subjectType": "project",
+    "subjectId": "project-ai1geo",
+    "claim": "ai1geo has external user value.",
+    "status": "missing_evidence",
+    "requiredEvidenceTypes": ["user_confirmation", "payment", "usage_signal"],
+    "linkedEvidenceIds": ["evidence-ai1geo-external-signal-needed"]
+  },
+  {
+    "id": "claim-agent-safe-state-update",
+    "projectId": "project-openc-law-teleclo",
+    "subjectType": "agent_permission",
+    "subjectId": "approval-first-scoped-write",
+    "claim": "An agent can safely update project state.",
+    "status": "pending",
+    "requiredEvidenceTypes": ["approval", "audit_log", "rollback_plan"],
+    "linkedEvidenceIds": ["evidence-openc-law-policy-needed"]
+  }
+]

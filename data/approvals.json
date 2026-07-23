@@ -1,0 +1,19 @@
+[
+  {
+    "id": "approval-first-scoped-write",
+    "requestedBy": "agent-codex",
+    "requestedAt": "2026-07-23T00:00:00+03:00",
+    "actionType": "scoped_write",
+    "entityType": "agent_permission",
+    "entityId": "agent-codex",
+    "scope": "project-agency-os:data_events_append",
+    "riskLevel": "medium",
+    "requiredEvidenceTypes": ["plan", "rollback_note", "audit_log"],
+    "state": "requested",
+    "approverId": null,
+    "decidedAt": null,
+    "expiresAt": "2026-07-24T00:00:00+03:00",
+    "rationale": "First scoped write should be explicit before agents mutate state.",
+    "linkedEvidenceIds": []
+  }
+]
