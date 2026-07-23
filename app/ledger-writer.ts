@@ -31,6 +31,23 @@ type ProjectNextActionWriteResult = {
   ignoredEventIds: string[];
 };
 
+type CaptureNoteWriteInput = {
+  ledger?: StateLedger;
+  eventsPath: string;
+  actorId: string;
+  projectId: string;
+  body: string;
+  source: string;
+  idempotencyKey: string;
+  createdAt: string;
+  receivedAt: string;
+  traceId?: string | null;
+  redactionStatus?: LedgerEvent["redactionStatus"];
+  eventSource?: string;
+};
+
+type CaptureNoteWriteResult = ProjectNextActionWriteResult;
+
 type LockHandle = Awaited<ReturnType<typeof open>>;
 
 function eventIdFromIdempotencyKey(idempotencyKey: string) {
@@ -41,6 +58,16 @@ function eventIdFromIdempotencyKey(idempotencyKey: string) {
     .slice(0, 80);
 
   return `event-${safeKey || "generated"}`;
+}
+
+function captureIdFromIdempotencyKey(idempotencyKey: string) {
+  const safeKey = idempotencyKey
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 80);
+
+  return `capture-${safeKey || "generated"}`;
 }
 
 function getReferenceSets(ledger: StateLedger) {
@@ -155,6 +182,59 @@ export function buildProjectNextActionEvent({
     idempotencyKey,
     redactionStatus,
     retentionClass: "audit",
+    previousEventHash: previousEvent?.eventHash ?? null,
+    eventHash: "",
+  };
+
+  event.eventHash = calculateEventHash(event);
+  return event;
+}
+
+export function buildCaptureNoteEvent({
+  ledger = stateLedger,
+  actorId,
+  projectId,
+  body,
+  source,
+  idempotencyKey,
+  createdAt,
+  receivedAt,
+  traceId = null,
+  redactionStatus = "pending_scan",
+  eventSource = "local_writer",
+}: Omit<CaptureNoteWriteInput, "eventsPath">) {
+  const previousEvent = ledger.events.at(-1);
+  const captureId = captureIdFromIdempotencyKey(idempotencyKey);
+  const event: LedgerEvent = {
+    schemaVersion: 1,
+    sequence: ledger.events.length + 1,
+    id: eventIdFromIdempotencyKey(idempotencyKey),
+    timestamp: receivedAt,
+    actorId,
+    action: "capture.note_created",
+    entityType: "capture",
+    entityId: captureId,
+    before: null,
+    after: {
+      id: captureId,
+      projectId,
+      actorId,
+      source,
+      body,
+      createdAt,
+      receivedAt,
+      redactionStatus,
+      classification: "inbox",
+      linkedEntityIds: [],
+      reviewStatus: "uncategorized",
+    },
+    evidenceIds: [],
+    approvalIds: [],
+    traceId,
+    source: eventSource,
+    idempotencyKey,
+    redactionStatus,
+    retentionClass: "operational",
     previousEventHash: previousEvent?.eventHash ?? null,
     eventHash: "",
   };
@@ -339,5 +419,112 @@ export async function appendProjectNextActionEvent({
     errors: [],
     ignoredEventIds: [],
   };
+  });
+}
+
+export async function appendCaptureNoteEvent({
+  ledger = stateLedger,
+  eventsPath,
+  actorId,
+  projectId,
+  body,
+  source,
+  idempotencyKey,
+  createdAt,
+  receivedAt,
+  traceId = null,
+  redactionStatus = "pending_scan",
+  eventSource = "local_writer",
+}: CaptureNoteWriteInput): Promise<CaptureNoteWriteResult> {
+  return withEventsLock(eventsPath, async () => {
+    const currentEventsSource = await readFile(eventsPath, "utf8");
+    const currentEvents = parseLedgerEvents(currentEventsSource);
+    const replayedCurrent = replayLedgerEvents(
+      { ...resetApprovalsForEventReplay(ledger), events: [] },
+      currentEvents,
+    );
+
+    if (replayedCurrent.errors.length > 0) {
+      return {
+        appended: false,
+        event: null,
+        errors: replayedCurrent.errors,
+        ignoredEventIds: [],
+      };
+    }
+
+    const ledgerForWrite: StateLedger = {
+      ...replayedCurrent.ledger,
+      events: currentEvents,
+    };
+
+    const event = buildCaptureNoteEvent({
+      ledger: ledgerForWrite,
+      actorId,
+      projectId,
+      body,
+      source,
+      idempotencyKey,
+      createdAt,
+      receivedAt,
+      traceId,
+      redactionStatus,
+      eventSource,
+    });
+
+    const existingEvent = currentEvents.find((item) => item.idempotencyKey === idempotencyKey);
+    if (existingEvent) {
+      if (comparableIdempotencyPayload(existingEvent) !== comparableIdempotencyPayload(event)) {
+        return {
+          appended: false,
+          event: existingEvent,
+          errors: [`idempotency conflict for ${idempotencyKey}`],
+          ignoredEventIds: [],
+        };
+      }
+
+      return {
+        appended: false,
+        event: existingEvent,
+        errors: [],
+        ignoredEventIds: [existingEvent.id],
+      };
+    }
+
+    const existingErrors = validateEventLog(currentEvents, getReferenceSets(ledgerForWrite));
+    if (existingErrors.length > 0) {
+      return {
+        appended: false,
+        event: null,
+        errors: existingErrors,
+        ignoredEventIds: [],
+      };
+    }
+
+    const replayResult = replayLedgerEvents(ledgerForWrite, [event]);
+
+    if (replayResult.errors.length > 0) {
+      return {
+        appended: false,
+        event,
+        errors: replayResult.errors,
+        ignoredEventIds: replayResult.ignoredEventIds,
+      };
+    }
+
+    const needsLeadingNewline =
+      currentEventsSource.trim().length > 0 && !currentEventsSource.endsWith("\n");
+    await appendFile(
+      eventsPath,
+      `${needsLeadingNewline ? "\n" : ""}${JSON.stringify(event)}\n`,
+      "utf8",
+    );
+
+    return {
+      appended: true,
+      event,
+      errors: [],
+      ignoredEventIds: [],
+    };
   });
 }

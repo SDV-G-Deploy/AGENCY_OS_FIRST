@@ -172,6 +172,28 @@ async function loadLocalApiRoute() {
   };
 }
 
+async function loadLocalCaptureApiRoute() {
+  const loaded = await loadLocalCommand();
+  const moduleDir = loaded.eventsPath.replace(/\\events\.jsonl$/, "").replace(/\/events\.jsonl$/, "");
+  const dataDir = join(moduleDir, "data");
+  const eventsSource = await readFile(new URL("../data/events.jsonl", import.meta.url), "utf8");
+
+  await mkdir(dataDir);
+  await writeFile(join(dataDir, "events.jsonl"), eventsSource, "utf8");
+  await transpileModule(
+    new URL("../app/api/local/capture-note/route.ts", import.meta.url),
+    join(moduleDir, "capture-note-route.js"),
+    true,
+  );
+
+  return {
+    ...loaded,
+    eventsPath: join(dataDir, "events.jsonl"),
+    moduleDir,
+    route: await import(pathToFileURL(join(moduleDir, "capture-note-route.js")).href),
+  };
+}
+
 test("sanity checks find stale evidence and unproven agent claims", async () => {
   const { getSanityChecks } = await loadLedger();
   const checks = getSanityChecks();
@@ -1300,6 +1322,123 @@ test("writer refuses to append when the existing event log is invalid", async ()
   assert.ok(result.errors.some((error) => error.includes("invalid event hash")));
 });
 
+test("writer appends a human capture note event after preflight replay", async () => {
+  const { eventsPath, ledger, writer } = await loadLedgerWithWriter();
+  const beforeEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+
+  const result = await writer.appendCaptureNoteEvent({
+    ledger: ledger.stateLedger,
+    eventsPath,
+    actorId: "person-serj",
+    projectId: "project-agency-os",
+    body: "Capture writer records one quarantined note.",
+    source: "phone",
+    idempotencyKey: "test-writer-capture-note",
+    createdAt: "2026-07-23T12:00:00Z",
+    receivedAt: "2026-07-23T12:00:02Z",
+  });
+  const afterEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+  const derived = ledger.getReplayDerivedLedger({
+    ...ledger.stateLedger,
+    events: afterEvents,
+  });
+  const capture = derived.ledger.captures.find((item) => item.id === result.event.entityId);
+
+  assert.equal(result.appended, true);
+  assert.deepEqual(result.errors, []);
+  assert.equal(afterEvents.length, beforeEvents.length + 1);
+  assert.equal(afterEvents.at(-1).action, "capture.note_created");
+  assert.equal(afterEvents.at(-1).entityType, "capture");
+  assert.equal(afterEvents.at(-1).actorId, "person-serj");
+  assert.equal(afterEvents.at(-1).redactionStatus, "pending_scan");
+  assert.equal(afterEvents.at(-1).retentionClass, "operational");
+  assert.equal(afterEvents.at(-1).previousEventHash, beforeEvents.at(-1).eventHash);
+  assert.equal(afterEvents.at(-1).eventHash, ledger.calculateEventHash(afterEvents.at(-1)));
+  assert.equal(capture.projectId, "project-agency-os");
+  assert.equal(capture.source, "phone");
+  assert.equal(capture.classification, "inbox");
+  assert.equal(capture.reviewStatus, "uncategorized");
+  assert.deepEqual(capture.linkedEntityIds, []);
+});
+
+test("writer treats an exact capture retry idempotency key as a no-op", async () => {
+  const { eventsPath, ledger, writer } = await loadLedgerWithWriter();
+  const input = {
+    ledger: ledger.stateLedger,
+    eventsPath,
+    actorId: "person-serj",
+    projectId: "inbox",
+    body: "Retrying this capture should not append twice.",
+    source: "phone",
+    idempotencyKey: "test-writer-capture-exact-retry",
+    createdAt: "2026-07-23T12:01:00Z",
+    receivedAt: "2026-07-23T12:01:01Z",
+    redactionStatus: "no_secrets_detected",
+  };
+
+  const first = await writer.appendCaptureNoteEvent(input);
+  const second = await writer.appendCaptureNoteEvent(input);
+  const events = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+
+  assert.equal(first.appended, true);
+  assert.equal(second.appended, false);
+  assert.deepEqual(second.errors, []);
+  assert.deepEqual(second.ignoredEventIds, [first.event.id]);
+  assert.equal(
+    events.filter((event) => event.idempotencyKey === "test-writer-capture-exact-retry").length,
+    1,
+  );
+});
+
+test("writer blocks capture notes with invalid raw redaction status", async () => {
+  const { eventsPath, ledger, writer } = await loadLedgerWithWriter();
+  const beforeEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+
+  const result = await writer.appendCaptureNoteEvent({
+    ledger: ledger.stateLedger,
+    eventsPath,
+    actorId: "person-serj",
+    projectId: "project-agency-os",
+    body: "Raw capture cannot be not_required.",
+    source: "phone",
+    idempotencyKey: "test-writer-capture-not-required",
+    createdAt: "2026-07-23T12:02:00Z",
+    receivedAt: "2026-07-23T12:02:01Z",
+    redactionStatus: "not_required",
+  });
+  const afterEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+
+  assert.equal(result.appended, false);
+  assert.ok(
+    result.errors.some((error) =>
+      error.includes("invalid capture redaction status not_required"),
+    ),
+  );
+  assert.equal(afterEvents.length, beforeEvents.length);
+});
+
+test("writer refuses capture append when the existing event log is invalid", async () => {
+  const { eventsPath, ledger, writer } = await loadLedgerWithWriter();
+  const events = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+  events[0].eventHash = "fnv1a32:badbad00";
+  await writeFile(eventsPath, `${events.map((event) => JSON.stringify(event)).join("\n")}\n`, "utf8");
+
+  const result = await writer.appendCaptureNoteEvent({
+    ledger: ledger.stateLedger,
+    eventsPath,
+    actorId: "person-serj",
+    projectId: "project-agency-os",
+    body: "This should not append after broken precondition.",
+    source: "phone",
+    idempotencyKey: "test-writer-capture-broken-precondition",
+    createdAt: "2026-07-23T12:03:00Z",
+    receivedAt: "2026-07-23T12:03:01Z",
+  });
+
+  assert.equal(result.appended, false);
+  assert.ok(result.errors.some((error) => error.includes("invalid event hash")));
+});
+
 test("writer serializes parallel appends through the event log lock", async () => {
   const { eventsPath, ledger, writer } = await loadLedgerWithWriter();
   const beforeEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
@@ -1398,6 +1537,57 @@ test("local command rejects invalid input before writer execution", async () => 
   assert.equal(afterEvents.length, beforeEvents.length);
 });
 
+test("local command writes a human capture note and confirms derived state", async () => {
+  const { command, eventsPath, ledger } = await loadLocalCommand();
+  const beforeEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+
+  const result = await command.runCaptureNoteCommand({
+    ledger: ledger.stateLedger,
+    eventsPath,
+    actorId: "person-serj",
+    projectId: "project-agency-os",
+    body: "Command layer confirmed a quarantined capture.",
+    source: "phone",
+    idempotencyKey: "test-command-human-capture-note",
+    createdAt: "2026-07-23T12:04:00Z",
+    receivedAt: "2026-07-23T12:04:02Z",
+  });
+  const afterEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+  const captureEvent = afterEvents.find(
+    (event) => event.idempotencyKey === "test-command-human-capture-note",
+  );
+
+  assert.equal(result.ok, true);
+  assert.equal(result.appended, true);
+  assert.equal(result.captureId, captureEvent.entityId);
+  assert.equal(result.reviewStatus, "uncategorized");
+  assert.equal(captureEvent.source, "local_command");
+  assert.equal(captureEvent.after.source, "phone");
+  assert.equal(afterEvents.length, beforeEvents.length + 1);
+});
+
+test("local command rejects agent capture actors before writer execution", async () => {
+  const { command, eventsPath, ledger } = await loadLocalCommand();
+  const beforeEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+
+  const result = await command.runCaptureNoteCommand({
+    ledger: ledger.stateLedger,
+    eventsPath,
+    actorId: "agent-codex",
+    projectId: "project-agency-os",
+    body: "Agent should not use human-only capture command.",
+    source: "phone",
+    idempotencyKey: "test-command-agent-capture-blocked",
+    createdAt: "2026-07-23T12:05:00Z",
+    receivedAt: "2026-07-23T12:05:01Z",
+  });
+  const afterEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.some((error) => error.includes("human-only")));
+  assert.equal(afterEvents.length, beforeEvents.length);
+});
+
 test("local API route writes through the canonical temp event ledger", async () => {
   const { eventsPath, ledger, moduleDir, route } = await loadLocalApiRoute();
   const beforeEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
@@ -1430,6 +1620,52 @@ test("local API route writes through the canonical temp event ledger", async () 
     assert.equal(afterEvents.at(-1).actorId, "person-serj");
     assert.equal(afterEvents.at(-1).source, "local_command");
     assert.equal(project.nextAction, "API route confirms the browser write surface.");
+  } finally {
+    process.chdir(previousCwd);
+  }
+});
+
+test("local capture API route writes through the canonical temp event ledger", async () => {
+  const { eventsPath, ledger, moduleDir, route } = await loadLocalCaptureApiRoute();
+  const beforeEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+  const previousCwd = process.cwd();
+
+  try {
+    process.chdir(moduleDir);
+    const response = await route.POST(
+      new Request("http://localhost/api/local/capture-note", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          projectId: "inbox",
+          body: "API route confirms the local capture write surface.",
+          source: "phone",
+          createdAt: "2026-07-23T12:06:00Z",
+          idempotencyKey: "test-api-capture-note",
+        }),
+      }),
+    );
+    const body = await response.json();
+    const afterEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
+    const captureEvent = afterEvents.find(
+      (event) => event.idempotencyKey === "test-api-capture-note",
+    );
+    const derived = ledger.getReplayDerivedLedger({
+      ...ledger.stateLedger,
+      events: afterEvents,
+    });
+    const capture = derived.ledger.captures.find((item) => item.id === body.captureId);
+
+    assert.equal(response.status, 200);
+    assert.equal(body.ok, true);
+    assert.equal(body.appended, true);
+    assert.equal(afterEvents.length, beforeEvents.length + 1);
+    assert.equal(captureEvent.actorId, "person-serj");
+    assert.equal(captureEvent.source, "local_command");
+    assert.equal(captureEvent.after.source, "phone");
+    assert.equal(captureEvent.redactionStatus, "pending_scan");
+    assert.equal(capture.projectId, "inbox");
+    assert.equal(capture.reviewStatus, "uncategorized");
   } finally {
     process.chdir(previousCwd);
   }

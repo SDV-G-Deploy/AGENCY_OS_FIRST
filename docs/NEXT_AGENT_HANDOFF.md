@@ -6,17 +6,18 @@ Last updated: 2026-07-23
 ## Handoff Freshness
 
 Branch:
-- `main`
+- `feature/capture-note-writer-api`
 
 Commit:
-- run `git log -1 --oneline` for the current checkpoint commit.
+- pending until this handoff update is committed; run `git log -1 --oneline`
+  after checkout for the exact checkpoint commit.
 
 Working tree state after this handoff checkpoint:
 - expected clean.
 
 Last verified command/result:
 - `npm run verify`
-- pass: lint, typecheck, build and 47 tests.
+- pass: lint, typecheck, build and 54 tests.
 
 Conflict rule:
 - if this handoff conflicts with current code/tests, trust code/tests, inspect
@@ -28,12 +29,12 @@ Agency OS now has a canonical local repo and GitHub remote:
 - local: `C:\Agency_os_first\AGENCY_OS_FIRST`;
 - GitHub: `https://github.com/SDV-G-Deploy/AGENCY_OS_FIRST`.
 
-Agency OS is ready for one supervised bounded local coding branch from `main`,
-but not for broad autonomous expansion. Agents should not reload all large
-product documents by default.
+Agency OS is on the supervised local capture branch. The
+`capture.note_created` writer/command/API slice is implemented, but the branch
+has not been merged to `main` in this handoff.
 
-The next branch should implement the v0.3 phone-first capture slice, starting
-from the contracts already written in:
+The next branch or continuation should stay inside the v0.3 phone-first capture
+path, starting from the contracts already written in:
 - `docs/AGENT_START_BRIEF.md`;
 - `docs/PRODUCT_DEVELOPMENT_FLOW.md`;
 - `docs/PRE_DEVELOPMENT_READINESS_AUDIT.md`;
@@ -72,6 +73,25 @@ Pre-development readiness checkpoint:
   v0.3 branch.
 - The first `capture.note_created` data/reducer slice is now implemented.
 
+Local capture write checkpoint:
+- `buildCaptureNoteEvent()` and `appendCaptureNoteEvent()` create
+  hash-chained `capture.note_created` events behind the existing event-log lock.
+- `runCaptureNoteCommand()` is person-only, accepts project or Inbox, requires
+  body/source/timestamps/idempotency key and defaults raw capture redaction to
+  `pending_scan`.
+- `/api/local/capture-note` fixes the local actor to `person-serj` and writes
+  through `data/events.jsonl` relative to the running repo.
+- Exact capture retries with the same idempotency payload are no-ops.
+- Invalid existing logs, `redactionStatus: not_required` for raw capture and
+  agent actors are blocked before durable append.
+
+Changed files in this slice:
+- `app/ledger-writer.ts`
+- `app/local-command.ts`
+- `app/api/local/capture-note/route.ts`
+- `tests/ledger.test.mjs`
+- `docs/NEXT_AGENT_HANDOFF.md`
+
 Organizational checkpoint:
 - canonical repo moved to `C:\Agency_os_first\AGENCY_OS_FIRST`;
 - GitHub `main` was updated without force-push;
@@ -83,18 +103,19 @@ Organizational checkpoint:
 
 ## Next Chewable Step
 
-Implement the local writer/command/API slice for `capture.note_created`.
+Implement the first local mobile viewport capture form that calls the existing
+`/api/local/capture-note` route.
 
 Recommended scope:
-- add `buildCaptureNoteEvent()` and `appendCaptureNoteEvent()`;
-- add a local command wrapper that is person-only;
-- add a local API route that fixes actor and canonical event path;
-- preserve the existing capture replay contract;
-- add tests for write success, duplicate idempotency, invalid existing log,
-  invalid raw-capture redaction status and blocked agent actor.
+- first viewport on mobile can enter one note/fact;
+- choose an existing project or Inbox;
+- choose source, defaulting to phone for the phone path;
+- save through the local capture API and show confirmation;
+- show the last three uncategorized captures from replay-derived state;
+- keep raw capture text quarantined and do not convert it to evidence/blocker/
+  decision/next action in this slice.
 
 Out of scope:
-- full phone UI;
 - Telegram;
 - GitHub/Codex/OpenClaw importers;
 - hosted auth;
@@ -119,7 +140,10 @@ Out of scope:
 - `app/ledger.ts`
 - `app/ledger-writer.ts`
 - `app/local-command.ts`
+- `app/api/local/capture-note/route.ts`
+- `app/page.tsx`
 - `tests/ledger.test.mjs`
+- `tests/rendered-html.test.mjs`
 
 ## Usually Skip Unless Needed
 
