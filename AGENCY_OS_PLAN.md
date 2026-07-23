@@ -312,3 +312,50 @@ Still failing:
 Next safest step:
 - Preserve this baseline, then create a bounded branch/task for the event
   writer/reducer and one phone review action that appends a local event.
+
+## PLAN FIRST - 2026-07-23 Baseline Preservation
+
+Block: Preserve the v0.2 staging baseline.
+
+Goal:
+- Create a durable git checkpoint before starting the next branch/task.
+
+In scope:
+- Re-run the full local verification gate.
+- Commit the non-ignored project files.
+- Keep the production audit blocker explicit.
+
+Out of scope:
+- New product behavior.
+- Branch creation.
+- Dependency force fixes.
+- Deployment.
+
+Done criteria:
+- Baseline commit exists.
+- `npm run verify` is green immediately before the commit.
+- Any production blocker remains documented.
+
+Evidence:
+- Commit `c0c1ebf` with message
+  `baseline: agency os v0.2 staging evidence ledger`.
+- `npm run verify` passed before commit: lint, typecheck, build and 9 tests.
+
+## PLAN UPDATE - 2026-07-23 Baseline Preservation
+
+Changed:
+- Created the first repository checkpoint for the Agency OS v0.2 staging MVP.
+- Configured repo-local git author identity as `Codex <codex@local>` because no
+  local author identity was set.
+
+Verified:
+- `npm run verify` passed before the commit.
+- Baseline commit hash: `c0c1ebf`.
+
+Still failing:
+- Production dependency audit remains blocked by Next's transitive
+  `postcss`/`sharp` advisories.
+
+Next safest step:
+- Start a separate branch/task for the local append-only event reducer and one
+  phone review action.

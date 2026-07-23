@@ -5,6 +5,16 @@ Last updated: 2026-07-23
 
 ## Current Claims
 
+### Claim 0: The v0.2 staging baseline is preserved
+
+Evidence:
+- Commit: `c0c1ebf`
+- Message: `baseline: agency os v0.2 staging evidence ledger`
+- Scope: 52 project files, including app, data, docs, tests and config.
+- Git identity used locally for this repository: `Codex <codex@local>`.
+
+Strength: strong for rollback/diffability inside this local repository.
+
 ### Claim 1: The local app opens
 
 Evidence:
@@ -103,7 +113,7 @@ Strength: strong evidence of an unresolved blocker.
   for append-only events yet.
 - Dependency audit blocks production deployment.
 - No visual screenshot artifact is saved in the repo yet.
-- No commit has been created yet for this initial project state.
+- The baseline has one local commit, but no remote backup has been created.
 
 ## Next Evidence To Create
 
