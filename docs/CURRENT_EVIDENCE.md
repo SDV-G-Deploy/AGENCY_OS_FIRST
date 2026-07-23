@@ -42,7 +42,7 @@ Evidence:
   - ledger rule tests
 
 Observed test result:
-- 31 tests passed.
+- 32 tests passed.
 
 Strength: strong for current static/local code quality.
 
@@ -206,6 +206,21 @@ Evidence:
 Strength: strong for the first durable approval-use path. It does not yet prove
 the full approval approval/request/reject lifecycle.
 
+### Claim 14: Approved agent writes require durable approval events
+
+Evidence:
+- `app/ledger.ts` handles `approval.approved` during replay.
+- `canUseApproval()` checks requested actor and approval entity.
+- `app/ledger-writer.ts` resets approval snapshots before replaying the event
+  log, so in-memory approved approvals are not trusted.
+- `tests/ledger.test.mjs` verifies that snapshot-only approval is blocked.
+- `tests/ledger.test.mjs` verifies durable `approval.approved` enables the
+  approved agent write path.
+- `npm run verify` passes with 32 tests.
+
+Strength: strong for the first durable approve/use lifecycle. It does not yet
+prove rejection, UI approval, or hosted persistence.
+
 ## Files Changed For Honesty Closure
 
 - `package.json`: added `typecheck`, `audit:prod`, `verify`; moved Next to
@@ -246,7 +261,7 @@ the full approval approval/request/reject lifecycle.
   first pure replay path and append writer exist for one action, but there is no
   visible UI/API action or full reducer coverage yet.
 - Writer has lock and idempotency conflict checks, but no durable
-  `approval.approved` lifecycle event yet.
+  `approval.rejected` lifecycle event yet.
 - Dependency audit blocks production deployment.
 - No visual screenshot artifact is saved in the repo yet.
 - The baseline has one local commit, but no remote backup has been created.

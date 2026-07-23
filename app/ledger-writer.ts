@@ -51,6 +51,20 @@ function getReferenceSets(ledger: StateLedger) {
   };
 }
 
+function resetApprovalsForEventReplay(ledger: StateLedger): StateLedger {
+  return {
+    ...ledger,
+    approvals: ledger.approvals.map((approval) => ({
+      ...approval,
+      state: "requested",
+      approverId: null,
+      decidedAt: null,
+      usedAt: null,
+      usedByEventId: null,
+    })),
+  };
+}
+
 function comparableIdempotencyPayload(event: LedgerEvent) {
   return JSON.stringify({
     actorId: event.actorId,
@@ -208,7 +222,10 @@ export async function appendProjectNextActionEvent({
   return withEventsLock(eventsPath, async () => {
   const currentEventsSource = await readFile(eventsPath, "utf8");
   const currentEvents = parseLedgerEvents(currentEventsSource);
-  const replayedCurrent = replayLedgerEvents({ ...ledger, events: [] }, currentEvents);
+  const replayedCurrent = replayLedgerEvents(
+    { ...resetApprovalsForEventReplay(ledger), events: [] },
+    currentEvents,
+  );
   if (replayedCurrent.errors.length > 0) {
     return {
       appended: false,

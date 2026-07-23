@@ -585,6 +585,8 @@ export type ApprovalUseRequest = {
   actionType: string;
   scope: string;
   riskLevel: ApprovalRecord["riskLevel"];
+  requestedBy?: string;
+  entityId?: string;
   approvals?: ApprovalRecord[];
   actors?: ActorRecord[];
   now?: Date;
@@ -595,6 +597,8 @@ export function canUseApproval({
   actionType,
   scope,
   riskLevel,
+  requestedBy,
+  entityId,
   approvals = stateLedger.approvals,
   actors = stateLedger.actors,
   now = new Date(),
@@ -620,6 +624,12 @@ export function canUseApproval({
     return false;
   }
   if (approval.riskLevel !== riskLevel) {
+    return false;
+  }
+  if (requestedBy && approval.requestedBy !== requestedBy) {
+    return false;
+  }
+  if (entityId && approval.entityId !== entityId) {
     return false;
   }
   if (approval.humanRequired) {
@@ -716,6 +726,27 @@ export function replayLedgerEvents(
     }
 
     if (event.action !== "project.next_action_updated") {
+      if (event.action === "approval.approved") {
+        const approval = ledger.approvals.find((item) => item.id === event.entityId);
+        const approverId = event.after?.approverId;
+        const decidedAt = event.after?.decidedAt;
+
+        if (event.entityType !== "approval" || !approval) {
+          errors.push(`event ${event.id} references unknown approval ${event.entityId}`);
+          continue;
+        }
+        if (typeof approverId !== "string" || typeof decidedAt !== "string") {
+          errors.push(`event ${event.id} missing approval decision details`);
+          continue;
+        }
+
+        approval.state = "approved";
+        approval.approverId = approverId;
+        approval.decidedAt = decidedAt;
+        appliedEventIds.push(event.id);
+        continue;
+      }
+
       if (event.action === "approval.used") {
         const approval = ledger.approvals.find((item) => item.id === event.entityId);
         const usedAt = event.after?.usedAt;
@@ -766,6 +797,8 @@ export function replayLedgerEvents(
             actionType: "scoped_write",
             scope: `${project.id}:project.next_action_updated`,
             riskLevel: "medium",
+            requestedBy: actor.id,
+            entityId: actor.id,
             approvals: ledger.approvals,
             actors: ledger.actors,
             now,

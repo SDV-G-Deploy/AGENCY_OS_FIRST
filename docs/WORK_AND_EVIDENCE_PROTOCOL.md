@@ -148,7 +148,9 @@ must remain blocked until this is resolved or explicitly accepted.
   as durable artifacts.
 - Event hash-chain validation is implemented for the local JSONL ledger.
 - A guarded local append writer exists for `project.next_action_updated`.
-- Full reducer coverage, visible write surfaces and durable approval-used events
+- Durable `approval.approved` and `approval.used` events exist for the first
+  approved agent write path.
+- Full reducer coverage, visible write surfaces and approval rejection lifecycle
   are not implemented yet.
 
 ## Future Artifact Layout

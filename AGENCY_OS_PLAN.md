@@ -800,3 +800,57 @@ Next safest step:
 - Add a local command/API wrapper that invokes the writer and then displays
   replay-derived state, or implement `approval.approved` lifecycle before
   granting agent writes from the UI.
+
+## PLAN FIRST - 2026-07-23 Durable Approval Approval
+
+Block: Require durable approval before approved agent writes.
+
+Goal:
+- Stop writer calls from trusting an in-memory approved approval snapshot.
+
+In scope:
+- Add replay support for `approval.approved`.
+- Make writer derive approval state by replaying existing JSONL events before
+  building a new event.
+- Require approval actor/entity/scope alignment for agent writes.
+- Test that snapshot-only approval is ignored and durable approval event is
+  required.
+
+Out of scope:
+- UI approval form.
+- Full approval rejection/request lifecycle.
+- Redaction scanner.
+- Hosted persistence.
+
+Done criteria:
+- Agent write with only an approved snapshot is blocked.
+- Agent write with durable `approval.approved` event succeeds and then emits
+  `approval.used`.
+- `npm run verify` passes.
+
+Evidence:
+- `app/ledger.ts` handles `approval.approved`.
+- `app/ledger-writer.ts` resets approval snapshots before replaying events.
+- `tests/ledger.test.mjs` includes snapshot-only approval rejection.
+
+## PLAN UPDATE - 2026-07-23 Durable Approval Approval
+
+Changed:
+- Added reducer support for `approval.approved`.
+- `canUseApproval()` now checks requested actor and approval entity.
+- Writer resets approval state and derives approved/used status from the event
+  log before building a new write.
+- Added tests for durable approval and blocking snapshot-only approval.
+
+Verified:
+- `npm run verify` passes: lint, typecheck, build and 32 tests.
+
+Still missing:
+- No UI/API approval surface.
+- No `approval.rejected` lifecycle.
+- Redaction scanner/import fixtures are not implemented.
+- Dashboard state is not yet visibly derived from replayed appended events.
+
+Next safest step:
+- Either add the first local command/API wrapper for the writer, or add a small
+  replay-derived state adapter so the dashboard can show appended event effects.

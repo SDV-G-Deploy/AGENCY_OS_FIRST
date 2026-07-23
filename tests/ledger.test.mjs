@@ -355,6 +355,46 @@ function makeProjectNextActionEvent(calculateEventHash, ledger, overrides = {}) 
   return event;
 }
 
+function makeApprovalApprovedEvent(calculateEventHash, ledger, overrides = {}) {
+  const previousEvent = ledger.events.at(-1);
+  const event = {
+    schemaVersion: 1,
+    sequence: ledger.events.length + 1,
+    id: "event-test-approval-approved",
+    timestamp: "2026-07-23T09:59:00Z",
+    actorId: "person-serj",
+    action: "approval.approved",
+    entityType: "approval",
+    entityId: "approval-first-scoped-write",
+    before: { state: "requested" },
+    after: {
+      approverId: "person-serj",
+      decidedAt: "2026-07-23T09:59:00Z",
+    },
+    evidenceIds: [],
+    approvalIds: [],
+    traceId: null,
+    source: "test",
+    idempotencyKey: "test-approval-approved",
+    redactionStatus: "not_required",
+    retentionClass: "audit",
+    previousEventHash: previousEvent?.eventHash ?? null,
+    eventHash: "",
+    ...overrides,
+  };
+  event.eventHash = calculateEventHash(event);
+  return event;
+}
+
+async function appendTestEvent(eventsPath, event) {
+  const source = await readFile(eventsPath, "utf8");
+  await writeFile(
+    eventsPath,
+    `${source.trimEnd()}\n${JSON.stringify(event)}\n`,
+    "utf8",
+  );
+}
+
 test("replay updates project next action without mutating the input snapshot", async () => {
   const { calculateEventHash, replayLedgerEvents, stateLedger } = await loadLedger();
   const originalNextAction = stateLedger.projects.find((project) => project.id === "project-agency-os").nextAction;
@@ -574,24 +614,12 @@ test("writer blocks an agent next-action event without scoped approval", async (
 
 test("writer appends an agent next-action event with scoped approval", async () => {
   const { eventsPath, ledger, writer } = await loadLedgerWithWriter();
+  const approvalEvent = makeApprovalApprovedEvent(ledger.calculateEventHash, ledger.stateLedger);
+  await appendTestEvent(eventsPath, approvalEvent);
   const beforeEvents = ledger.parseLedgerEvents(await readFile(eventsPath, "utf8"));
-  const approvedLedger = {
-    ...ledger.stateLedger,
-    approvals: ledger.stateLedger.approvals.map((approval) =>
-      approval.id === "approval-first-scoped-write"
-        ? {
-            ...approval,
-            state: "approved",
-            scope: "project-agency-os:project.next_action_updated",
-            approverId: "person-serj",
-            decidedAt: "2026-07-23T10:00:00Z",
-          }
-        : approval,
-    ),
-  };
 
   const result = await writer.appendProjectNextActionEvent({
-    ledger: approvedLedger,
+    ledger: ledger.stateLedger,
     eventsPath,
     actorId: "agent-codex",
     projectId: "project-agency-os",
@@ -621,22 +649,10 @@ test("writer appends an agent next-action event with scoped approval", async () 
 
 test("writer blocks reuse of single-use approval across separate calls", async () => {
   const { eventsPath, ledger, writer } = await loadLedgerWithWriter();
-  const approvedLedger = {
-    ...ledger.stateLedger,
-    approvals: ledger.stateLedger.approvals.map((approval) =>
-      approval.id === "approval-first-scoped-write"
-        ? {
-            ...approval,
-            state: "approved",
-            scope: "project-agency-os:project.next_action_updated",
-            approverId: "person-serj",
-            decidedAt: "2026-07-23T10:00:00Z",
-          }
-        : approval,
-    ),
-  };
+  const approvalEvent = makeApprovalApprovedEvent(ledger.calculateEventHash, ledger.stateLedger);
+  await appendTestEvent(eventsPath, approvalEvent);
   const first = await writer.appendProjectNextActionEvent({
-    ledger: approvedLedger,
+    ledger: ledger.stateLedger,
     eventsPath,
     actorId: "agent-codex",
     projectId: "project-agency-os",
@@ -646,7 +662,7 @@ test("writer blocks reuse of single-use approval across separate calls", async (
     timestamp: "2026-07-23T10:00:00Z",
   });
   const second = await writer.appendProjectNextActionEvent({
-    ledger: approvedLedger,
+    ledger: ledger.stateLedger,
     eventsPath,
     actorId: "agent-codex",
     projectId: "project-agency-os",
@@ -664,6 +680,37 @@ test("writer blocks reuse of single-use approval across separate calls", async (
     events.filter((event) => event.action === "approval.used").length,
     1,
   );
+});
+
+test("writer does not trust approved snapshot without durable approval event", async () => {
+  const { eventsPath, ledger, writer } = await loadLedgerWithWriter();
+  const approvedSnapshotOnly = {
+    ...ledger.stateLedger,
+    approvals: ledger.stateLedger.approvals.map((approval) =>
+      approval.id === "approval-first-scoped-write"
+        ? {
+            ...approval,
+            state: "approved",
+            approverId: "person-serj",
+            decidedAt: "2026-07-23T10:00:00Z",
+          }
+        : approval,
+    ),
+  };
+
+  const result = await writer.appendProjectNextActionEvent({
+    ledger: approvedSnapshotOnly,
+    eventsPath,
+    actorId: "agent-codex",
+    projectId: "project-agency-os",
+    nextAction: "Snapshot-only approval should be ignored.",
+    idempotencyKey: "test-writer-snapshot-only-approval",
+    approvalIds: ["approval-first-scoped-write"],
+    timestamp: "2026-07-23T10:00:00Z",
+  });
+
+  assert.equal(result.appended, false);
+  assert.ok(result.errors.some((error) => error.includes("requires scoped approval")));
 });
 
 test("writer refuses to append when the existing event log is invalid", async () => {
