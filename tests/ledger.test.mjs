@@ -339,6 +339,36 @@ test("ledger validation rejects duplicate event idempotency keys", async () => {
   assert.ok(errors.some((error) => error.includes("duplicate idempotency key")));
 });
 
+test("ledger validation rejects inbox as a capture candidate type", async () => {
+  const { stateLedger, validateLedger } = await loadLedger();
+  const capture = {
+    id: "capture-invalid-candidate-type",
+    projectId: "inbox",
+    actorId: "person-serj",
+    source: "phone",
+    body: "Candidate type must not accept inbox.",
+    createdAt: "2026-07-24T09:00:00Z",
+    receivedAt: "2026-07-24T09:00:01Z",
+    redactionStatus: "no_secrets_detected",
+    classification: "evidence_candidate",
+    candidateType: "inbox",
+    reviewedAt: "2026-07-24T09:01:00Z",
+    linkedEntityIds: [],
+    reviewStatus: "triaged",
+  };
+
+  const errors = validateLedger({
+    ...stateLedger,
+    captures: [...stateLedger.captures, capture],
+  });
+
+  assert.ok(
+    errors.some((error) =>
+      error.includes("capture capture-invalid-candidate-type has invalid candidate type inbox"),
+    ),
+  );
+});
+
 test("agent-submitted evidence cannot be self-verified by the same agent", async () => {
   const { stateLedger, validateLedger } = await loadLedger();
   const evidence = stateLedger.evidence.map((item) =>

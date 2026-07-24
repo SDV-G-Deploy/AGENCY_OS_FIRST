@@ -314,6 +314,12 @@ const allowedCaptureClassifications = new Set<CaptureClassification>([
   "decision_candidate",
   "next_action_candidate",
 ]);
+const allowedCaptureCandidateTypes = new Set<CaptureCandidateType>([
+  "evidence_candidate",
+  "blocker_candidate",
+  "decision_candidate",
+  "next_action_candidate",
+]);
 const allowedCaptureReviewStatuses = new Set<CaptureReviewStatus>([
   "uncategorized",
   "triaged",
@@ -611,7 +617,7 @@ export function validateLedger(ledger: StateLedger = stateLedger): string[] {
     }
     if (
       capture.candidateType !== null &&
-      !allowedCaptureClassifications.has(capture.candidateType)
+      !allowedCaptureCandidateTypes.has(capture.candidateType)
     ) {
       errors.push(`capture ${capture.id} has invalid candidate type ${capture.candidateType}`);
     }
@@ -1055,7 +1061,7 @@ export function replayLedgerEvents(
         errors.push(`event ${event.id} capture review must mark triaged`);
         continue;
       }
-      if (!candidateType || candidateType === "inbox" || !allowedCaptureClassifications.has(candidateType as CaptureClassification)) {
+      if (!candidateType || !allowedCaptureCandidateTypes.has(candidateType as CaptureCandidateType)) {
         errors.push(`event ${event.id} has invalid capture candidate type ${candidateType}`);
         continue;
       }
