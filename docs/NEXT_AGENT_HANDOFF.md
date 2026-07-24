@@ -6,24 +6,18 @@ Last updated: 2026-07-24
 ## Handoff Freshness
 
 Branch:
-- `feature/split-ledger-tests`
+- `main`
 
 Commit:
-- this handoff is included in the branch commit `test: split ledger test suite`;
-  run `git log -1 --oneline` after checkout for the exact checkpoint hash.
+- this handoff is included in the current main commit; run
+  `git log -1 --oneline` after checkout for the exact checkpoint hash.
 
 Working tree state after this handoff checkpoint:
 - expected clean.
 
 Last verified command/result:
-- `git diff --cached --check`
-- pass.
-- Node test-name comparison against `HEAD:tests/ledger.test.mjs`
-- pass: original 63 ledger tests, split 63 ledger tests, no missing or extra
-  test names.
-- `npm run verify` was not run in this worker worktree because `node_modules`
-  is absent; dependencies were not installed. Coordinator should run the npm
-  gate after reviewing this branch.
+- `npm run verify`
+- pass: lint, typecheck, build and 66 tests.
 
 Conflict rule:
 - if this handoff conflicts with current code/tests, trust code/tests, inspect
@@ -96,7 +90,7 @@ Changed files in the previous writer/API slice:
 - `app/ledger-writer.ts`
 - `app/local-command.ts`
 - `app/api/local/capture-note/route.ts`
-- `tests/ledger.test.mjs`
+- ledger tests, now split across focused `tests/ledger-*.test.mjs` files
 - `docs/NEXT_AGENT_HANDOFF.md`
 
 Mobile capture form checkpoint:
@@ -134,7 +128,7 @@ Changed files in this slice:
 - `app/globals.css`
 - `app/ledger.ts`
 - `tests/rendered-html.test.mjs`
-- `tests/ledger.test.mjs`
+- ledger tests, now split across focused `tests/ledger-*.test.mjs` files
 - `docs/NEXT_AGENT_HANDOFF.md`
 
 Local capture smoke checkpoint:
@@ -189,7 +183,7 @@ Capture review replay checkpoint:
 
 Changed files in this slice:
 - `app/ledger.ts`
-- `tests/ledger.test.mjs`
+- ledger tests, now split across focused `tests/ledger-*.test.mjs` files
 - `docs/NEXT_AGENT_HANDOFF.md`
 
 Capture review command/API checkpoint:
@@ -212,7 +206,7 @@ Changed files in this slice:
 - `app/ledger-writer.ts`
 - `app/local-command.ts`
 - `app/api/local/capture-review/route.ts`
-- `tests/ledger.test.mjs`
+- ledger tests, now split across focused `tests/ledger-*.test.mjs` files
 - `docs/NEXT_AGENT_HANDOFF.md`
 
 Capture candidate validation checkpoint:
@@ -236,7 +230,7 @@ Docs freshness checkpoint:
 
 Changed files in this fix:
 - `app/ledger.ts`
-- `tests/ledger.test.mjs`
+- ledger tests, now split across focused `tests/ledger-*.test.mjs` files
 
 Changed files in the docs freshness slice:
 - `docs/CURRENT_EVIDENCE.md`
@@ -254,6 +248,8 @@ Ledger test split checkpoint:
   command/API files.
 - `npm test` now runs the split ledger files plus the existing rendered HTML
   and capture smoke tests.
+- Merged to canonical `main` and verified with `npm run verify`: lint,
+  typecheck, build and 66 tests passed.
 
 Changed files in this test split slice:
 - `package.json`
