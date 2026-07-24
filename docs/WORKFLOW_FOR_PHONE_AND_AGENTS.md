@@ -1,7 +1,7 @@
 # Workflow For Phone And Agents
 
 Status: canonical workflow  
-Last updated: 2026-07-23
+Last updated: 2026-07-24
 
 ## Canonical Project Locations
 
@@ -57,7 +57,7 @@ Do not ask agents to build several features at once.
 Use:
 
 ```text
-main -> feature/<one-bounded-slice> -> verify -> docs/handoff -> commit -> review -> main
+main -> feature/<one-bounded-slice> -> verify -> docs/handoff -> commit -> review -> coordinator merge -> main
 ```
 
 Rules:
@@ -67,6 +67,36 @@ Rules:
 - no deploy unless explicitly planned;
 - no credentials in repo;
 - no broad framework/storage/auth changes inside feature slices.
+- worker agents do not checkout, merge, fast-forward or push `main`;
+- coordinator agents review, merge and push `main`.
+
+## Larger Goal Workflow
+
+Use larger goals as a sequence of small branches, not as one large commit.
+
+Allowed shape:
+
+```text
+milestone goal
+-> branch 1: contract/docs
+-> verify/review/commit
+-> branch 2: model/replay
+-> verify/review/commit
+-> branch 3: writer/API
+-> verify/review/commit
+-> branch 4: UI/smoke only if previous gates are green
+-> coordinator merge/push
+```
+
+Rules:
+- use separate git worktrees for parallel workers or overlapping files;
+- keep local `main` clean unless the prompt explicitly authorizes coordinator
+  checkpointing;
+- each branch must declare PLAN FIRST with goal, in scope, out of scope, done
+  criteria and evidence;
+- independent review is a gate, not permission to expand scope;
+- if a score is below threshold, fix only concrete findings inside the current
+  scope; otherwise stop and report.
 
 ## Agent Startup
 
@@ -93,7 +123,7 @@ Every non-trivial agent run should leave:
 Next slice:
 
 ```text
-capture.note_created writer/command/API
+mobile capture review UI affordance for capture.review_marked
 ```
 
 Still out of scope:

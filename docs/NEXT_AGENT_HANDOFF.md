@@ -6,7 +6,7 @@ Last updated: 2026-07-24
 ## Handoff Freshness
 
 Branch:
-- `feature/capture-review-command-api`
+- `main`
 
 Commit:
 - this handoff is included in the current slice commit; run
@@ -17,7 +17,7 @@ Working tree state after this handoff checkpoint:
 
 Last verified command/result:
 - `npm run verify`
-- pass: lint, typecheck, build and 65 tests.
+- pass: lint, typecheck, build and 66 tests.
 
 Conflict rule:
 - if this handoff conflicts with current code/tests, trust code/tests, inspect
@@ -29,10 +29,9 @@ Agency OS now has a canonical local repo and GitHub remote:
 - local: `C:\Agency_os_first\AGENCY_OS_FIRST`;
 - GitHub: `https://github.com/SDV-G-Deploy/AGENCY_OS_FIRST`.
 
-Agency OS is on the supervised capture review command/API branch. The prior
-capture triage contract and replay slices have been merged into local `main`,
-and this branch adds the local person-only write seam for
-`capture.review_marked`.
+Agency OS is on `main`. The capture triage contract, replay support,
+command/API seam and capture candidate validation fix are merged and pushed to
+GitHub.
 
 The next branch or continuation should stay inside the v0.3 phone-first capture
 path, starting from the contracts already written in:
@@ -209,6 +208,16 @@ Changed files in this slice:
 - `tests/ledger.test.mjs`
 - `docs/NEXT_AGENT_HANDOFF.md`
 
+Capture candidate validation checkpoint:
+- `validateLedger()` now uses the same candidate-only allow-list as replay and
+  command validation.
+- `candidateType: "inbox"` is rejected for reviewed captures.
+- Focused tests cover the snapshot validation gap.
+
+Changed files in this fix:
+- `app/ledger.ts`
+- `tests/ledger.test.mjs`
+
 Organizational checkpoint:
 - canonical repo moved to `C:\Agency_os_first\AGENCY_OS_FIRST`;
 - GitHub `main` was updated without force-push;
@@ -217,6 +226,14 @@ Organizational checkpoint:
 - root `AGENTS.md` exists for new Codex chats.
 - GitHub Actions verify workflow exists as the simple manual build/verify
   button.
+
+Process checkpoint:
+- worker agents must not checkout, merge, fast-forward or push `main` unless
+  explicitly acting as coordinator.
+- coordinator agents own merge order, conflict resolution and pushing `main`.
+- larger goals should be milestone trains made of separate branches/worktrees,
+  not one large commit.
+- independent review is a gate; it is not permission to expand scope.
 
 ## Next Chewable Step
 

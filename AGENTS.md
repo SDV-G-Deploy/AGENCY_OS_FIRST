@@ -52,6 +52,32 @@ Rules:
 - Update `docs/NEXT_AGENT_HANDOFF.md` before finishing.
 - Commit only when verification passes and scope is clean.
 
+## Worker And Coordinator Boundary
+
+Default worker behavior:
+
+- Do not checkout, merge, fast-forward or push `main`.
+- Do not push to GitHub.
+- Leave `main` clean and let the coordinator review, merge and push.
+- If a task asks for more than one slice, stop after the first verified commit
+  unless the prompt explicitly authorizes a multi-slice supervised cycle.
+
+Multi-slice supervised cycles:
+
+- Use one branch per slice.
+- Prefer separate git worktrees for parallel workers or any cycle with
+  overlapping touched files.
+- The coordinator owns merge order, conflict resolution and pushing `main`.
+- If the prompt explicitly authorizes local checkpointing between sequential
+  slices, state that in PLAN FIRST and record it in `docs/NEXT_AGENT_HANDOFF.md`.
+
+Stop immediately when:
+
+- `npm run verify` fails and the fix is outside the current slice;
+- scope requires auth, storage, deploy, dependency or integration changes;
+- files outside the declared slice change unexpectedly;
+- the next step requires a product decision.
+
 ## Do Not Do Unless Explicitly Asked
 
 - Do not deploy.
@@ -76,7 +102,7 @@ Local Solo Builder Kit
 Current next slice:
 
 ```text
-capture.note_created writer/command/API
+mobile capture review UI affordance for capture.review_marked
 ```
 
 Still out of scope:

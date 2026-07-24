@@ -1,7 +1,7 @@
 # Agency OS Agent Start Brief
 
 Status: compact start context  
-Last updated: 2026-07-23
+Last updated: 2026-07-24
 
 Read this first. Do not read every product document by default.
 
@@ -38,7 +38,7 @@ Latest product DNA checkpoint:
 
 Current local gate:
 - `npm run verify`
-- Expected result: lint, typecheck, build and 47 tests pass.
+- Expected result: lint, typecheck, build and 66 tests pass.
 
 Production gate:
 - `npm run audit:prod` is still blocked by Next transitive
@@ -55,28 +55,31 @@ Production gate:
 - Human-only local command.
 - Browser-local next-action form/API.
 - `capture.note_created` data/reducer replay slice.
+- Local writer/command/API for `capture.note_created`.
+- Phone-first capture form and safe `npm run smoke:capture` command.
+- `capture.review_marked` contract, replay support and local command/API.
 - Claim required evidence type validation.
 - Unknown state-changing event actions fail closed.
 
 ## Planned Next Slice
 
-v0.3 phone-first capture:
+v0.3 phone-first review:
 
 ```text
-first mobile viewport:
-capture one note/fact -> choose project or Inbox -> save -> see confirmation
--> see last 3 uncategorized captures -> see one suggested next action/review
+first mobile review affordance:
+choose one uncategorized capture -> mark candidate type -> save -> see
+confirmation -> see replay-derived updated state
 ```
 
 Action contract:
-- `capture.note_created`
+- `capture.review_marked`
 - person actor only for v0.3;
-- project or Inbox required;
-- source required;
-- raw text treated as untrusted;
-- redaction status cannot default to `not_required`;
-- create starts as `classification: inbox`, `reviewStatus: uncategorized` and
-  empty `linkedEntityIds`;
+- existing capture required;
+- `reviewStatus: "triaged"` required;
+- `candidateType` required: `evidence_candidate`, `blocker_candidate`,
+  `decision_candidate` or `next_action_candidate`;
+- raw capture text remains quarantined;
+- no evidence, blocker, decision, task or next action is created by this event;
 - unsupported capture state changes still fail closed unless a reducer supports
   them.
 
@@ -113,6 +116,8 @@ Read full product context only for product/architecture changes:
 6. Run local verification.
 7. Update evidence/docs only when the product contract changes.
 8. End with a handoff for the next agent.
+9. Worker agents do not move or push `main`; coordinator agents own merge and
+   push unless the prompt explicitly says otherwise.
 
 ## Handoff Required
 
