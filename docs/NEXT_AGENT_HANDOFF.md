@@ -6,18 +6,24 @@ Last updated: 2026-07-24
 ## Handoff Freshness
 
 Branch:
-- `main`
+- `feature/split-ledger-tests`
 
 Commit:
-- this handoff is included in the current main commit; run
-  `git log -1 --oneline` after checkout for the exact checkpoint hash.
+- this handoff is included in the branch commit `test: split ledger test suite`;
+  run `git log -1 --oneline` after checkout for the exact checkpoint hash.
 
 Working tree state after this handoff checkpoint:
 - expected clean.
 
 Last verified command/result:
-- `npm run verify`
-- pass: lint, typecheck, build and 66 tests.
+- `git diff --cached --check`
+- pass.
+- Node test-name comparison against `HEAD:tests/ledger.test.mjs`
+- pass: original 63 ledger tests, split 63 ledger tests, no missing or extra
+  test names.
+- `npm run verify` was not run in this worker worktree because `node_modules`
+  is absent; dependencies were not installed. Coordinator should run the npm
+  gate after reviewing this branch.
 
 Conflict rule:
 - if this handoff conflicts with current code/tests, trust code/tests, inspect
@@ -239,6 +245,26 @@ Changed files in the docs freshness slice:
 - `docs/EVENT_LOG_INTEGRITY.md`
 - `docs/NEXT_AGENT_HANDOFF.md`
 
+Ledger test split checkpoint:
+- The former monolithic `tests/ledger.test.mjs` suite was split without
+  intentional behavior changes.
+- Shared TypeScript transpile/temp-ledger loaders and test event builders now
+  live in `tests/ledger-test-helpers.mjs`.
+- Existing ledger tests are grouped into validation, replay, writer and local
+  command/API files.
+- `npm test` now runs the split ledger files plus the existing rendered HTML
+  and capture smoke tests.
+
+Changed files in this test split slice:
+- `package.json`
+- `tests/ledger-test-helpers.mjs`
+- `tests/ledger-validation.test.mjs`
+- `tests/ledger-replay.test.mjs`
+- `tests/ledger-writer.test.mjs`
+- `tests/local-command-api.test.mjs`
+- removed `tests/ledger.test.mjs`
+- `docs/NEXT_AGENT_HANDOFF.md`
+
 Organizational checkpoint:
 - canonical repo moved to `C:\Agency_os_first\AGENCY_OS_FIRST`;
 - GitHub `main` was updated without force-push;
@@ -302,7 +328,11 @@ Out of scope:
 - `app/local-command.ts`
 - `app/api/local/capture-note/route.ts`
 - `scripts/smoke-capture-note.mjs`
-- `tests/ledger.test.mjs`
+- `tests/ledger-test-helpers.mjs`
+- `tests/ledger-validation.test.mjs`
+- `tests/ledger-replay.test.mjs`
+- `tests/ledger-writer.test.mjs`
+- `tests/local-command-api.test.mjs`
 - `tests/capture-smoke.test.mjs`
 - `tests/rendered-html.test.mjs`
 
