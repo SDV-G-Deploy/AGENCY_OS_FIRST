@@ -1,0 +1,162 @@
+{
+  "checkedAt": "2026-07-24T16:25:21.117Z",
+  "serverUrl": "http://localhost:5176/",
+  "note": "QA branch served from worktree using a temporary ignored node_modules junction to the canonical install.",
+  "mobile": {
+    "screenshotPath": "C:/Agency_os_first/worktrees/capture-review-ui-qa/tasks/log/2026-07-24-capture-review-ui-qa/capture-review-ui-mobile-panel-390w.png",
+    "panelScreenshot": {
+      "screenshotPath": "C:/Agency_os_first/worktrees/capture-review-ui-qa/tasks/log/2026-07-24-capture-review-ui-qa/capture-review-ui-mobile-panel-390w.png",
+      "clip": {
+        "height": 1266,
+        "width": 351,
+        "x": 12,
+        "y": 228
+      }
+    },
+    "report": {
+      "outsidePanel": [],
+      "overlaps": [],
+      "rects": {
+        "panel": {
+          "bottom": 1490,
+          "height": 1258,
+          "right": 359,
+          "selector": ".mobile-brief",
+          "width": 343,
+          "x": 16,
+          "y": 232
+        },
+        "phoneActions": {
+          "bottom": 1472,
+          "height": 446,
+          "right": 340,
+          "selector": ".phone-action-list",
+          "width": 305,
+          "x": 35,
+          "y": 1026
+        },
+        "quickCapture": {
+          "bottom": 665,
+          "height": 264,
+          "right": 340,
+          "selector": ".capture-note-form",
+          "width": 305,
+          "x": 35,
+          "y": 402
+        },
+        "reviewForm": {
+          "bottom": 956,
+          "height": 279,
+          "right": 340,
+          "selector": ".capture-review-form",
+          "width": 305,
+          "x": 35,
+          "y": 677
+        },
+        "uncategorizedList": {
+          "bottom": 1010,
+          "height": 42,
+          "right": 340,
+          "selector": ".capture-review-list",
+          "width": 305,
+          "x": 35,
+          "y": 968
+        }
+      },
+      "requiredText": {
+        "candidateType": true,
+        "lastUncategorized": true,
+        "markOneCandidate": true,
+        "quickCapture": true,
+        "reviewCapture": true
+      },
+      "title": "Agency OS - Local Solo Builder Kit",
+      "url": "http://localhost:5176/",
+      "viewport": {
+        "height": 844,
+        "width": 390
+      }
+    }
+  },
+  "desktop": {
+    "screenshotPath": "C:/Agency_os_first/worktrees/capture-review-ui-qa/tasks/log/2026-07-24-capture-review-ui-qa/capture-review-ui-desktop-panel-1280w.png",
+    "panelScreenshot": {
+      "screenshotPath": "C:/Agency_os_first/worktrees/capture-review-ui-qa/tasks/log/2026-07-24-capture-review-ui-qa/capture-review-ui-desktop-panel-1280w.png",
+      "clip": {
+        "height": 1456,
+        "width": 216,
+        "x": 24,
+        "y": 344
+      }
+    },
+    "report": {
+      "outsidePanel": [],
+      "overlaps": [],
+      "rects": {
+        "panel": {
+          "bottom": 1814,
+          "height": 1465,
+          "right": 236,
+          "selector": ".mobile-brief",
+          "width": 208,
+          "x": 28,
+          "y": 348
+        },
+        "phoneActions": {
+          "bottom": 1795,
+          "height": 522,
+          "right": 217,
+          "selector": ".phone-action-list",
+          "width": 171,
+          "x": 47,
+          "y": 1273
+        },
+        "quickCapture": {
+          "bottom": 893,
+          "height": 352,
+          "right": 217,
+          "selector": ".capture-note-form",
+          "width": 171,
+          "x": 47,
+          "y": 540
+        },
+        "reviewForm": {
+          "bottom": 1203,
+          "height": 298,
+          "right": 217,
+          "selector": ".capture-review-form",
+          "width": 171,
+          "x": 47,
+          "y": 905
+        },
+        "uncategorizedList": {
+          "bottom": 1257,
+          "height": 42,
+          "right": 217,
+          "selector": ".capture-review-list",
+          "width": 171,
+          "x": 47,
+          "y": 1215
+        }
+      },
+      "requiredText": {
+        "candidateType": true,
+        "lastUncategorized": true,
+        "markOneCandidate": true,
+        "quickCapture": true,
+        "reviewCapture": true
+      },
+      "title": "Agency OS - Local Solo Builder Kit",
+      "url": "http://localhost:5176/",
+      "viewport": {
+        "height": 900,
+        "width": 1280
+      }
+    }
+  },
+  "result": {
+    "requiredTextPresent": true,
+    "noPairwiseOverlap": true,
+    "noHorizontalPanelOverflow": true
+  }
+}

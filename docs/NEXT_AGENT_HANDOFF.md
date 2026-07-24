@@ -6,10 +6,10 @@ Last updated: 2026-07-24
 ## Handoff Freshness
 
 Branch:
-- `main`
+- `feature/capture-review-ui-qa`
 
 Commit:
-- this handoff is included in the current main commit; run
+- this handoff is included in the branch commit; run
   `git log -1 --oneline` after checkout for the exact checkpoint hash.
 
 Working tree state after this handoff checkpoint:
@@ -18,6 +18,12 @@ Working tree state after this handoff checkpoint:
 Last verified command/result:
 - `npm run verify`
 - pass: lint, typecheck, build and 66 tests.
+- Browser QA against `http://localhost:5176/`
+- pass: mobile `390px` and desktop `1280px` phone-mode panel screenshots show
+  quick capture form, capture review form and uncategorized list without
+  overlap or horizontal overflow.
+- `git diff --check`
+- pass.
 
 Conflict rule:
 - if this handoff conflicts with current code/tests, trust code/tests, inspect
@@ -308,6 +314,38 @@ Changed files in this capture review UI slice:
 - `tests/rendered-html.test.mjs`
 - `docs/NEXT_AGENT_HANDOFF.md`
 
+Capture review UI QA checkpoint:
+- Browser QA evidence was captured for the merged capture review UI affordance.
+- QA server: `http://localhost:5176/`.
+- Mobile panel screenshot:
+  `tasks/log/2026-07-24-capture-review-ui-qa/capture-review-ui-mobile-panel-390w.png`.
+- Desktop panel screenshot:
+  `tasks/log/2026-07-24-capture-review-ui-qa/capture-review-ui-desktop-panel-1280w.png`.
+- Machine-readable geometry report:
+  `tasks/log/2026-07-24-capture-review-ui-qa/capture-review-ui-qa-report.json`.
+- Evidence note:
+  `tasks/log/2026-07-24-capture-review-ui-qa/qa-evidence.md`.
+- `docs/CURRENT_EVIDENCE.md` now records the screenshot QA evidence and removes
+  the stale "no visual screenshot artifact" gap.
+- Result: required capture/review/list text present at mobile and desktop
+  widths; no pairwise overlap; no horizontal panel overflow.
+- Current replay-derived state has no uncategorized capture summaries, so the
+  review select renders the empty state `No captures`.
+- QA found and fixed a narrow desktop sidebar clipping issue:
+  `app/globals.css` stacks the quick-capture project/source controls by default,
+  and `app/CaptureNoteForm.tsx` uses the shorter empty review label.
+
+Changed files in this QA slice:
+- `app/CaptureNoteForm.tsx`
+- `app/globals.css`
+- `docs/CURRENT_EVIDENCE.md`
+- `docs/NEXT_AGENT_HANDOFF.md`
+- `tasks/log/2026-07-24-capture-review-ui-qa/.gitignore`
+- `tasks/log/2026-07-24-capture-review-ui-qa/qa-evidence.md`
+- `tasks/log/2026-07-24-capture-review-ui-qa/capture-review-ui-mobile-panel-390w.png`
+- `tasks/log/2026-07-24-capture-review-ui-qa/capture-review-ui-desktop-panel-1280w.png`
+- `tasks/log/2026-07-24-capture-review-ui-qa/capture-review-ui-qa-report.json`
+
 Organizational checkpoint:
 - canonical repo moved to `C:\Agency_os_first\AGENCY_OS_FIRST`;
 - GitHub `main` was updated without force-push;
@@ -327,15 +365,13 @@ Process checkpoint:
 
 ## Next Chewable Step
 
-Capture a browser QA/screenshot artifact for the merged mobile capture review
-UI affordance.
+Coordinator review and merge `feature/capture-review-ui-qa`, then run the
+canonical `npm run verify` from the merged worktree.
 
 Recommended scope:
-- inspect the phone-mode panel in a browser at mobile and desktop widths;
-- confirm the quick capture form, review form and uncategorized list do not
-  overlap;
-- save a screenshot or record the QA artifact path/result in handoff;
-- do not create linked entities or conversion events.
+- inspect the QA screenshot artifacts and narrow CSS fix;
+- run `npm run verify`;
+- if verify passes, merge/push through the coordinator path.
 
 Out of scope:
 - Telegram;

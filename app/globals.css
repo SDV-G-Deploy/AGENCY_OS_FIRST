@@ -240,7 +240,7 @@ button:hover {
 
 .capture-note-fields {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(92px, 0.62fr);
+  grid-template-columns: 1fr;
   gap: 8px;
 }
 
@@ -966,6 +966,10 @@ button:hover {
 
   .mobile-brief {
     margin-top: 0;
+  }
+
+  .capture-note-fields {
+    grid-template-columns: minmax(0, 1fr) minmax(92px, 0.62fr);
   }
 
   .hero-grid,

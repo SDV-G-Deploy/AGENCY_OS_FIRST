@@ -479,6 +479,27 @@ Evidence:
 Strength: strong for candidate validation consistency across current local
 paths.
 
+### Claim 30: The capture review UI has first browser QA evidence
+
+Evidence:
+- `tasks/log/2026-07-24-capture-review-ui-qa/qa-evidence.md` records the QA
+  result.
+- `tasks/log/2026-07-24-capture-review-ui-qa/capture-review-ui-mobile-panel-390w.png`
+  captures the phone-mode panel at mobile width.
+- `tasks/log/2026-07-24-capture-review-ui-qa/capture-review-ui-desktop-panel-1280w.png`
+  captures the phone-mode panel at desktop width.
+- `tasks/log/2026-07-24-capture-review-ui-qa/capture-review-ui-qa-report.json`
+  records the DOM geometry checks.
+- Browser QA result: quick capture form, capture review form and uncategorized
+  list rendered without overlap or horizontal overflow at mobile and desktop
+  widths.
+- Command: `npm run verify`
+- Result: pass with lint, typecheck, build and 66 tests.
+
+Strength: medium. It proves first local browser/layout QA for the phone-mode
+capture review surface, not full device coverage or interaction mutation
+through the real event log.
+
 ## Files Changed For Honesty Closure
 
 - `package.json`: added `typecheck`, `audit:prod`, `verify`; moved Next to
@@ -552,7 +573,7 @@ paths.
 - Writer has lock and idempotency conflict checks, but no durable
   `approval.rejected` lifecycle event yet.
 - Dependency audit blocks production deployment.
-- No visual screenshot artifact is saved in the repo yet.
+- First visual screenshot artifacts exist for the phone-mode capture review UI.
 - The canonical repo has been pushed to GitHub, but production deployment is
   still blocked.
 - Event integrity is validated, but the hash function is a deterministic local
@@ -561,7 +582,7 @@ paths.
 ## Next Evidence To Create
 
 Before the next product feature:
-- add the first mobile review UI affordance for `capture.review_marked`;
 - prove one uncategorized capture can be marked as a candidate through
-  `/api/local/capture-review`;
-- capture a screenshot or browser QA artifact after the next visible UI change.
+  `/api/local/capture-review` from a non-mutating QA fixture or a safe temp
+  ledger flow;
+- capture a browser interaction QA artifact for the successful review flow.

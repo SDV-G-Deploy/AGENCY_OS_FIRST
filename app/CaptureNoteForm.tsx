@@ -211,7 +211,7 @@ export function CaptureNoteForm({ projects, recentCaptures }: CaptureNoteFormPro
                 </option>
               ))
             ) : (
-              <option value="">No uncategorized captures</option>
+              <option value="">No captures</option>
             )}
           </select>
         </label>
