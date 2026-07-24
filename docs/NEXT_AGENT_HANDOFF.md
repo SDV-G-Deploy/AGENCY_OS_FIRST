@@ -6,10 +6,10 @@ Last updated: 2026-07-24
 ## Handoff Freshness
 
 Branch:
-- `feature/capture-review-ui-qa`
+- `main`
 
 Commit:
-- this handoff is included in the branch commit; run
+- this handoff is included in the current main commit; run
   `git log -1 --oneline` after checkout for the exact checkpoint hash.
 
 Working tree state after this handoff checkpoint:
@@ -334,6 +334,8 @@ Capture review UI QA checkpoint:
 - QA found and fixed a narrow desktop sidebar clipping issue:
   `app/globals.css` stacks the quick-capture project/source controls by default,
   and `app/CaptureNoteForm.tsx` uses the shorter empty review label.
+- Merged to canonical `main` and verified with `npm run verify`: lint,
+  typecheck, build and 66 tests passed.
 
 Changed files in this QA slice:
 - `app/CaptureNoteForm.tsx`
@@ -365,13 +367,18 @@ Process checkpoint:
 
 ## Next Chewable Step
 
-Coordinator review and merge `feature/capture-review-ui-qa`, then run the
-canonical `npm run verify` from the merged worktree.
+Capture safe browser interaction QA for the capture review success flow using a
+temporary event ledger.
 
 Recommended scope:
-- inspect the QA screenshot artifacts and narrow CSS fix;
-- run `npm run verify`;
-- if verify passes, merge/push through the coordinator path.
+- run the app against a copied/temp `data/events.jsonl` or equivalent safe
+  fixture;
+- create or seed one uncategorized capture in the temp ledger;
+- submit one `capture.review_marked` from the browser UI;
+- confirm success confirmation and replay-derived removal from the
+  uncategorized list;
+- save the QA artifact/report path in handoff;
+- do not mutate canonical `data/events.jsonl`.
 
 Out of scope:
 - Telegram;
