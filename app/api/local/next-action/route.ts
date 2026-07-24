@@ -1,5 +1,4 @@
-import { resolve } from "node:path";
-
+import { resolveLocalEventsPath } from "../../../local-events-path";
 import { runProjectNextActionCommand } from "../../../local-command";
 
 type NextActionPayload = {
@@ -19,7 +18,7 @@ export async function POST(request: Request) {
   const projectId = typeof payload.projectId === "string" ? payload.projectId : "";
   const nextAction = typeof payload.nextAction === "string" ? payload.nextAction : "";
   const result = await runProjectNextActionCommand({
-    eventsPath: resolve(process.cwd(), "data/events.jsonl"),
+    eventsPath: resolveLocalEventsPath(),
     actorId: "person-serj",
     projectId,
     nextAction,

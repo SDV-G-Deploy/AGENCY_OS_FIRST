@@ -14,6 +14,7 @@
     "typecheck": "tsc --noEmit",
     "audit:prod": "npm audit --omit=dev",
     "smoke:capture": "node scripts/smoke-capture-note.mjs",
+    "smoke:local-dev-api": "node scripts/smoke-local-dev-api-writes.mjs",
     "verify": "npm run lint && npm run typecheck && npm test",
     "db:generate": "drizzle-kit generate"
   },

@@ -59,11 +59,24 @@ test("server-renders the Agency OS dashboard shell", async () => {
 });
 
 test("keeps the first MVP focused on state, proof and agent runs", async () => {
-  const [page, route, captureRoute, captureReviewRoute, captureForm, projectsData, evidenceData, ledger, layout, packageJson] = await Promise.all([
+  const [
+    page,
+    route,
+    captureRoute,
+    captureReviewRoute,
+    localEventsPath,
+    captureForm,
+    projectsData,
+    evidenceData,
+    ledger,
+    layout,
+    packageJson,
+  ] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/api/local/next-action/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/local/capture-note/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/local/capture-review/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/local-events-path.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/CaptureNoteForm.tsx", import.meta.url), "utf8"),
     readFile(new URL("../data/projects.json", import.meta.url), "utf8"),
     readFile(new URL("../data/evidence.json", import.meta.url), "utf8"),
@@ -102,14 +115,16 @@ test("keeps the first MVP focused on state, proof and agent runs", async () => {
   assert.doesNotMatch(page, /segmented-control|secondary-action|action-row/);
   assert.match(page, /from "\.\/ledger"/);
   assert.match(route, /actorId: "person-serj"/);
-  assert.match(route, /resolve\(process\.cwd\(\), "data\/events\.jsonl"\)/);
+  assert.match(route, /resolveLocalEventsPath\(\)/);
   assert.doesNotMatch(route, /payload\.actorId|payload\.eventsPath/);
   assert.match(captureRoute, /actorId: "person-serj"/);
-  assert.match(captureRoute, /resolve\(process\.cwd\(\), "data\/events\.jsonl"\)/);
+  assert.match(captureRoute, /resolveLocalEventsPath\(\)/);
   assert.doesNotMatch(captureRoute, /payload\.actorId|payload\.eventsPath/);
   assert.match(captureReviewRoute, /actorId: "person-serj"/);
-  assert.match(captureReviewRoute, /resolve\(process\.cwd\(\), "data\/events\.jsonl"\)/);
+  assert.match(captureReviewRoute, /resolveLocalEventsPath\(\)/);
   assert.doesNotMatch(captureReviewRoute, /payload\.actorId|payload\.eventsPath/);
+  assert.match(localEventsPath, /AGENCY_OS_EVENTS_PATH/);
+  assert.match(localEventsPath, /resolve\(process\.cwd\(\), "data\/events\.jsonl"\)/);
   assert.match(captureForm, /fetch\("\/api\/local\/capture-note"/);
   assert.match(captureForm, /fetch\("\/api\/local\/capture-review"/);
   assert.match(captureForm, /try \{/);

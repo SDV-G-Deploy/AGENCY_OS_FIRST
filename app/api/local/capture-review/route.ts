@@ -1,5 +1,4 @@
-import { resolve } from "node:path";
-
+import { resolveLocalEventsPath } from "../../../local-events-path";
 import { runCaptureReviewMarkedCommand } from "../../../local-command";
 
 type CaptureReviewPayload = {
@@ -36,7 +35,7 @@ export async function POST(request: Request) {
         )}:${normalizeIdempotencyPart(reviewedAt)}`;
 
   const result = await runCaptureReviewMarkedCommand({
-    eventsPath: resolve(process.cwd(), "data/events.jsonl"),
+    eventsPath: resolveLocalEventsPath(),
     actorId: "person-serj",
     captureId,
     candidateType,

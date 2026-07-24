@@ -6,25 +6,29 @@ Last updated: 2026-07-24
 ## Handoff Freshness
 
 Branch:
-- `main`
+- `feature/fix-local-dev-api-write-lock`
 
 Commit:
-- this handoff is included in the current main commit; run
-  `git log -1 --oneline` after checkout for the exact checkpoint hash.
+- this handoff is included in the branch commit; run `git log -1 --oneline`
+  after checkout for the exact checkpoint hash.
 
 Working tree state after this handoff checkpoint:
-- expected clean.
+- expected clean after commit.
 
 Last verified command/result:
 - `npm run verify`
 - pass: lint, typecheck, build and 66 tests.
 - `git diff --check`
-- pass.
-- Browser interaction QA against temporary worktree event ledger.
-- partial: browser submitted one `capture.review_marked` through
-  `/api/local/capture-review` and replay-derived removal was confirmed after a
-  clean reload; transient success confirmation was not captured before the
-  automatic reload reset the UI.
+- pass; PowerShell reported only existing CRLF normalization warnings.
+- `npm run smoke:local-dev-api`
+- pass: standard `npm run dev` served the app and appended one
+  `capture.note_created` plus one `capture.review_marked` through
+  `/api/local/capture-note` and `/api/local/capture-review` against temp log
+  `C:\Users\SERJSE~1\AppData\Local\Temp\agency-os-local-dev-api-KYPsBz\events.jsonl`.
+- Reproduced pre-fix blocker before code changes:
+  `POST /api/local/capture-note` against standard `npm run dev` on
+  `http://localhost:5181/` returned HTTP 500 with `EPERM` at
+  `acquireLock()` while opening `data/events.jsonl.lock`.
 - Canonical `C:\Agency_os_first\AGENCY_OS_FIRST\data\events.jsonl`
   hash stayed unchanged:
   `E4DB925895E9F085112439482882D8E32E1079A0D672B44422D884431F625D10`.
@@ -43,8 +47,10 @@ Agency OS is on `main`. The capture triage contract, replay support,
 command/API seam and capture candidate validation fix are merged and pushed to
 GitHub.
 
-The next branch or continuation should stay inside the v0.3 phone-first capture
-path, starting from the contracts already written in:
+The local dev API write EPERM blocker is fixed on
+`feature/fix-local-dev-api-write-lock`. The next action is coordinator review,
+merge and push if accepted. Any continuation should stay inside the v0.3
+phone-first capture path, starting from the contracts already written in:
 - `docs/AGENT_START_BRIEF.md`;
 - `docs/PRODUCT_DEVELOPMENT_FLOW.md`;
 - `docs/PRE_DEVELOPMENT_READINESS_AUDIT.md`;
@@ -54,6 +60,45 @@ path, starting from the contracts already written in:
 - `docs/EVENT_LOG_INTEGRITY.md`.
 
 ## Last Completed Work
+
+Local dev API write runtime fix checkpoint:
+- The standard `npm run dev` EPERM blocker was reproduced before the fix:
+  Vinext served the route, but the Cloudflare/workerd request runtime rejected
+  `node:fs/promises.open(lockPath, "wx")` for `data/events.jsonl.lock`.
+- Root cause: file-backed local ledger writes need Node filesystem write access;
+  the Cloudflare dev request runtime is suitable for Worker simulation but not
+  for local-first file appends.
+- `vite.config.ts` now keeps the Cloudflare plugin for build/non-serve commands
+  and for explicit `AGENCY_OS_DEV_RUNTIME=cloudflare`, while default
+  `npm run dev` uses Vinext's Node-backed request path.
+- `app/local-events-path.ts` centralizes local event log resolution and supports
+  `AGENCY_OS_EVENTS_PATH` for safe temp-ledger QA; default remains
+  `data/events.jsonl` relative to the running repo.
+- `/api/local/next-action`, `/api/local/capture-note` and
+  `/api/local/capture-review` all route through `resolveLocalEventsPath()`;
+  request payloads still cannot choose actor or events path.
+- `npm run smoke:local-dev-api` starts the standard dev server with
+  `AGENCY_OS_EVENTS_PATH` pointing to a copied temp ledger, posts one capture
+  note, posts one capture review for that capture and asserts the canonical
+  ledger bytes are unchanged.
+- Exact final smoke result: temp log
+  `C:\Users\SERJSE~1\AppData\Local\Temp\agency-os-local-dev-api-KYPsBz\events.jsonl`;
+  appended events `event-smoke-local-dev-api-capture-note` and
+  `event-smoke-local-dev-api-capture-review`.
+- No product UI, conversion flow, importer, auth, storage, deployment or
+  dependency behavior changed.
+
+Changed files in this local dev API write fix:
+- `vite.config.ts`
+- `app/local-events-path.ts`
+- `app/api/local/next-action/route.ts`
+- `app/api/local/capture-note/route.ts`
+- `app/api/local/capture-review/route.ts`
+- `scripts/smoke-local-dev-api-writes.mjs`
+- `package.json`
+- `tests/ledger-test-helpers.mjs`
+- `tests/rendered-html.test.mjs`
+- `docs/NEXT_AGENT_HANDOFF.md`
 
 Product planning checkpoint:
 - Product DNA locked.
@@ -425,61 +470,30 @@ Process checkpoint:
 
 ## Next Chewable Step
 
-Investigate and fix the standard local dev API write `EPERM` blocker for
-file-backed capture writes.
+Coordinator review of `feature/fix-local-dev-api-write-lock`.
 
 Recommended scope:
-- reproduce standard `npm run dev` local API writes against a copied/temp event
-  ledger;
-- identify why the Vinext/Cloudflare request runtime cannot open
-  `data/events.jsonl.lock`;
-- make the smallest runtime/write-path fix that keeps canonical
-  `data/events.jsonl` safe;
-- prove capture note and capture review POSTs can append through the standard
-  local dev server against a temp ledger;
-- keep success-confirmation timing as a later UI polish unless it is required
-  to verify the runtime fix.
+- inspect the local dev runtime change in `vite.config.ts`;
+- inspect `AGENCY_OS_EVENTS_PATH` handling in `app/local-events-path.ts`;
+- rerun `npm run smoke:local-dev-api` if desired before merge;
+- merge and push if accepted.
 
-Out of scope:
-- Telegram;
-- GitHub/Codex/OpenClaw importers;
-- hosted auth;
-- production deploy;
-- converting capture to evidence/blocker/decision.
-- broad storage, framework or auth changes.
+After this branch is merged, the next product slice can return to v0.3
+phone-first capture polish, with success-confirmation timing still available as
+a small UI follow-up.
 
 ## Minimum Files To Read Next
 
 - `docs/AGENT_START_BRIEF.md`
 - `docs/NEXT_AGENT_HANDOFF.md`
-- `docs/PRODUCT_DEVELOPMENT_FLOW.md` sections:
-  - `v0.3 Wedge Contract`
-  - `Stage 2: First Phone Write`
-- `docs/PRE_DEVELOPMENT_READINESS_AUDIT.md`
-- `docs/WORKFLOW_FOR_PHONE_AND_AGENTS.md`
-- `docs/STACK_AND_TOOLING_DECISION.md`
-- `docs/DATA_MODEL_AND_INVARIANTS.md` section:
-  - `Capture`
-- `docs/REDACTION_AND_IMPORT_BOUNDARIES.md` section:
-  - `Raw Capture Quarantine`
-- `app/ledger.ts`
-- `app/ledger-writer.ts`
-- `app/local-command.ts`
+- `vite.config.ts`
+- `app/local-events-path.ts`
 - `app/api/local/capture-note/route.ts`
 - `app/api/local/capture-review/route.ts`
-- `app/CaptureNoteForm.tsx`
-- `app/page.tsx`
-- `app/ledger.ts`
-- `app/ledger-writer.ts`
-- `app/local-command.ts`
-- `app/api/local/capture-note/route.ts`
 - `scripts/smoke-capture-note.mjs`
+- `scripts/smoke-local-dev-api-writes.mjs`
 - `tests/ledger-test-helpers.mjs`
-- `tests/ledger-validation.test.mjs`
-- `tests/ledger-replay.test.mjs`
-- `tests/ledger-writer.test.mjs`
 - `tests/local-command-api.test.mjs`
-- `tests/capture-smoke.test.mjs`
 - `tests/rendered-html.test.mjs`
 
 ## Usually Skip Unless Needed

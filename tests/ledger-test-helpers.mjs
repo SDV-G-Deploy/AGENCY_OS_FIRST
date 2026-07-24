@@ -33,6 +33,10 @@ async function transpileModule(sourcePath, targetPath, rewriteImports = false) {
     source = source.replace('from "./ledger"', 'from "./ledger.js"');
     source = source.replace('from "./ledger-writer"', 'from "./ledger-writer.js"');
     source = source.replace('from "../../../local-command"', 'from "./local-command.js"');
+    source = source.replace(
+      'from "../../../local-events-path"',
+      'from "./local-events-path.js"',
+    );
   }
   const output = ts.transpileModule(source, {
     compilerOptions: {
@@ -138,6 +142,11 @@ export async function loadLocalCommand() {
   await transpileModule(
     new URL("../app/local-command.ts", import.meta.url),
     join(moduleDir, "local-command.js"),
+    true,
+  );
+  await transpileModule(
+    new URL("../app/local-events-path.ts", import.meta.url),
+    join(moduleDir, "local-events-path.js"),
     true,
   );
 

@@ -1,5 +1,4 @@
-import { resolve } from "node:path";
-
+import { resolveLocalEventsPath } from "../../../local-events-path";
 import { runCaptureNoteCommand } from "../../../local-command";
 
 type CaptureNotePayload = {
@@ -39,7 +38,7 @@ export async function POST(request: Request) {
         )}:${normalizeIdempotencyPart(createdAt)}:${normalizeIdempotencyPart(body)}`;
 
   const result = await runCaptureNoteCommand({
-    eventsPath: resolve(process.cwd(), "data/events.jsonl"),
+    eventsPath: resolveLocalEventsPath(),
     actorId: "person-serj",
     projectId,
     body,
