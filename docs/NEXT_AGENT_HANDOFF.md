@@ -1,19 +1,20 @@
 # Next Agent Handoff
 
 Status: current handoff  
-Last updated: 2026-07-24
+Last updated: 2026-07-25
 
 ## Handoff Freshness
 
 Branch:
-- `main`
+- `feature/capture-review-success-confirmation`
 
 Commit:
-- this handoff is included in the current main commit; run
+- this handoff is included in the current branch commit; run
   `git log -1 --oneline` after checkout for the exact checkpoint hash.
 
 Working tree state after this handoff checkpoint:
-- expected clean.
+- expected clean, with only the ignored local `node_modules` junction used by
+  this disposable worktree for verification.
 
 Last verified command/result:
 - `npm run verify`
@@ -24,11 +25,7 @@ Last verified command/result:
 - pass: standard `npm run dev` served the app and appended one
   `capture.note_created` plus one `capture.review_marked` through
   `/api/local/capture-note` and `/api/local/capture-review` against temp log
-  `C:\Users\SERJSE~1\AppData\Local\Temp\agency-os-local-dev-api-6MpQ2K\events.jsonl`.
-- Reproduced pre-fix blocker before code changes:
-  `POST /api/local/capture-note` against standard `npm run dev` on
-  `http://localhost:5181/` returned HTTP 500 with `EPERM` at
-  `acquireLock()` while opening `data/events.jsonl.lock`.
+  `C:\Users\SERJSE~1\AppData\Local\Temp\agency-os-local-dev-api-M3MM3t\events.jsonl`.
 - Canonical `C:\Agency_os_first\AGENCY_OS_FIRST\data\events.jsonl`
   hash stayed unchanged:
   `E4DB925895E9F085112439482882D8E32E1079A0D672B44422D884431F625D10`.
@@ -43,9 +40,11 @@ Agency OS now has a canonical local repo and GitHub remote:
 - local: `C:\Agency_os_first\AGENCY_OS_FIRST`;
 - GitHub: `https://github.com/SDV-G-Deploy/AGENCY_OS_FIRST`.
 
-Agency OS is on `main`. The capture triage contract, replay support,
-command/API seam and capture candidate validation fix are merged and pushed to
-GitHub.
+Canonical Agency OS remains on `main`. This handoff is for branch
+`feature/capture-review-success-confirmation`, which starts from the local-dev
+API write fix checkpoint. The capture triage contract, replay support,
+command/API seam and capture candidate validation fix are already merged and
+pushed to GitHub.
 
 The local dev API write EPERM blocker is fixed on `main`. Any continuation
 should stay inside the v0.3 phone-first capture path, starting from the
@@ -59,6 +58,29 @@ contracts already written in:
 - `docs/EVENT_LOG_INTEGRITY.md`.
 
 ## Last Completed Work
+
+Capture review success confirmation durability checkpoint:
+- `app/CaptureNoteForm.tsx` keeps the existing local removal of a reviewed
+  capture from the visible uncategorized list immediately after a successful
+  `/api/local/capture-review` response.
+- Review success now waits 2000 ms before reloading, giving browser QA enough
+  time to observe the inline success confirmation.
+- Review success also writes a one-shot browser session confirmation before
+  reload and restores it after the replay-derived page refreshes, so the
+  success state is observable both before and after refresh.
+- Session storage is best effort only; if it is unavailable, the successful
+  API response still shows the pre-refresh confirmation and schedules the
+  replay-derived reload.
+- No backend write semantics, event contracts, conversion flows, importer,
+  auth, storage, deployment or dependency behavior changed.
+- Verified with `git diff --check`, `npm run verify` and
+  `npm run smoke:local-dev-api`; canonical `data/events.jsonl` hash stayed
+  unchanged.
+
+Changed files in this capture review success confirmation slice:
+- `app/CaptureNoteForm.tsx`
+- `tests/rendered-html.test.mjs`
+- `docs/NEXT_AGENT_HANDOFF.md`
 
 Local dev API write runtime fix checkpoint:
 - The standard `npm run dev` EPERM blocker was reproduced before the fix:
@@ -471,15 +493,14 @@ Process checkpoint:
 
 ## Next Chewable Step
 
-Improve capture-review success confirmation durability after browser submit.
+Coordinator review of branch `feature/capture-review-success-confirmation`.
 
-Recommended scope:
-- keep it limited to the existing capture review UI;
-- make the successful review confirmation observable before/after the refresh,
-  or delay/adjust reload behavior enough for QA to capture it;
-- verify the reviewed capture still disappears from replay-derived
-  uncategorized state;
-- do not change event contracts, conversion flows or backend write semantics.
+Recommended review focus:
+- confirm the capture review success message is observable before the delayed
+  reload and after the replay-derived refresh;
+- confirm the reviewed capture still disappears from the uncategorized list;
+- confirm the slice stayed limited to `app/CaptureNoteForm.tsx`, focused static
+  tests and this handoff.
 
 ## Minimum Files To Read Next
 
@@ -487,7 +508,6 @@ Recommended scope:
 - `docs/NEXT_AGENT_HANDOFF.md`
 - `app/CaptureNoteForm.tsx`
 - `app/api/local/capture-review/route.ts`
-- `scripts/smoke-capture-note.mjs`
 - `scripts/smoke-local-dev-api-writes.mjs`
 - `tests/rendered-html.test.mjs`
 

@@ -137,6 +137,11 @@ test("keeps the first MVP focused on state, proof and agent runs", async () => {
   assert.match(captureForm, /decision_candidate/);
   assert.match(captureForm, /next_action_candidate/);
   assert.match(captureForm, /reviewedCaptureIds/);
+  assert.match(captureForm, /reviewSuccessStorageKey/);
+  assert.match(captureForm, /window\.sessionStorage\.setItem\(reviewSuccessStorageKey/);
+  assert.match(captureForm, /window\.sessionStorage\.getItem\(reviewSuccessStorageKey\)/);
+  assert.match(captureForm, /reviewRefreshDelayMs = 2000/);
+  assert.match(captureForm, /Derived state refreshed/);
   assert.match(captureForm, /window\.location\.reload/);
   assert.match(captureForm, /className="capture-note-fields"/);
   assert.match(captureForm, /className="capture-review-form"/);

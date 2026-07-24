@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 
 type ProjectOption = {
   id: string;
@@ -45,6 +45,17 @@ const candidateOptions = [
   { id: "next_action_candidate", label: "Next action candidate" },
 ];
 
+const reviewSuccessStorageKey = "agency-os:capture-review-success";
+const reviewRefreshDelayMs = 2000;
+
+function storeReviewSuccessMessage(message: string) {
+  try {
+    window.sessionStorage.setItem(reviewSuccessStorageKey, message);
+  } catch {
+    // Session storage is a best-effort confirmation bridge across reloads.
+  }
+}
+
 export function CaptureNoteForm({ projects, recentCaptures }: CaptureNoteFormProps) {
   const [projectId, setProjectId] = useState("inbox");
   const [source, setSource] = useState("phone");
@@ -60,6 +71,28 @@ export function CaptureNoteForm({ projects, recentCaptures }: CaptureNoteFormPro
   const [reviewedCaptureIds, setReviewedCaptureIds] = useState<Set<string>>(() => new Set());
   const visibleCaptures = recentCaptures.filter((capture) => !reviewedCaptureIds.has(capture.id));
   const selectedReviewCaptureId = reviewCaptureId || visibleCaptures[0]?.id || "";
+
+  useEffect(() => {
+    let storedReviewMessage = "";
+
+    try {
+      storedReviewMessage = window.sessionStorage.getItem(reviewSuccessStorageKey) ?? "";
+      window.sessionStorage.removeItem(reviewSuccessStorageKey);
+    } catch {
+      return undefined;
+    }
+
+    if (!storedReviewMessage) {
+      return undefined;
+    }
+
+    const restoreTimer = window.setTimeout(() => {
+      setReviewStatus("saved");
+      setReviewMessage(storedReviewMessage);
+    }, 0);
+
+    return () => window.clearTimeout(restoreTimer);
+  }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -130,10 +163,15 @@ export function CaptureNoteForm({ projects, recentCaptures }: CaptureNoteFormPro
       setReviewedCaptureIds((current) => new Set(current).add(captureId));
       setReviewCaptureId(nextCapture?.id ?? "");
       setReviewStatus("saved");
-      setReviewMessage(
-        result.appended ? "Marked for follow-up. Refreshing derived state." : "Already reviewed.",
-      );
-      window.setTimeout(() => window.location.reload(), 500);
+      const successMessage = result.appended
+        ? "Marked for follow-up. Refreshing derived state soon."
+        : "Already reviewed. Refreshing derived state soon.";
+      const refreshedMessage = result.appended
+        ? "Marked for follow-up. Derived state refreshed."
+        : "Already reviewed. Derived state refreshed.";
+      setReviewMessage(successMessage);
+      storeReviewSuccessMessage(refreshedMessage);
+      window.setTimeout(() => window.location.reload(), reviewRefreshDelayMs);
     } catch {
       setReviewStatus("error");
       setReviewMessage("Unable to review capture.");
