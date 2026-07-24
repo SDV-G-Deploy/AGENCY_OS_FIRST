@@ -6,18 +6,18 @@ Last updated: 2026-07-24
 ## Handoff Freshness
 
 Branch:
-- `main`
+- `feature/docs-ledger-test-reference-cleanup`
 
 Commit:
-- this handoff is included in the current main commit; run
+- this handoff is included in the branch commit; run
   `git log -1 --oneline` after checkout for the exact checkpoint hash.
 
 Working tree state after this handoff checkpoint:
 - expected clean.
 
 Last verified command/result:
-- `npm run verify`
-- pass: lint, typecheck, build and 66 tests.
+- `git diff --check`
+- pass.
 
 Conflict rule:
 - if this handoff conflicts with current code/tests, trust code/tests, inspect
@@ -240,8 +240,8 @@ Changed files in the docs freshness slice:
 - `docs/NEXT_AGENT_HANDOFF.md`
 
 Ledger test split checkpoint:
-- The former monolithic `tests/ledger.test.mjs` suite was split without
-  intentional behavior changes.
+- The former monolithic ledger suite was split without intentional behavior
+  changes.
 - Shared TypeScript transpile/temp-ledger loaders and test event builders now
   live in `tests/ledger-test-helpers.mjs`.
 - Existing ledger tests are grouped into validation, replay, writer and local
@@ -258,7 +258,26 @@ Changed files in this test split slice:
 - `tests/ledger-replay.test.mjs`
 - `tests/ledger-writer.test.mjs`
 - `tests/local-command-api.test.mjs`
-- removed `tests/ledger.test.mjs`
+- removed the old monolithic ledger test file
+- `docs/NEXT_AGENT_HANDOFF.md`
+
+Docs ledger test reference cleanup checkpoint:
+- Current docs no longer point readers to the removed monolithic ledger test
+  file for active evidence or architecture gates.
+- `docs/CURRENT_EVIDENCE.md` now points validation claims to
+  `tests/ledger-validation.test.mjs`, replay claims to
+  `tests/ledger-replay.test.mjs`, writer claims to
+  `tests/ledger-writer.test.mjs` and command/API claims to
+  `tests/local-command-api.test.mjs`.
+- Helper extraction is called out through `tests/ledger-test-helpers.mjs`
+  where the split suite structure is relevant.
+- `docs/AGENCY_OS_ARCHITECTURE.md` now names
+  `tests/local-command-api.test.mjs` for the local API write-path gate.
+- No code, tests, package files, app behavior, UI or data files changed.
+
+Changed files in this docs cleanup slice:
+- `docs/CURRENT_EVIDENCE.md`
+- `docs/AGENCY_OS_ARCHITECTURE.md`
 - `docs/NEXT_AGENT_HANDOFF.md`
 
 Organizational checkpoint:

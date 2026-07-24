@@ -91,8 +91,8 @@ Strength: strong evidence of an unresolved blocker.
 Evidence:
 - `app/ledger.ts` imports `data/events.jsonl?raw`.
 - `parseLedgerEvents()` builds `stateLedger.events` from that source.
-- `tests/ledger.test.mjs` asserts that `stateLedger.events` equals parsed
-  `data/events.jsonl`.
+- `tests/ledger-validation.test.mjs` asserts that `stateLedger.events` equals
+  parsed `data/events.jsonl`.
 - `tests/rendered-html.test.mjs` asserts the old `const rawEvents` source does
   not exist.
 
@@ -119,8 +119,8 @@ Evidence:
   `retentionClass`, `previousEventHash` and `eventHash`.
 - `app/ledger.ts` exports `calculateEventHash()` and `validateEventLog()`.
 - `validateLedger()` includes event log validation errors.
-- `tests/ledger.test.mjs` covers valid event log, broken hash chain, duplicate
-  sequence, missing redaction and unknown approval reference.
+- `tests/ledger-validation.test.mjs` covers valid event log, broken hash chain,
+  duplicate sequence, missing redaction and unknown approval reference.
 - `npm run verify` passes with 16 tests.
 
 Strength: strong for local event integrity validation. It does not yet prove
@@ -135,7 +135,7 @@ Evidence:
 - Agent writes require a scoped approval for
   `project-id:project.next_action_updated`.
 - Single-use approval is marked `used` during successful agent replay.
-- `tests/ledger.test.mjs` covers no-mutation replay, exact duplicate
+- `tests/ledger-replay.test.mjs` covers no-mutation replay, exact duplicate
   idempotency ignore, changed duplicate rejection, missing approval and
   single-use approval consumption.
 - `npm run verify` passes with 21 tests.
@@ -149,8 +149,9 @@ Evidence:
 - `replayLedgerEvents()` validates appended events as
   `validateEventLog([...ledger.events, ...eventsToApply])`.
 - Replay idempotency checks are seeded from existing `ledger.events`.
-- `tests/ledger.test.mjs` verifies invalid event hash does not mutate state.
-- `tests/ledger.test.mjs` verifies reuse of an existing idempotency key is
+- `tests/ledger-replay.test.mjs` verifies invalid event hash does not mutate
+  state.
+- `tests/ledger-replay.test.mjs` verifies reuse of an existing idempotency key is
   rejected.
 - `npm run verify` passes with 23 tests.
 
@@ -166,8 +167,8 @@ Evidence:
 - Writer validates the existing event log precondition.
 - Writer builds the next `sequence`, `previousEventHash` and `eventHash`.
 - Writer preflights through `replayLedgerEvents()` before append.
-- `tests/ledger.test.mjs` covers human append, duplicate idempotency no-op,
-  blocked agent append, approved agent append and invalid existing log
+- `tests/ledger-writer.test.mjs` covers human append, duplicate idempotency
+  no-op, blocked agent append, approved agent append and invalid existing log
   precondition.
 - `npm run verify` passes with 28 tests.
 
@@ -199,8 +200,8 @@ Evidence:
   approved agent project write.
 - Writer replays existing events before building a new event, so previous
   approval-use events affect later writes.
-- `tests/ledger.test.mjs` verifies that a second writer call using the same
-  single-use approval is blocked.
+- `tests/ledger-writer.test.mjs` verifies that a second writer call using the
+  same single-use approval is blocked.
 - `npm run verify` passes with 31 tests.
 
 Strength: strong for the first durable approval-use path. It does not yet prove
@@ -213,9 +214,10 @@ Evidence:
 - `canUseApproval()` checks requested actor and approval entity.
 - `app/ledger-writer.ts` resets approval snapshots before replaying the event
   log, so in-memory approved approvals are not trusted.
-- `tests/ledger.test.mjs` verifies that snapshot-only approval is blocked.
-- `tests/ledger.test.mjs` verifies durable `approval.approved` enables the
-  approved agent write path.
+- `tests/ledger-writer.test.mjs` verifies that snapshot-only approval is
+  blocked.
+- `tests/ledger-writer.test.mjs` verifies durable `approval.approved` enables
+  the approved agent write path.
 - `npm run verify` passes with 32 tests.
 
 Strength: strong for the first durable approve/use lifecycle. It does not yet
@@ -228,8 +230,8 @@ Evidence:
 - `event.actorId` must equal `after.approverId`.
 - Approval event details must match the original `requestedBy`, `actionType`,
   `scope`, `riskLevel` and `entityId`.
-- `tests/ledger.test.mjs` verifies agent-forged approval is rejected.
-- `tests/ledger.test.mjs` verifies changed-scope approval is rejected.
+- `tests/ledger-replay.test.mjs` verifies agent-forged approval is rejected.
+- `tests/ledger-replay.test.mjs` verifies changed-scope approval is rejected.
 - `npm run verify` passes with 34 tests.
 
 Strength: strong for the first approval authorization guard. It does not yet
@@ -242,8 +244,9 @@ Evidence:
   `derivedStateLedger`.
 - Dashboard-facing exports use `derivedStateLedger`.
 - `getSanityChecks()` surfaces replay errors for the default derived ledger.
-- `tests/ledger.test.mjs` proves an appended `project.next_action_updated`
-  event changes derived project `nextAction` without changing the snapshot.
+- `tests/ledger-replay.test.mjs` proves an appended
+  `project.next_action_updated` event changes derived project `nextAction`
+  without changing the snapshot.
 - `npm run verify` passes with 35 tests.
 
 Strength: strong for local replay-derived display state. By itself, this claim
@@ -259,8 +262,8 @@ Evidence:
 - The command is person-only and rejects agent actors before writer execution.
 - The command appends via `appendProjectNextActionEvent()` and confirms the
   result through replay-derived state.
-- `tests/ledger.test.mjs` covers success, blocked agent actor and invalid
-  input.
+- `tests/local-command-api.test.mjs` covers success, blocked agent actor and
+  invalid input.
 - `npm run verify` passes with 66 tests.
 
 Strength: strong for a local command surface. It does not yet prove browser UI,
@@ -278,9 +281,9 @@ Evidence:
   project state instead of the old static seed.
 - `tests/rendered-html.test.mjs` verifies that the form appears in rendered
   HTML and that the route does not accept caller-provided actor or event path.
-- `tests/ledger.test.mjs` verifies the route against a temporary event ledger:
-  POST succeeds, appends exactly one event, uses the human actor, and replay
-  confirms the new next action.
+- `tests/local-command-api.test.mjs` verifies the route against a temporary
+  event ledger: POST succeeds, appends exactly one event, uses the human actor,
+  and replay confirms the new next action.
 - `npm run verify` passes with 66 tests.
 
 Strength: strong for the first local browser-to-ledger write path. It does not
@@ -296,8 +299,8 @@ Evidence:
   for the local app URL.
 - `validateLedger()` now checks that a verified claim has linked verified
   evidence for every declared `requiredEvidenceTypes` entry.
-- `tests/ledger.test.mjs` verifies that removing the `local_url` evidence link
-  from the verified claim creates a validation error.
+- `tests/ledger-validation.test.mjs` verifies that removing the `local_url`
+  evidence link from the verified claim creates a validation error.
 - `npm run verify` passes with 66 tests.
 
 Strength: strong for the first claim/evidence-type contract. It does not yet
@@ -308,11 +311,11 @@ prove automated evidence collection or freshness expiry enforcement.
 Evidence:
 - `replayLedgerEvents()` now treats unsupported state-changing actions for
   known state entities as errors instead of silently ignoring them.
-- `tests/ledger.test.mjs` verifies that unsupported capture state changes such
-  as `capture.note_updated` fail closed unless a reducer explicitly supports
-  them.
-- `tests/ledger.test.mjs` verifies that non-state informational events can
-  still be ignored.
+- `tests/ledger-replay.test.mjs` verifies that unsupported capture state
+  changes such as `capture.note_updated` fail closed unless a reducer
+  explicitly supports them.
+- `tests/ledger-replay.test.mjs` verifies that non-state informational events
+  can still be ignored.
 - `npm run verify` passes with 66 tests.
 
 Strength: strong for reducer safety as capture support expands.
@@ -369,9 +372,9 @@ Evidence:
 - `blocked_sensitive` capture body text is replaced in public derived capture
   records, hidden from `getUncategorizedCaptures()` and absent from phone review
   queue JSON.
-- `tests/ledger.test.mjs` covers valid capture replay, Inbox capture, invalid
-  capture fields, capture-specific duplicate idempotency, stricter create
-  invariants, blocked-sensitive summary/body hiding and unsupported
+- `tests/ledger-replay.test.mjs` covers valid capture replay, Inbox capture,
+  invalid capture fields, capture-specific duplicate idempotency, stricter
+  create invariants, blocked-sensitive summary/body hiding and unsupported
   `capture.note_updated` fail-closed behavior.
 - Command: `npm run verify`
 - Result: pass with lint, typecheck, build and 66 tests.
@@ -492,8 +495,10 @@ paths.
   evidence, blockers, decisions, approvals, traces, work items and agent runs.
 - `app/ledger.ts`: derived State Ledger, validation checks and dashboard
   adapters now read from `data/*.json`.
-- `tests/ledger.test.mjs`: tests validation, duplicate idempotency keys,
-  self-verification rejection and fail-closed external approvals.
+- `tests/ledger-test-helpers.mjs`: shared TypeScript transpile/temp-ledger
+  loaders and test event builders for the split ledger suites.
+- `tests/ledger-validation.test.mjs`: tests validation, duplicate idempotency
+  keys, self-verification rejection and fail-closed external approvals.
 - `types/raw-imports.d.ts`: declares raw JSONL imports for the app bundle.
 - `docs/EVENT_LOG_INTEGRITY.md`: event envelope, hash-chain target, reducer and
   write-path contract.
@@ -512,9 +517,10 @@ paths.
 - `app/NextActionForm.tsx`: first browser-local write form.
 - `app/api/local/next-action/route.ts`: local API route into the command layer.
 - `app/page.tsx`: primary focus now derives from ledger-facing project state.
-- `tests/ledger.test.mjs`: route integration test against a temporary event
-  ledger, required evidence type validation and unsupported state-changing
-  action rejection.
+- `tests/local-command-api.test.mjs`: route integration test against a
+  temporary event ledger.
+- `tests/ledger-validation.test.mjs`: required evidence type validation.
+- `tests/ledger-replay.test.mjs`: unsupported state-changing action rejection.
 - `data/claims.json`: local verified claim now links all required evidence
   types.
 - `data/evidence.json`: added local URL evidence for the current MVP claim.

@@ -470,8 +470,8 @@ Stack:
 
 Current gates:
 - `npm run verify` passes: lint, typecheck, build and tests;
-- `tests/ledger.test.mjs` covers the local API write path against a temporary
-  event ledger;
+- `tests/local-command-api.test.mjs` covers the local API write path against a
+  temporary event ledger;
 - production dependency audit currently has an upstream Next/PostCSS advisory
   blocker and must remain visible before deployment.
 
