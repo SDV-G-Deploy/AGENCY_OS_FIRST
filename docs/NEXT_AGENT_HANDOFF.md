@@ -6,11 +6,12 @@ Last updated: 2026-07-25
 ## Handoff Freshness
 
 Branch:
-- `feature/deploy-readiness-launch-candidate-audit`
+- `main`
 
 Commit:
-- deploy-readiness launch-candidate audit committed on this branch. Run
-  `git log -1 --oneline` in the audit worktree for the exact local commit hash.
+- deploy-readiness launch-candidate audit merged at `d7d5a34`; this coordinator
+  freshness update is included in the current `main` checkpoint. Run
+  `git log -1 --oneline` for the exact local commit hash.
 
 Working tree state after this handoff checkpoint:
 - expected clean.
@@ -27,7 +28,7 @@ Last verified command/result:
 - `npm run smoke:local-dev-api`
 - pass: standard local dev/API smoke wrote one `capture.note_created` plus one
   `capture.review_marked` against a temp log
-  `C:\Users\SERJSE~1\AppData\Local\Temp\agency-os-local-dev-api-JOTjJ0\events.jsonl`.
+  `C:\Users\SERJSE~1\AppData\Local\Temp\agency-os-local-dev-api-wNnkdV\events.jsonl`.
 - Canonical `C:\Agency_os_first\AGENCY_OS_FIRST\data\events.jsonl`
   hash stayed unchanged:
   `E4DB925895E9F085112439482882D8E32E1079A0D672B44422D884431F625D10`.
@@ -87,6 +88,9 @@ Deploy-readiness launch-candidate audit checkpoint:
   `E4DB925895E9F085112439482882D8E32E1079A0D672B44422D884431F625D10`.
 - No deploy, push, product scope expansion, UI redesign, dependency-file change
   or canonical ledger mutation was performed.
+- Merged to canonical `main` and verified with `git diff --check`,
+  `npm run verify` and `npm run smoke:local-dev-api`; canonical
+  `npm run audit:prod` still fails as the known launch blocker.
 
 Artifacts from this audit:
 - `tasks/log/2026-07-25-deploy-readiness-launch-candidate-audit/launch-candidate-audit.md`
