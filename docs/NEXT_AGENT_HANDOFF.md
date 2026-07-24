@@ -6,14 +6,14 @@ Last updated: 2026-07-24
 ## Handoff Freshness
 
 Branch:
-- `feature/fix-local-dev-api-write-lock`
+- `main`
 
 Commit:
-- this handoff is included in the branch commit; run `git log -1 --oneline`
-  after checkout for the exact checkpoint hash.
+- this handoff is included in the current main commit; run
+  `git log -1 --oneline` after checkout for the exact checkpoint hash.
 
 Working tree state after this handoff checkpoint:
-- expected clean after commit.
+- expected clean.
 
 Last verified command/result:
 - `npm run verify`
@@ -24,7 +24,7 @@ Last verified command/result:
 - pass: standard `npm run dev` served the app and appended one
   `capture.note_created` plus one `capture.review_marked` through
   `/api/local/capture-note` and `/api/local/capture-review` against temp log
-  `C:\Users\SERJSE~1\AppData\Local\Temp\agency-os-local-dev-api-KYPsBz\events.jsonl`.
+  `C:\Users\SERJSE~1\AppData\Local\Temp\agency-os-local-dev-api-6MpQ2K\events.jsonl`.
 - Reproduced pre-fix blocker before code changes:
   `POST /api/local/capture-note` against standard `npm run dev` on
   `http://localhost:5181/` returned HTTP 500 with `EPERM` at
@@ -47,10 +47,9 @@ Agency OS is on `main`. The capture triage contract, replay support,
 command/API seam and capture candidate validation fix are merged and pushed to
 GitHub.
 
-The local dev API write EPERM blocker is fixed on
-`feature/fix-local-dev-api-write-lock`. The next action is coordinator review,
-merge and push if accepted. Any continuation should stay inside the v0.3
-phone-first capture path, starting from the contracts already written in:
+The local dev API write EPERM blocker is fixed on `main`. Any continuation
+should stay inside the v0.3 phone-first capture path, starting from the
+contracts already written in:
 - `docs/AGENT_START_BRIEF.md`;
 - `docs/PRODUCT_DEVELOPMENT_FLOW.md`;
 - `docs/PRE_DEVELOPMENT_READINESS_AUDIT.md`;
@@ -82,11 +81,13 @@ Local dev API write runtime fix checkpoint:
   note, posts one capture review for that capture and asserts the canonical
   ledger bytes are unchanged.
 - Exact final smoke result: temp log
-  `C:\Users\SERJSE~1\AppData\Local\Temp\agency-os-local-dev-api-KYPsBz\events.jsonl`;
+  `C:\Users\SERJSE~1\AppData\Local\Temp\agency-os-local-dev-api-6MpQ2K\events.jsonl`;
   appended events `event-smoke-local-dev-api-capture-note` and
   `event-smoke-local-dev-api-capture-review`.
 - No product UI, conversion flow, importer, auth, storage, deployment or
   dependency behavior changed.
+- Merged to canonical `main` and verified with `npm run smoke:local-dev-api`
+  and `npm run verify`: lint, typecheck, build and 66 tests passed.
 
 Changed files in this local dev API write fix:
 - `vite.config.ts`
@@ -470,30 +471,24 @@ Process checkpoint:
 
 ## Next Chewable Step
 
-Coordinator review of `feature/fix-local-dev-api-write-lock`.
+Improve capture-review success confirmation durability after browser submit.
 
 Recommended scope:
-- inspect the local dev runtime change in `vite.config.ts`;
-- inspect `AGENCY_OS_EVENTS_PATH` handling in `app/local-events-path.ts`;
-- rerun `npm run smoke:local-dev-api` if desired before merge;
-- merge and push if accepted.
-
-After this branch is merged, the next product slice can return to v0.3
-phone-first capture polish, with success-confirmation timing still available as
-a small UI follow-up.
+- keep it limited to the existing capture review UI;
+- make the successful review confirmation observable before/after the refresh,
+  or delay/adjust reload behavior enough for QA to capture it;
+- verify the reviewed capture still disappears from replay-derived
+  uncategorized state;
+- do not change event contracts, conversion flows or backend write semantics.
 
 ## Minimum Files To Read Next
 
 - `docs/AGENT_START_BRIEF.md`
 - `docs/NEXT_AGENT_HANDOFF.md`
-- `vite.config.ts`
-- `app/local-events-path.ts`
-- `app/api/local/capture-note/route.ts`
+- `app/CaptureNoteForm.tsx`
 - `app/api/local/capture-review/route.ts`
 - `scripts/smoke-capture-note.mjs`
 - `scripts/smoke-local-dev-api-writes.mjs`
-- `tests/ledger-test-helpers.mjs`
-- `tests/local-command-api.test.mjs`
 - `tests/rendered-html.test.mjs`
 
 ## Usually Skip Unless Needed
