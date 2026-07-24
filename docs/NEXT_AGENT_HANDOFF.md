@@ -6,25 +6,26 @@ Last updated: 2026-07-25
 ## Handoff Freshness
 
 Branch:
-- `feature/capture-review-success-browser-qa`
+- `main`
 
 Commit:
-- this handoff is included in the current branch commit; run
-  `git log -1 --oneline` after checkout for the exact checkpoint hash.
+- capture review success browser QA merged at `99e640a`; this coordinator
+  freshness update is included in the current `main` checkpoint. Run
+  `git log -1 --oneline` for the exact local commit hash.
 
 Working tree state after this handoff checkpoint:
 - expected clean.
 
 Last verified command/result:
+- Canonical `npm run smoke:local-dev-api`
+- pass: standard `npm run dev` served the app and appended one
+  `capture.note_created` plus one `capture.review_marked` through
+  `/api/local/capture-note` and `/api/local/capture-review` against temp log
+  `C:\Users\SERJSE~1\AppData\Local\Temp\agency-os-local-dev-api-fjDfHA\events.jsonl`.
 - `npm run verify`
 - pass: lint, typecheck, build and 66 tests.
 - `git diff --check`
 - pass; PowerShell reported only existing CRLF normalization warnings.
-- `npm run smoke:local-dev-api`
-- pass: standard `npm run dev` served the app and appended one
-  `capture.note_created` plus one `capture.review_marked` through
-  `/api/local/capture-note` and `/api/local/capture-review` against temp log
-  `C:\Users\SERJSE~1\AppData\Local\Temp\agency-os-local-dev-api-Rrzor9\events.jsonl`.
 - Canonical `C:\Agency_os_first\AGENCY_OS_FIRST\data\events.jsonl`
   hash stayed unchanged:
   `E4DB925895E9F085112439482882D8E32E1079A0D672B44422D884431F625D10`.
@@ -40,8 +41,10 @@ Agency OS now has a canonical local repo and GitHub remote:
 - GitHub: `https://github.com/SDV-G-Deploy/AGENCY_OS_FIRST`.
 
 Agency OS is on `main`. The capture triage contract, replay support,
-command/API seam, capture candidate validation fix, local dev API write fix and
-capture review success confirmation fix are merged and pushed to GitHub.
+command/API seam, capture candidate validation fix, local dev API write fix,
+capture review success confirmation fix and success-confirmation browser QA
+evidence are merged. The branch is ready for coordinator push after this
+handoff freshness update.
 
 The local dev API write EPERM blocker is fixed on `main`. Any continuation
 should stay inside the v0.3 phone-first capture path, starting from the
@@ -86,6 +89,8 @@ Capture review success browser QA checkpoint:
   `app/local-events-path.ts`.
 - Verified with `git diff --check`, `npm run verify` and
   `npm run smoke:local-dev-api`.
+- Merged to canonical `main` and verified with `npm run smoke:local-dev-api`
+  and `npm run verify`: lint, typecheck, build and 66 tests passed.
 
 Artifacts from this success browser QA:
 - `tasks/log/2026-07-25-capture-review-success-browser-qa/qa-evidence.md`
@@ -545,16 +550,17 @@ Process checkpoint:
 
 ## Next Chewable Step
 
-Coordinator review for
-`feature/capture-review-success-browser-qa`.
+Create a deploy-readiness / launch-candidate audit branch.
 
 Recommended scope:
-- inspect the narrow runtime ledger refresh fix in `app/ledger.ts` and
-  `app/page.tsx`;
-- inspect browser QA evidence under
-  `tasks/log/2026-07-25-capture-review-success-browser-qa/`;
-- confirm canonical `data/events.jsonl` remains unchanged;
-- merge to `main` only after review.
+- inspect the current production/deploy blocker notes, especially the
+  `postcss` / `sharp` audit blocker recorded in evidence docs;
+- run the production-facing audit/build checks that are cheap and local;
+- determine whether the current `main` can be called Launch Candidate or list
+  the exact remaining blockers;
+- keep the slice evidence/docs-focused unless a narrow deploy blocker fix is
+  directly proven and small;
+- do not deploy until coordinator explicitly approves deployment.
 
 ## Minimum Files To Read Next
 
@@ -567,6 +573,8 @@ Recommended scope:
 - `scripts/smoke-local-dev-api-writes.mjs`
 - `tests/rendered-html.test.mjs`
 - `tasks/log/2026-07-25-capture-review-success-browser-qa/qa-evidence.md`
+- `docs/CURRENT_EVIDENCE.md`
+- `docs/STACK_AND_TOOLING_DECISION.md`
 
 ## Usually Skip Unless Needed
 
