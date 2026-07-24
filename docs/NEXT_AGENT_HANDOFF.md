@@ -6,18 +6,20 @@ Last updated: 2026-07-24
 ## Handoff Freshness
 
 Branch:
-- `main`
+- `feature/capture-review-ui-affordance`
 
 Commit:
-- this handoff is included in the current main commit; run
+- this handoff is included in the branch commit; run
   `git log -1 --oneline` after checkout for the exact checkpoint hash.
 
 Working tree state after this handoff checkpoint:
 - expected clean.
 
 Last verified command/result:
-- `npm run verify`
-- pass: lint, typecheck, build and 66 tests.
+- `git diff --check`
+- pass.
+- `npm run verify` skipped in this worker worktree because `node_modules` is
+  absent; coordinator should run canonical verify after merge.
 
 Conflict rule:
 - if this handoff conflicts with current code/tests, trust code/tests, inspect
@@ -282,6 +284,30 @@ Changed files in this docs cleanup slice:
 - `docs/AGENCY_OS_ARCHITECTURE.md`
 - `docs/NEXT_AGENT_HANDOFF.md`
 
+Capture review UI affordance checkpoint:
+- `app/CaptureNoteForm.tsx` now includes a compact review form directly under
+  the quick capture form in the phone-mode panel.
+- The review form lets the person choose one replay-derived uncategorized
+  capture and one candidate type:
+  `evidence_candidate`, `blocker_candidate`, `decision_candidate` or
+  `next_action_candidate`.
+- Submit posts to `/api/local/capture-review` with `captureId`,
+  `candidateType` and `reviewedAt`.
+- Success and error confirmations render inline.
+- On successful command confirmation, the reviewed capture is hidden from the
+  local uncategorized list and the page reloads so the queue is refreshed from
+  replay-derived state.
+- No evidence, blocker, decision, next-action entity, importer, auth, storage,
+  dependency, deployment or conversion behavior was added.
+- Focused rendered/static tests cover the visible affordance, route boundary,
+  allowed candidate values and derived-state refresh path.
+
+Changed files in this capture review UI slice:
+- `app/CaptureNoteForm.tsx`
+- `app/globals.css`
+- `tests/rendered-html.test.mjs`
+- `docs/NEXT_AGENT_HANDOFF.md`
+
 Organizational checkpoint:
 - canonical repo moved to `C:\Agency_os_first\AGENCY_OS_FIRST`;
 - GitHub `main` was updated without force-push;
@@ -301,15 +327,14 @@ Process checkpoint:
 
 ## Next Chewable Step
 
-Add the first tiny review UI affordance for marking uncategorized captures as
-candidates through `/api/local/capture-review`.
+Coordinator review and merge `feature/capture-review-ui-affordance`, then run
+the canonical `npm run verify` from the merged worktree.
 
 Recommended scope:
-- keep it mobile-friendly and close to the existing phone review queue;
-- choose one candidate type for one existing capture and submit locally;
-- show success/error confirmation and replay-derived updated state;
-- add focused rendered/static tests;
-- do not create linked entities or conversion events.
+- inspect the four changed files;
+- run `npm run verify`;
+- if verify passes, merge/push through the coordinator path;
+- after the next visible UI merge, capture a browser QA/screenshot artifact.
 
 Out of scope:
 - Telegram;

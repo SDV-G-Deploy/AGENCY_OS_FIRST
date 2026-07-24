@@ -232,7 +232,8 @@ button:hover {
   line-height: 1.16;
 }
 
-.capture-note-form {
+.capture-note-form,
+.capture-review-form {
   display: grid;
   gap: 9px;
 }
@@ -243,12 +244,14 @@ button:hover {
   gap: 8px;
 }
 
-.capture-note-form label {
+.capture-note-form label,
+.capture-review-form label {
   display: grid;
   gap: 6px;
 }
 
 .capture-note-form span,
+.capture-review-form span,
 .capture-review-list > span {
   color: var(--muted);
   font-size: 11px;
@@ -258,7 +261,8 @@ button:hover {
 }
 
 .capture-note-form select,
-.capture-note-form textarea {
+.capture-note-form textarea,
+.capture-review-form select {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -267,7 +271,8 @@ button:hover {
   padding: 9px 10px;
 }
 
-.capture-note-form select {
+.capture-note-form select,
+.capture-review-form select {
   min-height: 38px;
 }
 
@@ -284,12 +289,19 @@ button:hover {
   color: var(--muted);
 }
 
-.capture-note-form .command-status.saved {
+.capture-note-form .command-status.saved,
+.capture-review-form .command-status.saved {
   color: var(--green);
 }
 
-.capture-note-form .command-status.error {
+.capture-note-form .command-status.error,
+.capture-review-form .command-status.error {
   color: var(--red);
+}
+
+.capture-review-form {
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
 }
 
 .capture-review-list {

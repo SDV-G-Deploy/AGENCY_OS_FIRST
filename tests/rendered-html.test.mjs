@@ -45,6 +45,11 @@ test("server-renders the Agency OS dashboard shell", async () => {
   assert.match(html, /Note or fact/);
   assert.match(html, /Last uncategorized/);
   assert.match(html, /Local-only capture through the event ledger/);
+  assert.match(html, /Review capture/);
+  assert.match(html, /Mark one candidate/);
+  assert.match(html, /Candidate type/);
+  assert.match(html, /Mark candidate/);
+  assert.match(html, /Local-only review through the event ledger/);
   assert.match(html, /Evidence attachment is planned/);
   assert.doesNotMatch(html, />Attach evidence</);
   assert.doesNotMatch(html, />Run verifier</);
@@ -54,10 +59,11 @@ test("server-renders the Agency OS dashboard shell", async () => {
 });
 
 test("keeps the first MVP focused on state, proof and agent runs", async () => {
-  const [page, route, captureRoute, captureForm, projectsData, evidenceData, ledger, layout, packageJson] = await Promise.all([
+  const [page, route, captureRoute, captureReviewRoute, captureForm, projectsData, evidenceData, ledger, layout, packageJson] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/api/local/next-action/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/local/capture-note/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/local/capture-review/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/CaptureNoteForm.tsx", import.meta.url), "utf8"),
     readFile(new URL("../data/projects.json", import.meta.url), "utf8"),
     readFile(new URL("../data/evidence.json", import.meta.url), "utf8"),
@@ -101,13 +107,26 @@ test("keeps the first MVP focused on state, proof and agent runs", async () => {
   assert.match(captureRoute, /actorId: "person-serj"/);
   assert.match(captureRoute, /resolve\(process\.cwd\(\), "data\/events\.jsonl"\)/);
   assert.doesNotMatch(captureRoute, /payload\.actorId|payload\.eventsPath/);
+  assert.match(captureReviewRoute, /actorId: "person-serj"/);
+  assert.match(captureReviewRoute, /resolve\(process\.cwd\(\), "data\/events\.jsonl"\)/);
+  assert.doesNotMatch(captureReviewRoute, /payload\.actorId|payload\.eventsPath/);
   assert.match(captureForm, /fetch\("\/api\/local\/capture-note"/);
+  assert.match(captureForm, /fetch\("\/api\/local\/capture-review"/);
   assert.match(captureForm, /try \{/);
   assert.match(captureForm, /catch \{/);
   assert.match(captureForm, /useState\("phone"\)/);
   assert.match(captureForm, /<option value="inbox">Inbox<\/option>/);
+  assert.match(captureForm, /candidateOptions/);
+  assert.match(captureForm, /evidence_candidate/);
+  assert.match(captureForm, /blocker_candidate/);
+  assert.match(captureForm, /decision_candidate/);
+  assert.match(captureForm, /next_action_candidate/);
+  assert.match(captureForm, /reviewedCaptureIds/);
+  assert.match(captureForm, /window\.location\.reload/);
   assert.match(captureForm, /className="capture-note-fields"/);
-  assert.match(captureForm, /recentCaptures\.map/);
+  assert.match(captureForm, /className="capture-review-form"/);
+  assert.match(captureForm, /recentCaptures\.filter/);
+  assert.match(captureForm, /visibleCaptures\.map/);
   assert.doesNotMatch(captureForm, /telegram|github|openc-law|openclaw/i);
   assert.match(layout, /Agency OS - Local Solo Builder Kit/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
