@@ -6,24 +6,20 @@ Last updated: 2026-07-24
 ## Handoff Freshness
 
 Branch:
-- `feature/capture-review-interaction-qa`
+- `main`
 
 Commit:
-- this handoff is included in the branch commit; run `git log -1 --oneline`
-  after checkout for the exact checkpoint hash.
+- this handoff is included in the current main commit; run
+  `git log -1 --oneline` after checkout for the exact checkpoint hash.
 
 Working tree state after this handoff checkpoint:
 - expected clean.
 
 Last verified command/result:
-- `git diff --check`
-- pass.
 - `npm run verify`
 - pass: lint, typecheck, build and 66 tests.
-- Worktree originally had no `node_modules`, so this QA used an ignored
-  junction to the canonical local install.
-- Coordinator should still run canonical `npm run verify` after merge because
-  this worktree did not have its own installed `node_modules`.
+- `git diff --check`
+- pass.
 - Browser interaction QA against temporary worktree event ledger.
 - partial: browser submitted one `capture.review_marked` through
   `/api/local/capture-review` and replay-derived removal was confirmed after a
@@ -377,6 +373,8 @@ Capture review interaction QA checkpoint:
   temp ledger.
 - No evidence, blocker, decision, next-action entity, importer, auth, storage,
   dependency, deploy or conversion behavior was changed.
+- Merged to canonical `main` and verified with `npm run verify`: lint,
+  typecheck, build and 66 tests passed.
 
 Artifacts from this interaction QA:
 - `tasks/log/2026-07-24-capture-review-interaction-qa/qa-evidence.md`
@@ -427,17 +425,20 @@ Process checkpoint:
 
 ## Next Chewable Step
 
-Coordinator review of capture review interaction QA findings.
+Investigate and fix the standard local dev API write `EPERM` blocker for
+file-backed capture writes.
 
 Recommended scope:
-- review the interaction QA artifacts under
-  `tasks/log/2026-07-24-capture-review-interaction-qa/`;
-- decide whether the standard Vinext/Cloudflare local API write `EPERM`
-  is a release-blocking runtime issue for v0.3 local-first capture;
-- decide whether the automatic reload should leave a more durable success
-  confirmation or whether current behavior is acceptable;
-- if fixing, use a new branch/worktree and keep changes limited to the smallest
-  runtime/UI behavior slice.
+- reproduce standard `npm run dev` local API writes against a copied/temp event
+  ledger;
+- identify why the Vinext/Cloudflare request runtime cannot open
+  `data/events.jsonl.lock`;
+- make the smallest runtime/write-path fix that keeps canonical
+  `data/events.jsonl` safe;
+- prove capture note and capture review POSTs can append through the standard
+  local dev server against a temp ledger;
+- keep success-confirmation timing as a later UI polish unless it is required
+  to verify the runtime fix.
 
 Out of scope:
 - Telegram;
