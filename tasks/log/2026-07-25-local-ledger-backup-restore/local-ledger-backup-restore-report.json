@@ -1,0 +1,78 @@
+{
+  "date": "2026-07-25",
+  "branch": "feature/local-ledger-backup-restore",
+  "commit": "see git log -1 --oneline for final branch commit",
+  "worktree": "C:\\Agency_os_first\\worktrees\\local-ledger-backup-restore",
+  "canonicalLedgerPath": "C:\\Agency_os_first\\AGENCY_OS_FIRST\\data\\events.jsonl",
+  "canonicalLedgerSha256Before": "E4DB925895E9F085112439482882D8E32E1079A0D672B44422D884431F625D10",
+  "canonicalLedgerSha256After": "E4DB925895E9F085112439482882D8E32E1079A0D672B44422D884431F625D10",
+  "localDailyUseCandidate": {
+    "verdict": "yes-after-coordinator-review-and-merge",
+    "limitations": [
+      "manual local backup/restore only",
+      "no scheduled backup",
+      "no off-machine copy automation",
+      "no hosted storage or multi-device sync",
+      "no auth",
+      "event hashes are deterministic local tamper-evidence checks, not cryptographic signatures"
+    ]
+  },
+  "productionLaunchCandidate": {
+    "verdict": "no",
+    "blockers": [
+      "npm run audit:prod fails on known Next transitive postcss/sharp advisories",
+      "hosted storage/runtime direction unresolved",
+      "remote auth/identity unresolved"
+    ]
+  },
+  "commands": [
+    {
+      "command": "node --test tests/ledger-backup-restore.test.mjs",
+      "result": "pass",
+      "log": "tasks/log/2026-07-25-local-ledger-backup-restore/node-test-ledger-backup-restore.log"
+    },
+    {
+      "command": "npm run ledger:backup -- --out tasks/log/2026-07-25-local-ledger-backup-restore/cli-backups",
+      "result": "pass",
+      "log": "tasks/log/2026-07-25-local-ledger-backup-restore/npm-run-ledger-backup.log"
+    },
+    {
+      "command": "npm run ledger:restore -- <backup-dir> --dry-run",
+      "result": "pass",
+      "log": "tasks/log/2026-07-25-local-ledger-backup-restore/npm-run-ledger-restore-dry-run.log"
+    },
+    {
+      "command": "npm run ledger:restore -- <backup-dir> --events <temp-events.jsonl> --out <temp-safety-dir>",
+      "result": "pass",
+      "log": "tasks/log/2026-07-25-local-ledger-backup-restore/npm-run-ledger-restore-temp-copy.log"
+    },
+    {
+      "command": "git diff --check",
+      "result": "pass",
+      "log": "tasks/log/2026-07-25-local-ledger-backup-restore/git-diff-check.final.log"
+    },
+    {
+      "command": "npm run verify",
+      "result": "pass: lint, typecheck, build and 74 tests",
+      "log": "tasks/log/2026-07-25-local-ledger-backup-restore/npm-run-verify.log"
+    },
+    {
+      "command": "npm run smoke:local-dev-api",
+      "result": "pass: temp ledger only",
+      "log": "tasks/log/2026-07-25-local-ledger-backup-restore/npm-run-smoke-local-dev-api.log"
+    },
+    {
+      "command": "npm run audit:prod",
+      "result": "fail: known Next transitive postcss/sharp advisories",
+      "log": "tasks/log/2026-07-25-local-ledger-backup-restore/npm-run-audit-prod.log"
+    }
+  ],
+  "scopeControl": {
+    "deployed": false,
+    "pushed": false,
+    "canonicalLedgerMutated": false,
+    "hostedStorageAdded": false,
+    "authAdded": false,
+    "uiRedesigned": false
+  }
+}

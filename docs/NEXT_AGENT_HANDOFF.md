@@ -6,31 +6,37 @@ Last updated: 2026-07-25
 ## Handoff Freshness
 
 Branch:
-- `main`
+- `feature/local-ledger-backup-restore`
 
 Commit:
-- deploy-readiness launch-candidate audit merged at `d7d5a34`; this coordinator
-  freshness update is included in the current `main` checkpoint. Run
-  `git log -1 --oneline` for the exact local commit hash.
+- current branch commit; run `git log -1 --oneline` for the exact hash.
 
 Working tree state after this handoff checkpoint:
-- expected clean.
+- expected clean after the worker commit.
 
 Last verified command/result:
+- `node --test tests/ledger-backup-restore.test.mjs`
+- pass: 8 focused backup/restore tests.
+- `npm run ledger:backup -- --out tasks/log/2026-07-25-local-ledger-backup-restore/cli-backups`
+- pass: created a timestamped backup artifact with 3 events and SHA-256
+  `E4DB925895E9F085112439482882D8E32E1079A0D672B44422D884431F625D10`.
+- `npm run ledger:restore -- <backup-dir> --dry-run`
+- pass: validated the backup without mutating `data/events.jsonl`.
+- `npm run ledger:restore -- <backup-dir> --events <temp-events.jsonl> --out <temp-safety-dir>`
+- pass: restored only a temporary event log and wrote a safety backup first.
 - `git diff --check`
-- pass: no whitespace errors.
+- pass: no whitespace errors; Git printed Windows line-ending warnings only.
 - `npm run verify`
-- pass: lint, typecheck, build and 66 tests.
-- `npm run audit:prod`
-- fail: 3 high severity advisories through Next transitive
-  `postcss <=8.5.17` and `sharp <0.35.0`; current `next@16.2.11` is the npm
-  latest and npm's force-fix path proposes a breaking `next@9.3.3` downgrade.
+- pass: lint, typecheck, build and 74 tests.
 - `npm run smoke:local-dev-api`
 - pass: standard local dev/API smoke wrote one `capture.note_created` plus one
-  `capture.review_marked` against a temp log
-  `C:\Users\SERJSE~1\AppData\Local\Temp\agency-os-local-dev-api-wNnkdV\events.jsonl`.
-- Canonical `C:\Agency_os_first\AGENCY_OS_FIRST\data\events.jsonl`
-  hash stayed unchanged:
+  `capture.review_marked` against a temp log.
+- `npm run audit:prod`
+- fail: production Launch Candidate remains blocked by 3 high severity
+  advisories through Next transitive `postcss <=8.5.17` and `sharp <0.35.0`;
+  npm's force-fix path still proposes the breaking `next@9.3.3` downgrade.
+- Canonical `data/events.jsonl` hash stayed unchanged during backup/restore
+  command checks:
   `E4DB925895E9F085112439482882D8E32E1079A0D672B44422D884431F625D10`.
 
 Conflict rule:
@@ -66,6 +72,48 @@ contracts already written in:
 - `docs/EVENT_LOG_INTEGRITY.md`.
 
 ## Last Completed Work
+
+Local ledger backup/restore checkpoint:
+- Worktree:
+  `C:\Agency_os_first\worktrees\local-ledger-backup-restore`.
+- Branch: `feature/local-ledger-backup-restore`.
+- Added script-level local ledger backup/export and restore tooling for
+  `data/events.jsonl`.
+- `npm run ledger:backup` creates a timestamped local bundle containing
+  `events.jsonl` plus `metadata.json` with source path, SHA-256 hash, event
+  count and creation time.
+- `npm run ledger:restore -- <backup-dir-or-metadata.json>` requires metadata,
+  validates JSONL, event count, SHA-256, duplicate sequence/idempotency and the
+  hash chain before restore, supports `--dry-run`, and preserves the current
+  target ledger as a safety backup before replacement.
+- `backups/` is ignored so normal local backup output is not accidentally
+  committed.
+- Focused tests cover backup non-mutation, restore dry-run, temp-copy restore
+  with safety backup, missing metadata, invalid JSONL, broken hash chain and
+  duplicate sequence.
+- Evidence is under:
+  `tasks/log/2026-07-25-local-ledger-backup-restore/`.
+- Local Daily-Use Candidate: yes after coordinator review and merge of this
+  branch.
+- Production Launch Candidate: no; the known production dependency audit plus
+  hosted storage/auth blockers remain.
+- No deploy, push, UI redesign, hosted storage/auth, product scope expansion or
+  canonical ledger mutation was performed.
+
+Changed files in this backup/restore slice:
+- `.gitignore`
+- `package.json`
+- `README.md`
+- `scripts/ledger-backup-lib.mjs`
+- `scripts/ledger-backup-restore.mjs`
+- `tests/ledger-backup-restore.test.mjs`
+- `docs/CURRENT_EVIDENCE.md`
+- `docs/PRE_DEVELOPMENT_READINESS_AUDIT.md`
+- `docs/EVENT_LOG_INTEGRITY.md`
+- `docs/NEXT_AGENT_HANDOFF.md`
+- `tasks/log/2026-07-25-local-ledger-backup-restore/local-ledger-backup-restore.md`
+- `tasks/log/2026-07-25-local-ledger-backup-restore/local-ledger-backup-restore-report.json`
+- backup/restore command logs in the same task directory.
 
 Deploy-readiness launch-candidate audit checkpoint:
 - Audit worktree:
@@ -610,8 +658,9 @@ Recommended scope:
 - choose hosted storage/runtime direction before any remote deployment because
   the current writer is local-file-backed;
 - choose remote auth/identity boundaries before exposing local write routes;
-- add backup/export and restore checks before depending on the local ledger as
-  the only memory of real work;
+- keep using the local backup/restore path before depending on the local ledger
+  as the only memory of real work, and copy backups off-machine manually if the
+  ledger becomes important;
 - do not deploy until coordinator explicitly approves deployment.
 
 ## Minimum Files To Read Next
@@ -622,6 +671,9 @@ Recommended scope:
 - `app/ledger.ts`
 - `app/page.tsx`
 - `app/api/local/capture-review/route.ts`
+- `scripts/ledger-backup-lib.mjs`
+- `scripts/ledger-backup-restore.mjs`
+- `tests/ledger-backup-restore.test.mjs`
 - `scripts/smoke-local-dev-api-writes.mjs`
 - `tests/rendered-html.test.mjs`
 - `tasks/log/2026-07-25-capture-review-success-browser-qa/qa-evidence.md`
