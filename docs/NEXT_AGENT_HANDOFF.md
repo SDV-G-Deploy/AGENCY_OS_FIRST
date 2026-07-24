@@ -6,15 +6,14 @@ Last updated: 2026-07-25
 ## Handoff Freshness
 
 Branch:
-- `feature/capture-review-success-confirmation`
+- `main`
 
 Commit:
-- this handoff is included in the current branch commit; run
+- this handoff is included in the current main commit; run
   `git log -1 --oneline` after checkout for the exact checkpoint hash.
 
 Working tree state after this handoff checkpoint:
-- expected clean, with only the ignored local `node_modules` junction used by
-  this disposable worktree for verification.
+- expected clean.
 
 Last verified command/result:
 - `npm run verify`
@@ -25,7 +24,7 @@ Last verified command/result:
 - pass: standard `npm run dev` served the app and appended one
   `capture.note_created` plus one `capture.review_marked` through
   `/api/local/capture-note` and `/api/local/capture-review` against temp log
-  `C:\Users\SERJSE~1\AppData\Local\Temp\agency-os-local-dev-api-M3MM3t\events.jsonl`.
+  `C:\Users\SERJSE~1\AppData\Local\Temp\agency-os-local-dev-api-83mlz7\events.jsonl`.
 - Canonical `C:\Agency_os_first\AGENCY_OS_FIRST\data\events.jsonl`
   hash stayed unchanged:
   `E4DB925895E9F085112439482882D8E32E1079A0D672B44422D884431F625D10`.
@@ -40,11 +39,9 @@ Agency OS now has a canonical local repo and GitHub remote:
 - local: `C:\Agency_os_first\AGENCY_OS_FIRST`;
 - GitHub: `https://github.com/SDV-G-Deploy/AGENCY_OS_FIRST`.
 
-Canonical Agency OS remains on `main`. This handoff is for branch
-`feature/capture-review-success-confirmation`, which starts from the local-dev
-API write fix checkpoint. The capture triage contract, replay support,
-command/API seam and capture candidate validation fix are already merged and
-pushed to GitHub.
+Agency OS is on `main`. The capture triage contract, replay support,
+command/API seam, capture candidate validation fix, local dev API write fix and
+capture review success confirmation fix are merged and pushed to GitHub.
 
 The local dev API write EPERM blocker is fixed on `main`. Any continuation
 should stay inside the v0.3 phone-first capture path, starting from the
@@ -76,6 +73,8 @@ Capture review success confirmation durability checkpoint:
 - Verified with `git diff --check`, `npm run verify` and
   `npm run smoke:local-dev-api`; canonical `data/events.jsonl` hash stayed
   unchanged.
+- Merged to canonical `main` and verified with `npm run smoke:local-dev-api`
+  and `npm run verify`: lint, typecheck, build and 66 tests passed.
 
 Changed files in this capture review success confirmation slice:
 - `app/CaptureNoteForm.tsx`
@@ -493,14 +492,15 @@ Process checkpoint:
 
 ## Next Chewable Step
 
-Coordinator review of branch `feature/capture-review-success-confirmation`.
+Capture browser QA evidence for the durable capture-review success confirmation.
 
-Recommended review focus:
+Recommended scope:
 - confirm the capture review success message is observable before the delayed
   reload and after the replay-derived refresh;
 - confirm the reviewed capture still disappears from the uncategorized list;
-- confirm the slice stayed limited to `app/CaptureNoteForm.tsx`, focused static
-  tests and this handoff.
+- use a temp ledger and do not mutate canonical `data/events.jsonl`;
+- save QA artifacts under `tasks/log/`;
+- keep changes to evidence/docs unless QA reveals a narrow blocking bug.
 
 ## Minimum Files To Read Next
 
