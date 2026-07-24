@@ -6,18 +6,18 @@ Last updated: 2026-07-24
 ## Handoff Freshness
 
 Branch:
-- `feature/docs-ledger-test-reference-cleanup`
+- `main`
 
 Commit:
-- this handoff is included in the branch commit; run
+- this handoff is included in the current main commit; run
   `git log -1 --oneline` after checkout for the exact checkpoint hash.
 
 Working tree state after this handoff checkpoint:
 - expected clean.
 
 Last verified command/result:
-- `git diff --check`
-- pass.
+- `npm run verify`
+- pass: lint, typecheck, build and 66 tests.
 
 Conflict rule:
 - if this handoff conflicts with current code/tests, trust code/tests, inspect
@@ -274,6 +274,8 @@ Docs ledger test reference cleanup checkpoint:
 - `docs/AGENCY_OS_ARCHITECTURE.md` now names
   `tests/local-command-api.test.mjs` for the local API write-path gate.
 - No code, tests, package files, app behavior, UI or data files changed.
+- Merged to canonical `main` and verified with `npm run verify`: lint,
+  typecheck, build and 66 tests passed.
 
 Changed files in this docs cleanup slice:
 - `docs/CURRENT_EVIDENCE.md`
