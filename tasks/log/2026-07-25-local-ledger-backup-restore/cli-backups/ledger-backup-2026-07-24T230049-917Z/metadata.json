@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "artifactType": "agency-os-local-ledger-backup",
+  "createdAt": "2026-07-24T23:00:49.917Z",
+  "sourcePath": "C:\\Agency_os_first\\worktrees\\local-ledger-backup-restore\\data\\events.jsonl",
+  "sourceSha256": "E4DB925895E9F085112439482882D8E32E1079A0D672B44422D884431F625D10",
+  "eventCount": 3,
+  "eventLogFile": "events.jsonl"
+}

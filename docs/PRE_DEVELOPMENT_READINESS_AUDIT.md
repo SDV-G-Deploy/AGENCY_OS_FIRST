@@ -1,6 +1,6 @@
 # Pre-Development Readiness Audit
 
-Status: local MVP checks pass; deploy-ready Launch Candidate blocked
+Status: local daily-use candidate after backup/restore; deploy-ready Launch Candidate blocked
 Last updated: 2026-07-25
 
 ## Question
@@ -10,7 +10,8 @@ start building the next Agency OS slice?
 
 ## Short Answer
 
-Yes, for one supervised bounded local development branch.
+Yes, for supervised bounded local development and cautious local daily use
+after the backup/restore branch is reviewed and merged.
 
 No, for broad autonomous parallel development, production deployment, real
 external integrations, hosted users or a deploy-ready Launch Candidate label.
@@ -18,8 +19,8 @@ external integrations, hosted users or a deploy-ready Launch Candidate label.
 The next branch should now be:
 
 ```text
-fix or explicitly accept deploy blockers before any production launch;
-continue bounded local MVP slices only after coordinator review
+continue bounded local MVP slices only after coordinator review;
+fix or explicitly accept deploy blockers before any production launch
 ```
 
 ## Readiness Matrix
@@ -35,7 +36,7 @@ continue bounded local MVP slices only after coordinator review
 | Write safety | Guarded writer paths exist for next action, capture note and capture review | Ready for narrow UI expansion |
 | Agent autonomy | Start brief, handoff and branch guardrails | Conditional only |
 | Production | `npm run audit:prod` fails on Next transitive `postcss` and `sharp` advisories | Not ready |
-| Backup/restore | Not implemented | Not ready for daily dependence |
+| Backup/restore | `npm run ledger:backup`, `npm run ledger:restore`, focused tests and command logs | Ready for cautious local daily use |
 | Auth | Not implemented | Not ready for remote use |
 | Redaction runtime | Capture redaction statuses are validated and blocked-sensitive captures are quarantined | Ready for local capture review |
 
@@ -132,6 +133,24 @@ Required if scope drifts:
 - ask for review before merge;
 - record skipped or blocked work in `docs/NEXT_AGENT_HANDOFF.md`.
 
+## Local Daily-Use Candidate Verdict
+
+With the local ledger backup/restore branch reviewed and merged:
+
+```text
+Local Daily-Use Candidate: yes.
+```
+
+Limitations:
+- local-only, single-user files remain the source of truth;
+- restore is manual, not scheduled or synced;
+- backup artifacts are local files and still need an external copy if the
+  machine fails;
+- event hashes remain deterministic local tamper-evidence checks, not
+  cryptographic signatures;
+- write coverage is still narrow and reducer coverage is not complete for all
+  future event types.
+
 ## Final Pre-Start Verdict
 
 Agency OS is not "fully understood" in the grand-product sense. That would be a
@@ -153,5 +172,5 @@ Launch Candidate: no.
 ```
 
 Starting production deployment is not rational until the dependency audit has a
-safe path or the risk is explicitly accepted, and hosted storage/auth plus
-backup/restore choices are made.
+safe path or the risk is explicitly accepted, and hosted storage/auth choices
+are made.

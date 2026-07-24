@@ -26,6 +26,7 @@ For v0.3:
 Current implementation status:
 - local file-backed writers exist for `project.next_action_updated`,
   `capture.note_created` and `capture.review_marked`;
+- local backup/export and restore tooling exists for `data/events.jsonl`;
 - the writer uses a lock file and idempotency payload comparison;
 - approved agent writes require durable `approval.approved` and append a durable
   `approval.used` companion event;
@@ -132,11 +133,46 @@ The only safe write path is:
 
 If any step fails, the event is not appended.
 
+## Backup And Restore Path
+
+The local ledger can be exported with:
+
+```text
+npm run ledger:backup
+```
+
+The command creates a timestamped local bundle under `backups/ledger/` by
+default. Each bundle contains:
+- `events.jsonl`: a byte-for-byte copy of the source event log;
+- `metadata.json`: schema version, artifact type, creation time, source path,
+  SHA-256 hash, event count and event log filename.
+
+Restore uses:
+
+```text
+npm run ledger:restore -- <backup-dir-or-metadata.json>
+```
+
+Restore fails closed unless metadata exists and matches the event file, JSONL
+parsing succeeds, event count matches, SHA-256 matches and the hash-chain /
+sequence validation passes. A restore dry-run is available:
+
+```text
+npm run ledger:restore -- <backup-dir-or-metadata.json> --dry-run
+```
+
+Before a real restore replaces the target event log, it writes a safety backup
+of the current target ledger to the backup output root. This path is local-only
+and validates the event log envelope/hash chain; it is not a hosted sync,
+cryptographic signing or multi-device conflict resolution system.
+
 ## Failure Modes To Test
 
 - duplicate idempotency key;
 - duplicate sequence;
 - broken hash chain;
+- missing backup metadata;
+- invalid backup JSONL;
 - event references missing evidence;
 - external action lacks approval;
 - approval already used;

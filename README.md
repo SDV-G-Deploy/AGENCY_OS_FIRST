@@ -41,6 +41,7 @@ Future Codex work should start from this canonical local repo.
 - Local writer/command/API for `capture.note_created`.
 - Minimal phone-first capture form that writes through the local capture API.
 - Safe local capture smoke command that uses a temporary event log.
+- Local ledger backup and restore commands for `data/events.jsonl`.
 - Product DNA and v0.3 phone-first capture plan.
 
 ## Next useful layer
@@ -48,12 +49,11 @@ Future Codex work should start from this canonical local repo.
 1. Propose the first capture triage contract without implementing conversion.
 2. Add approval rejection and expiry UI.
 3. Add runtime schema validation and redaction/import fixtures.
-4. Add export, backup and restore for the local ledger.
-5. Add GitHub importer fixtures for commits, pull requests, checks and deploy
+4. Add GitHub importer fixtures for commits, pull requests, checks and deploy
    URLs.
-6. Add an OpenClaw event endpoint for `agent_run.created`.
-7. Add a Telegram action surface for approve, block, verify and capture.
-8. Add agent lifecycle and cost-spend warnings.
+5. Add an OpenClaw event endpoint for `agent_run.created`.
+6. Add a Telegram action surface for approve, block, verify and capture.
+7. Add agent lifecycle and cost-spend warnings.
 
 ## Run
 
@@ -62,9 +62,20 @@ npm run dev
 npm run build
 npm test
 npm run verify
+npm run ledger:backup
+npm run ledger:restore -- <backup-dir-or-metadata.json> --dry-run
 npm run smoke:capture
 npm run audit:prod
 ```
+
+`npm run ledger:backup` creates a timestamped local bundle under
+`backups/ledger/` by default. The bundle contains `events.jsonl` and
+`metadata.json` with source path, SHA-256, event count and creation time.
+
+`npm run ledger:restore -- <backup-dir-or-metadata.json>` validates metadata,
+JSONL parsing and the event hash chain before replacing `data/events.jsonl`.
+It preserves the current ledger as a safety backup first. Use `--dry-run` to
+validate a backup without writing.
 
 `npm run smoke:capture` writes a sample `capture.note_created` event to a
 temporary copied event log and checks that the real `data/events.jsonl` file is

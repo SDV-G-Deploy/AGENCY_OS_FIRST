@@ -532,6 +532,45 @@ Decision:
 Strength: strong for deploy-readiness status as of 2026-07-25. It does not
 resolve dependency, hosted storage, auth or backup/restore blockers.
 
+### Claim 32: The local ledger has a minimal verified backup and restore path
+
+Evidence:
+- Branch: `feature/local-ledger-backup-restore`.
+- `scripts/ledger-backup-lib.mjs` validates JSONL, event sequence, duplicate
+  sequence, duplicate event/idempotency keys, previous hash links and event
+  hashes before backup or restore.
+- `scripts/ledger-backup-restore.mjs` exposes local CLI commands through
+  `npm run ledger:backup` and `npm run ledger:restore`.
+- Backup creates a timestamped bundle with `events.jsonl` and `metadata.json`
+  containing source path, SHA-256, event count and creation time.
+- Restore requires metadata, validates candidate SHA-256/event count/JSONL/hash
+  chain, supports `--dry-run`, and writes a safety backup of the current target
+  before replacement.
+- `tests/ledger-backup-restore.test.mjs` covers backup non-mutation, restore
+  dry-run, temp-copy restore with safety backup, missing metadata, invalid
+  JSONL, broken hash chain and duplicate sequence.
+- Focused command log:
+  `tasks/log/2026-07-25-local-ledger-backup-restore/node-test-ledger-backup-restore.log`
+  passed with 8 tests.
+- CLI command logs:
+  `tasks/log/2026-07-25-local-ledger-backup-restore/npm-run-ledger-backup.log`,
+  `tasks/log/2026-07-25-local-ledger-backup-restore/npm-run-ledger-restore-dry-run.log`
+  and
+  `tasks/log/2026-07-25-local-ledger-backup-restore/npm-run-ledger-restore-temp-copy.log`.
+- Canonical `data/events.jsonl` hash stayed unchanged during backup/restore
+  checks:
+  `E4DB925895E9F085112439482882D8E32E1079A0D672B44422D884431F625D10`.
+
+Decision:
+- Local Daily-Use Candidate: yes after coordinator review and merge of this
+  branch.
+- Production Launch Candidate: no; the known production dependency audit,
+  hosted storage and auth blockers remain.
+
+Strength: strong for minimal local backup/export/restore behavior. It does not
+prove scheduled backups, cloud/off-machine backup, multi-device sync or
+cryptographic signing.
+
 ## Files Changed For Honesty Closure
 
 - `package.json`: added `typecheck`, `audit:prod`, `verify`; moved Next to
@@ -592,6 +631,9 @@ resolve dependency, hosted storage, auth or backup/restore blockers.
   review command layer.
 - `scripts/smoke-capture-note.mjs`: temp-log capture smoke command.
 - `tests/capture-smoke.test.mjs`: smoke non-mutation invariant.
+- `scripts/ledger-backup-lib.mjs`: local backup/restore validation helpers.
+- `scripts/ledger-backup-restore.mjs`: local ledger backup/restore CLI.
+- `tests/ledger-backup-restore.test.mjs`: focused backup/restore tests.
 
 ## Known Gaps
 
@@ -606,8 +648,10 @@ resolve dependency, hosted storage, auth or backup/restore blockers.
   `approval.rejected` lifecycle event yet.
 - Dependency audit blocks production deployment and prevents calling current
   `main` a deploy-ready Launch Candidate.
-- Hosted runtime/storage, remote auth/identity and backup/restore decisions are
-  still open before production or dependable daily use.
+- Hosted runtime/storage and remote auth/identity decisions are still open
+  before production.
+- Backup/restore is now implemented as a manual local path; scheduled backups,
+  off-machine copies and multi-device conflict handling are not implemented.
 - First visual screenshot artifacts exist for the phone-mode capture review UI.
 - The canonical repo has been pushed to GitHub, but production deployment is
   still blocked.
