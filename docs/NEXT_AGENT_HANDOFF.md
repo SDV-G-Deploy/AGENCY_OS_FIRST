@@ -6,20 +6,18 @@ Last updated: 2026-07-24
 ## Handoff Freshness
 
 Branch:
-- `feature/capture-review-ui-affordance`
+- `main`
 
 Commit:
-- this handoff is included in the branch commit; run
+- this handoff is included in the current main commit; run
   `git log -1 --oneline` after checkout for the exact checkpoint hash.
 
 Working tree state after this handoff checkpoint:
 - expected clean.
 
 Last verified command/result:
-- `git diff --check`
-- pass.
-- `npm run verify` skipped in this worker worktree because `node_modules` is
-  absent; coordinator should run canonical verify after merge.
+- `npm run verify`
+- pass: lint, typecheck, build and 66 tests.
 
 Conflict rule:
 - if this handoff conflicts with current code/tests, trust code/tests, inspect
@@ -301,6 +299,8 @@ Capture review UI affordance checkpoint:
   dependency, deployment or conversion behavior was added.
 - Focused rendered/static tests cover the visible affordance, route boundary,
   allowed candidate values and derived-state refresh path.
+- Merged to canonical `main` and verified with `npm run verify`: lint,
+  typecheck, build and 66 tests passed.
 
 Changed files in this capture review UI slice:
 - `app/CaptureNoteForm.tsx`
@@ -327,14 +327,15 @@ Process checkpoint:
 
 ## Next Chewable Step
 
-Coordinator review and merge `feature/capture-review-ui-affordance`, then run
-the canonical `npm run verify` from the merged worktree.
+Capture a browser QA/screenshot artifact for the merged mobile capture review
+UI affordance.
 
 Recommended scope:
-- inspect the four changed files;
-- run `npm run verify`;
-- if verify passes, merge/push through the coordinator path;
-- after the next visible UI merge, capture a browser QA/screenshot artifact.
+- inspect the phone-mode panel in a browser at mobile and desktop widths;
+- confirm the quick capture form, review form and uncategorized list do not
+  overlap;
+- save a screenshot or record the QA artifact path/result in handoff;
+- do not create linked entities or conversion events.
 
 Out of scope:
 - Telegram;
