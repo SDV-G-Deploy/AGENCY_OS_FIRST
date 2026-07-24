@@ -32,6 +32,7 @@ async function transpileModule(sourcePath, targetPath, rewriteImports = false) {
     );
     source = source.replace('from "./ledger"', 'from "./ledger.js"');
     source = source.replace('from "./ledger-writer"', 'from "./ledger-writer.js"');
+    source = source.replace('from "./local-events-path"', 'from "./local-events-path.js"');
     source = source.replace('from "../../../local-command"', 'from "./local-command.js"');
     source = source.replace(
       'from "../../../local-events-path"',
@@ -77,6 +78,11 @@ export async function loadLedger() {
   );
 
   await transpileModule(
+    new URL("../app/local-events-path.ts", import.meta.url),
+    join(moduleDir, "local-events-path.js"),
+    true,
+  );
+  await transpileModule(
     new URL("../app/ledger.ts", import.meta.url),
     join(moduleDir, "ledger.js"),
     true,
@@ -114,6 +120,11 @@ export async function loadLedgerWithWriter() {
   );
   await writeFile(join(moduleDir, "events.jsonl"), eventsSource, "utf8");
 
+  await transpileModule(
+    new URL("../app/local-events-path.ts", import.meta.url),
+    join(moduleDir, "local-events-path.js"),
+    true,
+  );
   await transpileModule(
     new URL("../app/ledger.ts", import.meta.url),
     join(moduleDir, "ledger.js"),

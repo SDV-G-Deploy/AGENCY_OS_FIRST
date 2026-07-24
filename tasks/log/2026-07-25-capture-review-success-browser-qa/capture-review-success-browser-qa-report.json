@@ -1,0 +1,57 @@
+{
+  "branch": "feature/capture-review-success-browser-qa",
+  "worktree": "C:\\Agency_os_first\\worktrees\\capture-review-success-browser-qa",
+  "artifactDir": "tasks/log/2026-07-25-capture-review-success-browser-qa",
+  "qaDate": "2026-07-25",
+  "browser": {
+    "surface": "Codex in-app browser",
+    "url": "http://localhost:5181/",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    }
+  },
+  "ledger": {
+    "mode": "temporary ledger copy",
+    "tempEventsPath": "C:\\Users\\SerjSerjSerj\\AppData\\Local\\Temp\\agency-os-capture-review-success-browser-qa-visible-bafd3e399ffb478f8d1765e468a38d70\\events.jsonl",
+    "tempLedgerFinalSha256": "6679763FF68B2013DC3118DD699393564A18C535D1ADDC1C3F9515F797684FE9",
+    "canonicalEventsSha256Before": "E4DB925895E9F085112439482882D8E32E1079A0D672B44422D884431F625D10",
+    "canonicalEventsSha256AfterQa": "E4DB925895E9F085112439482882D8E32E1079A0D672B44422D884431F625D10"
+  },
+  "seededCapture": {
+    "captureId": "capture-capture-review-success-browser-qa-visible-note-2026-07-25",
+    "eventId": "event-capture-review-success-browser-qa-visible-note-2026-07-25",
+    "idempotencyKey": "capture-review-success-browser-qa-visible-note-2026-07-25",
+    "reviewStatus": "uncategorized"
+  },
+  "reviewEvent": {
+    "eventId": "event-ui-capture-review-capture-capture-review-success-browser-qa-visible-note-2026-07",
+    "captureId": "capture-capture-review-success-browser-qa-visible-note-2026-07-25",
+    "candidateType": "evidence_candidate",
+    "reviewStatus": "triaged",
+    "timestamp": "2026-07-24T21:51:44.436Z"
+  },
+  "assertions": {
+    "preReviewStateVisible": true,
+    "successVisibleBeforeDelayedReload": true,
+    "refreshedSuccessVisibleAfterReload": true,
+    "reviewedItemRemovedAfterReplayRefresh": true,
+    "canonicalEventsUnchanged": true
+  },
+  "observedText": {
+    "preReviewList": "Last uncategorized Inbox Pending scan phone / 2026-07-24T21:51:22.336Z",
+    "successBeforeDelayedReload": "Marked for follow-up. Refreshing derived state soon.",
+    "successAfterReload": "Marked for follow-up. Derived state refreshed.",
+    "postRefreshList": "Last uncategorized No uncategorized captures yet."
+  },
+  "screenshots": [
+    "pre-review-state-mobile-390w.png",
+    "success-before-delayed-reload-mobile-390w.png",
+    "refreshed-success-after-reload-mobile-390w.png",
+    "reviewed-item-removed-after-refresh-mobile-390w.png"
+  ],
+  "narrowFix": {
+    "applied": true,
+    "summary": "Server-rendered phone review data now reads the current local event log through the existing events path resolver during render, so the delayed reload reflects the appended capture.review_marked event."
+  }
+}

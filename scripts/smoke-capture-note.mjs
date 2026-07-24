@@ -33,6 +33,7 @@ async function transpileModule(sourcePath, targetPath, rewriteImports = false) {
     );
     source = source.replace('from "./ledger"', 'from "./ledger.js"');
     source = source.replace('from "./ledger-writer"', 'from "./ledger-writer.js"');
+    source = source.replace('from "./local-events-path"', 'from "./local-events-path.js"');
   }
 
   const output = ts.transpileModule(source, {
@@ -72,6 +73,11 @@ async function prepareSmokeWorkspace() {
     "utf8",
   );
   await writeFile(join(moduleDir, "events.jsonl"), eventsSource, "utf8");
+  await transpileModule(
+    resolve(repoRoot, "app/local-events-path.ts"),
+    join(moduleDir, "local-events-path.js"),
+    true,
+  );
   await transpileModule(resolve(repoRoot, "app/ledger.ts"), join(moduleDir, "ledger.js"), true);
   await transpileModule(
     resolve(repoRoot, "app/ledger-writer.ts"),

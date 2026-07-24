@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import actorsData from "../data/actors.json";
 import agentRunsData from "../data/agent-runs.json";
 import approvalsData from "../data/approvals.json";
@@ -9,6 +10,7 @@ import eventsJsonl from "../data/events.jsonl?raw";
 import projectsData from "../data/projects.json";
 import tracesData from "../data/traces.json";
 import workItemsData from "../data/work-items.json";
+import { resolveLocalEventsPath } from "./local-events-path";
 
 type Severity = "critical" | "warning" | "info";
 type ActionType = "approve" | "verify" | "unblock" | "capture";
@@ -277,6 +279,22 @@ export type CaptureReviewSummary = {
   summary: string;
 };
 
+function readLocalEventsSource() {
+  try {
+    return readFileSync(resolveLocalEventsPath(), "utf8");
+  } catch {
+    return eventsJsonl;
+  }
+}
+
+export function getRuntimeStateLedger(): StateLedger {
+  return {
+    ...stateLedger,
+    captures: [],
+    events: parseLedgerEvents(readLocalEventsSource()),
+  };
+}
+
 const allowedRedactionStatuses = new Set<RedactionStatus>([
   "not_required",
   "pending_scan",
@@ -464,7 +482,7 @@ export const stateLedger: StateLedger = {
   blockers: blockersData as BlockerRecord[],
   traces: tracesData as TraceRecord[],
   captures: [],
-  events: parseLedgerEvents(eventsJsonl),
+  events: parseLedgerEvents(readLocalEventsSource()),
 };
 
 function createIndexes(ledger: StateLedger) {

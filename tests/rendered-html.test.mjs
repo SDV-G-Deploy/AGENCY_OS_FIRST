@@ -90,6 +90,8 @@ test("keeps the first MVP focused on state, proof and agent runs", async () => {
   assert.match(ledger, /export const stateLedger/);
   assert.match(ledger, /export const derivedStateLedger/);
   assert.match(ledger, /export function getReplayDerivedLedger/);
+  assert.match(ledger, /export function getRuntimeStateLedger/);
+  assert.match(ledger, /readFileSync\(resolveLocalEventsPath\(\), "utf8"\)/);
   assert.match(ledger, /eventsJsonl/);
   assert.doesNotMatch(ledger, /const rawEvents/);
   assert.match(ledger, /export const projects/);
@@ -110,6 +112,9 @@ test("keeps the first MVP focused on state, proof and agent runs", async () => {
   assert.match(page, /CaptureNoteForm/);
   assert.match(page, /<CaptureNoteForm[\s\S]*<div className="phone-action-list">/);
   assert.match(page, /getUncategorizedCaptures/);
+  assert.match(page, /getRuntimeStateLedger/);
+  assert.match(page, /getReplayDerivedLedger\(getRuntimeStateLedger\(\)\)/);
+  assert.match(page, /export const dynamic = "force-dynamic"/);
   assert.match(page, /recentCaptures=\{uncategorizedCaptures\}/);
   assert.doesNotMatch(page, /<button/);
   assert.doesNotMatch(page, /segmented-control|secondary-action|action-row/);

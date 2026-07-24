@@ -6,10 +6,10 @@ Last updated: 2026-07-25
 ## Handoff Freshness
 
 Branch:
-- `main`
+- `feature/capture-review-success-browser-qa`
 
 Commit:
-- this handoff is included in the current main commit; run
+- this handoff is included in the current branch commit; run
   `git log -1 --oneline` after checkout for the exact checkpoint hash.
 
 Working tree state after this handoff checkpoint:
@@ -24,7 +24,7 @@ Last verified command/result:
 - pass: standard `npm run dev` served the app and appended one
   `capture.note_created` plus one `capture.review_marked` through
   `/api/local/capture-note` and `/api/local/capture-review` against temp log
-  `C:\Users\SERJSE~1\AppData\Local\Temp\agency-os-local-dev-api-83mlz7\events.jsonl`.
+  `C:\Users\SERJSE~1\AppData\Local\Temp\agency-os-local-dev-api-Rrzor9\events.jsonl`.
 - Canonical `C:\Agency_os_first\AGENCY_OS_FIRST\data\events.jsonl`
   hash stayed unchanged:
   `E4DB925895E9F085112439482882D8E32E1079A0D672B44422D884431F625D10`.
@@ -55,6 +55,59 @@ contracts already written in:
 - `docs/EVENT_LOG_INTEGRITY.md`.
 
 ## Last Completed Work
+
+Capture review success browser QA checkpoint:
+- Browser QA evidence was captured from worktree
+  `C:\Agency_os_first\worktrees\capture-review-success-browser-qa`.
+- QA server: `http://localhost:5181/`.
+- Browser: Codex in-app browser at 390 x 844 viewport.
+- Temp ledger:
+  `C:\Users\SerjSerjSerj\AppData\Local\Temp\agency-os-capture-review-success-browser-qa-visible-bafd3e399ffb478f8d1765e468a38d70\events.jsonl`.
+- Canonical `data/events.jsonl` hash before and after QA stayed unchanged:
+  `E4DB925895E9F085112439482882D8E32E1079A0D672B44422D884431F625D10`.
+- Result: pass after one narrow refresh-read fix.
+- Confirmed visible pre-review state with one replay-derived uncategorized
+  capture.
+- Confirmed success before delayed reload:
+  `Marked for follow-up. Refreshing derived state soon.`
+- Confirmed one-shot refreshed success after reload:
+  `Marked for follow-up. Derived state refreshed.`
+- Confirmed the reviewed capture disappeared from the uncategorized review list
+  after replay-derived refresh: capture select showed `No captures` and the
+  list showed `No uncategorized captures yet.`
+- Initial QA found the review event was appended to the temp ledger, but the
+  refreshed page could still render stale replay input because the server-side
+  dashboard held the event log through the raw import path.
+- Narrow fix: `app/ledger.ts` now exposes `getRuntimeStateLedger()` using the
+  existing local events path resolver, and `app/page.tsx` derives the phone
+  review queue during render from that runtime ledger with `dynamic =
+  "force-dynamic"`.
+- Test/smoke harnesses that transpile `app/ledger.ts` now also transpile
+  `app/local-events-path.ts`.
+- Verified with `git diff --check`, `npm run verify` and
+  `npm run smoke:local-dev-api`.
+
+Artifacts from this success browser QA:
+- `tasks/log/2026-07-25-capture-review-success-browser-qa/qa-evidence.md`
+- `tasks/log/2026-07-25-capture-review-success-browser-qa/capture-review-success-browser-qa-report.json`
+- `tasks/log/2026-07-25-capture-review-success-browser-qa/pre-review-state-mobile-390w.png`
+- `tasks/log/2026-07-25-capture-review-success-browser-qa/success-before-delayed-reload-mobile-390w.png`
+- `tasks/log/2026-07-25-capture-review-success-browser-qa/refreshed-success-after-reload-mobile-390w.png`
+- `tasks/log/2026-07-25-capture-review-success-browser-qa/reviewed-item-removed-after-refresh-mobile-390w.png`
+
+Changed files in this success browser QA slice:
+- `app/ledger.ts`
+- `app/page.tsx`
+- `scripts/smoke-capture-note.mjs`
+- `tests/ledger-test-helpers.mjs`
+- `tests/rendered-html.test.mjs`
+- `docs/NEXT_AGENT_HANDOFF.md`
+- `tasks/log/2026-07-25-capture-review-success-browser-qa/qa-evidence.md`
+- `tasks/log/2026-07-25-capture-review-success-browser-qa/capture-review-success-browser-qa-report.json`
+- `tasks/log/2026-07-25-capture-review-success-browser-qa/pre-review-state-mobile-390w.png`
+- `tasks/log/2026-07-25-capture-review-success-browser-qa/success-before-delayed-reload-mobile-390w.png`
+- `tasks/log/2026-07-25-capture-review-success-browser-qa/refreshed-success-after-reload-mobile-390w.png`
+- `tasks/log/2026-07-25-capture-review-success-browser-qa/reviewed-item-removed-after-refresh-mobile-390w.png`
 
 Capture review success confirmation durability checkpoint:
 - `app/CaptureNoteForm.tsx` keeps the existing local removal of a reviewed
@@ -492,24 +545,28 @@ Process checkpoint:
 
 ## Next Chewable Step
 
-Capture browser QA evidence for the durable capture-review success confirmation.
+Coordinator review for
+`feature/capture-review-success-browser-qa`.
 
 Recommended scope:
-- confirm the capture review success message is observable before the delayed
-  reload and after the replay-derived refresh;
-- confirm the reviewed capture still disappears from the uncategorized list;
-- use a temp ledger and do not mutate canonical `data/events.jsonl`;
-- save QA artifacts under `tasks/log/`;
-- keep changes to evidence/docs unless QA reveals a narrow blocking bug.
+- inspect the narrow runtime ledger refresh fix in `app/ledger.ts` and
+  `app/page.tsx`;
+- inspect browser QA evidence under
+  `tasks/log/2026-07-25-capture-review-success-browser-qa/`;
+- confirm canonical `data/events.jsonl` remains unchanged;
+- merge to `main` only after review.
 
 ## Minimum Files To Read Next
 
 - `docs/AGENT_START_BRIEF.md`
 - `docs/NEXT_AGENT_HANDOFF.md`
 - `app/CaptureNoteForm.tsx`
+- `app/ledger.ts`
+- `app/page.tsx`
 - `app/api/local/capture-review/route.ts`
 - `scripts/smoke-local-dev-api-writes.mjs`
 - `tests/rendered-html.test.mjs`
+- `tasks/log/2026-07-25-capture-review-success-browser-qa/qa-evidence.md`
 
 ## Usually Skip Unless Needed
 

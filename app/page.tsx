@@ -12,10 +12,14 @@ import {
   workItems,
   getPhoneReviewQueue,
   getRecommendedSteps,
+  getReplayDerivedLedger,
+  getRuntimeStateLedger,
   getSanityChecks,
   getUncategorizedCaptures,
   ledgerEvents,
 } from "./ledger";
+
+export const dynamic = "force-dynamic";
 
 const staleEvidence = projects.filter((project) => project.evidenceState !== "fresh");
 const blockedProjects = projects.filter((project) => project.state === "blocked");
@@ -25,8 +29,6 @@ const verificationLoad = evidenceQueue.filter(
 ).length;
 const sanityChecks = getSanityChecks();
 const recommendedSteps = getRecommendedSteps();
-const phoneReviewQueue = getPhoneReviewQueue();
-const uncategorizedCaptures = getUncategorizedCaptures();
 const primaryProject = projects.find(
   (project) => project.priority === "core" && project.state === "active",
 ) ?? projects[0];
@@ -36,6 +38,10 @@ const captureProjects = projects.map((project) => ({
 }));
 
 export default function Home() {
+  const runtimeDerivedLedger = getReplayDerivedLedger(getRuntimeStateLedger()).ledger;
+  const phoneReviewQueue = getPhoneReviewQueue(runtimeDerivedLedger);
+  const uncategorizedCaptures = getUncategorizedCaptures(runtimeDerivedLedger);
+
   return (
     <main className="dashboard-shell">
       <aside className="sidebar" aria-label="Agency OS navigation">
