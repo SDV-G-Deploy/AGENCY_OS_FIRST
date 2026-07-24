@@ -1,7 +1,7 @@
 # Event Log Integrity
 
-Status: draft v0.1  
-Last updated: 2026-07-23
+Status: current local integrity contract
+Last updated: 2026-07-24
 
 ## Purpose
 
@@ -24,16 +24,21 @@ For v0.3:
 - direct mutation of current state files is forbidden outside migrations.
 
 Current implementation status:
-- the first local file-backed writer exists for `project.next_action_updated`;
+- local file-backed writers exist for `project.next_action_updated`,
+  `capture.note_created` and `capture.review_marked`;
 - the writer uses a lock file and idempotency payload comparison;
 - approved agent writes require durable `approval.approved` and append a durable
   `approval.used` companion event;
 - `approval.approved` rejects non-person approvers and changed request details;
 - the first browser-local UI/API path is wired for human
   `project.next_action_updated`;
+- the phone-first capture form/API is wired for human `capture.note_created`;
+- the local command/API path is wired for human `capture.review_marked`, but
+  the mobile review UI affordance is not built yet;
 - dashboard-facing state derives from replayed events over snapshots;
-- a human-only local command can append a `project.next_action_updated` event
-  and confirm replay-derived state;
+- human-only local commands can append `project.next_action_updated`,
+  `capture.note_created` and `capture.review_marked` events and confirm
+  replay-derived state;
 - it does not regenerate current snapshot files after append.
 
 ## Event Envelope
@@ -59,9 +64,10 @@ Every event must eventually include:
 - `previousEventHash`;
 - `eventHash`.
 
-Current v0.2 events have this minimal envelope. The first next-action write is
-forced through this envelope; other state-changing actions still need command
-models and reducer coverage.
+Current local events have this minimal envelope. The implemented
+`project.next_action_updated`, `capture.note_created` and
+`capture.review_marked` write paths are forced through this envelope; other
+state-changing actions still need command models and reducer coverage.
 
 ## Hash Chain
 
@@ -95,9 +101,14 @@ The reducer must:
 - emit validation errors as sanity checks;
 - never mutate input records in place.
 
-Minimum reducer actions:
+Implemented reducer actions:
 - `project.next_action_updated`;
 - `capture.note_created`;
+- `capture.review_marked`;
+- `approval.approved`;
+- `approval.used`;
+
+Minimum future reducer actions:
 - `evidence.submitted`;
 - `evidence.verified`;
 - `agent_run.submitted`;
@@ -105,7 +116,6 @@ Minimum reducer actions:
 - `blocker.resolved`;
 - `decision.recorded`;
 - `approval.requested`;
-- `approval.used`;
 
 ## Write Path
 

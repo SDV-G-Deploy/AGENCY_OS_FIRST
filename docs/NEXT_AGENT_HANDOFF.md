@@ -6,18 +6,21 @@ Last updated: 2026-07-24
 ## Handoff Freshness
 
 Branch:
-- `main`
+- `feature/docs-freshness-pass`
 
 Commit:
-- this handoff is included in the current slice commit; run
+- this handoff is included in the docs freshness slice commit; run
   `git log -1 --oneline` after checkout for the exact checkpoint hash.
 
 Working tree state after this handoff checkpoint:
 - expected clean.
 
 Last verified command/result:
-- `npm run verify`
-- pass: lint, typecheck, build and 66 tests.
+- `git diff --check`
+- pass.
+- `npm run verify` was attempted twice in this isolated worktree and did not
+  reach project checks because worktree-local `node_modules` is absent
+  (`eslint` / imported `eslint` package not found).
 
 Conflict rule:
 - if this handoff conflicts with current code/tests, trust code/tests, inspect
@@ -51,7 +54,8 @@ Product planning checkpoint:
 - Phone-first capture slice defined.
 - Capture contract documented.
 - Unknown state-changing actions fail closed.
-- Verify passed with 42 tests.
+- Verify passed at that historical checkpoint; current verification is tracked
+  in Handoff Freshness.
 - Final combined critic score reached 96/100.
 
 Current context-protocol checkpoint:
@@ -214,9 +218,29 @@ Capture candidate validation checkpoint:
 - `candidateType: "inbox"` is rejected for reviewed captures.
 - Focused tests cover the snapshot validation gap.
 
+Docs freshness checkpoint:
+- Secondary docs now reflect current `main` at `fdffa3d`.
+- Current verification references use the 66-test gate.
+- Capture note writer/command/API/form/smoke work is documented as
+  implemented.
+- Capture review contract/replay/writer/command/API work is documented as
+  implemented, with only the mobile review UI affordance remaining next.
+- `docs/EVENT_LOG_INTEGRITY.md` lists implemented event write/replay paths for
+  `project.next_action_updated`, `capture.note_created` and
+  `capture.review_marked`.
+- Verified with `git diff --check`; full `npm run verify` was blocked by the
+  missing dependency install in this separate worktree.
+
 Changed files in this fix:
 - `app/ledger.ts`
 - `tests/ledger.test.mjs`
+
+Changed files in the docs freshness slice:
+- `docs/CURRENT_EVIDENCE.md`
+- `docs/PRE_DEVELOPMENT_READINESS_AUDIT.md`
+- `docs/PRODUCT_DEVELOPMENT_FLOW.md`
+- `docs/EVENT_LOG_INTEGRITY.md`
+- `docs/NEXT_AGENT_HANDOFF.md`
 
 Organizational checkpoint:
 - canonical repo moved to `C:\Agency_os_first\AGENCY_OS_FIRST`;

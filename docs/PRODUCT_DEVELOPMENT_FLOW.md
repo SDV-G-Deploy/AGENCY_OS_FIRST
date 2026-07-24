@@ -1,7 +1,7 @@
 # Agency OS Product Development Flow
 
-Status: draft v0.1 execution plan  
-Last updated: 2026-07-23
+Status: current staged execution plan
+Last updated: 2026-07-24
 
 ## Purpose
 
@@ -24,7 +24,7 @@ Every stage must produce:
 
 ## Current Stage
 
-Stage: v0.2 local honesty checkpoint.
+Stage: v0.3 phone-first capture path.
 
 Already true:
 
@@ -34,15 +34,17 @@ Already true:
 - first reducer path exists;
 - first writer path exists;
 - first browser-local command exists;
-- first `capture.note_created` data/reducer slice exists;
+- `capture.note_created` data/reducer, writer, command, API, phone form and
+  smoke path exist;
+- `capture.review_marked` contract, replay, writer, command and API exist;
 - false UI actions are removed;
 - claim/evidence required-type contract is enforced;
-- `npm run verify` passes with 47 tests;
+- `npm run verify` passes with 66 tests;
 - independent critic reached 96/100 for the honesty checkpoint.
 
 Not true yet:
 
-- phone review cards do not write;
+- phone review cards do not yet submit `capture.review_marked`;
 - evidence attach is not implemented;
 - blockers cannot be resolved through UI;
 - no GitHub/Codex/OpenClaw/Telegram importers;
@@ -214,7 +216,7 @@ The default ritual is not:
 - inspect every evidence item;
 - plan a full work session.
 
-Recommended first command:
+Implemented first capture command:
 - `capture.note_created`
 
 Why:
@@ -231,7 +233,7 @@ Why not first by default:
 - evidence types and freshness rules are still young.
 
 Scope:
-- one phone-friendly form/card;
+- one phone-friendly capture form/card;
 - append event;
 - replay reducer;
 - test route and reducer;
@@ -276,7 +278,9 @@ Done criteria:
 - a short phone session can capture one note into the ledger;
 - the note appears in recent events or review queue;
 - invalid/empty input is rejected;
-- tests prove write/replay.
+- tests prove write/replay;
+- the next remaining UI slice can mark one uncategorized capture as a triaged
+  candidate through `/api/local/capture-review`.
 
 UX acceptance states:
 - empty capture queue;
@@ -468,15 +472,15 @@ For each major product block:
 
 ## Next Branch Candidates
 
-### Candidate A: Phone Capture
+### Candidate A: Phone Capture Review
 
 Recommended.
 
 Why:
 - highest fit with the user's real work pattern;
 - low risk;
-- turns phone review from read-only to useful;
-- creates more data for future review engine.
+- turns the existing phone review queue from read-only to useful;
+- uses the implemented `capture.review_marked` command/API.
 
 ### Candidate B: Evidence Attach
 
@@ -511,7 +515,8 @@ Risk:
 
 ## Decisions Needed From Human Soon
 
-1. Should the next branch optimize for phone usefulness or evidence discipline?
+1. After the review UI affordance, should the next branch optimize for evidence
+   attach or backup/export?
 2. Is Agency OS first a private local tool, a productized solo-builder kit, or a
    service-led offering?
 3. Should external users see it before GitHub import exists?
@@ -523,7 +528,7 @@ Risk:
 Build next:
 
 ```text
-phone capture -> evidence attach -> blocker decision -> backup/export -> GitHub importer
+phone capture review -> evidence attach -> blocker decision -> backup/export -> GitHub importer
 ```
 
 This sequence keeps the product close to the real pain: short sessions,

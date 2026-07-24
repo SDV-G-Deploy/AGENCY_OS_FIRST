@@ -1,7 +1,7 @@
 # Current Evidence Log
 
-Status: v0.2 closure evidence  
-Last updated: 2026-07-23
+Status: current evidence
+Last updated: 2026-07-24
 
 ## Current Claims
 
@@ -42,7 +42,7 @@ Evidence:
   - ledger rule tests
 
 Observed test result:
-- 42 tests passed.
+- 66 tests passed.
 
 Strength: strong for current static/local code quality.
 
@@ -261,7 +261,7 @@ Evidence:
   result through replay-derived state.
 - `tests/ledger.test.mjs` covers success, blocked agent actor and invalid
   input.
-- `npm run verify` passes with 42 tests.
+- `npm run verify` passes with 66 tests.
 
 Strength: strong for a local command surface. It does not yet prove browser UI,
 HTTP API or external integrations.
@@ -281,7 +281,7 @@ Evidence:
 - `tests/ledger.test.mjs` verifies the route against a temporary event ledger:
   POST succeeds, appends exactly one event, uses the human actor, and replay
   confirms the new next action.
-- `npm run verify` passes with 42 tests.
+- `npm run verify` passes with 66 tests.
 
 Strength: strong for the first local browser-to-ledger write path. It does not
 yet prove hosted persistence, real mobile QA, authentication, or general write
@@ -298,7 +298,7 @@ Evidence:
   evidence for every declared `requiredEvidenceTypes` entry.
 - `tests/ledger.test.mjs` verifies that removing the `local_url` evidence link
   from the verified claim creates a validation error.
-- `npm run verify` passes with 42 tests.
+- `npm run verify` passes with 66 tests.
 
 Strength: strong for the first claim/evidence-type contract. It does not yet
 prove automated evidence collection or freshness expiry enforcement.
@@ -308,14 +308,14 @@ prove automated evidence collection or freshness expiry enforcement.
 Evidence:
 - `replayLedgerEvents()` now treats unsupported state-changing actions for
   known state entities as errors instead of silently ignoring them.
-- `tests/ledger.test.mjs` verifies that unsupported `capture.note_created`
-  fails replay until a reducer explicitly supports it.
+- `tests/ledger.test.mjs` verifies that unsupported capture state changes such
+  as `capture.note_updated` fail closed unless a reducer explicitly supports
+  them.
 - `tests/ledger.test.mjs` verifies that non-state informational events can
   still be ignored.
-- `npm run verify` passes with 42 tests.
+- `npm run verify` passes with 66 tests.
 
-Strength: strong for reducer safety before adding the capture write surface. It
-does not yet implement the `capture.note_created` reducer itself.
+Strength: strong for reducer safety as capture support expands.
 
 ### Claim 21: Current stack is accepted for v0.3 local work, not production
 
@@ -326,7 +326,7 @@ Evidence:
   framework, storage, deployment, packaging or autonomous-agent branch scope.
 - `docs/NEXT_AGENT_HANDOFF.md` includes the stack/tooling checkpoint.
 - Command: `npm run verify`
-- Result: pass with lint, typecheck, build and 42 tests.
+- Result: pass with lint, typecheck, build and 66 tests.
 - Command: `npm run audit:prod`
 - Result: fail on the known Next transitive `postcss`/`sharp` advisories.
 
@@ -342,15 +342,16 @@ Evidence:
 - README links the readiness audit.
 - `docs/NEXT_AGENT_HANDOFF.md` points the next agent to the readiness audit.
 - Command: `npm run verify`
-- Result: pass with lint, typecheck, build and 42 tests.
+- Result: pass with lint, typecheck, build and 66 tests.
 
 Decision:
-- Start only the first supervised v0.3 branch:
-  `capture.note_created` data/reducer slice.
+- Start only the next supervised v0.3 branch:
+  mobile capture review UI affordance for `capture.review_marked`.
 - Do not start broad parallel autonomous development.
 
-Strength: strong for next-branch readiness. It does not prove the future branch
-implementation itself.
+Strength: strong for next-branch readiness. It reflects that the capture note
+and capture review command/API groundwork now exists, but it does not prove the
+future review UI itself.
 
 ### Claim 23: The first capture note replay slice exists
 
@@ -373,10 +374,107 @@ Evidence:
   invariants, blocked-sensitive summary/body hiding and unsupported
   `capture.note_updated` fail-closed behavior.
 - Command: `npm run verify`
-- Result: pass with lint, typecheck, build and 47 tests.
+- Result: pass with lint, typecheck, build and 66 tests.
 
-Strength: strong for data/reducer replay. It does not prove a writer, command,
-API route, phone form, Telegram action or capture-to-evidence conversion.
+Strength: strong for data/reducer replay. Later claims cover the writer,
+command, API route, phone form and smoke command. It does not prove Telegram or
+capture-to-evidence conversion.
+
+### Claim 24: The capture note writer, command and local API exist
+
+Evidence:
+- `app/ledger-writer.ts` exports `buildCaptureNoteEvent()` and
+  `appendCaptureNoteEvent()`.
+- `app/local-command.ts` exports `runCaptureNoteCommand()`.
+- `app/api/local/capture-note/route.ts` fixes the actor to `person-serj` and
+  writes through the local command.
+- Capture note writes use the event-log lock, hash chain, idempotency payload
+  comparison and preflight replay.
+- Tests cover writer append/retry, command success/rejection and the local POST
+  route against a temporary event ledger.
+- Command: `npm run verify`
+- Result: pass with lint, typecheck, build and 66 tests.
+
+Strength: strong for local capture-note write plumbing. It does not prove
+Telegram, hosted sync, or conversion into evidence/blockers/decisions/tasks.
+
+### Claim 25: The mobile capture form writes real capture notes
+
+Evidence:
+- `app/CaptureNoteForm.tsx` renders the phone-first note/fact form.
+- The form posts to `/api/local/capture-note`.
+- The phone-mode panel renders the capture form before the review queue and
+  shows the last three replay-derived uncategorized captures.
+- Rendered/static tests assert the capture-first order and API boundary.
+- Command: `npm run verify`
+- Result: pass with lint, typecheck, build and 66 tests.
+
+Strength: strong for the first browser-local capture write surface. It does not
+prove a full phone UI or capture review marking from the UI.
+
+### Claim 26: The capture smoke command protects the real event log
+
+Evidence:
+- `npm run smoke:capture` exercises `runCaptureNoteCommand()` against a
+  temporary copied event log.
+- `tests/capture-smoke.test.mjs` verifies the smoke command writes only to the
+  temporary log and leaves `data/events.jsonl` byte-for-byte unchanged.
+- README documents the smoke command.
+- Command: `npm run verify`
+- Result: pass with lint, typecheck, build and 66 tests.
+
+Strength: strong for local smoke safety around capture-note writes.
+
+### Claim 27: The capture review contract and replay path exist
+
+Evidence:
+- `docs/DATA_MODEL_AND_INVARIANTS.md`,
+  `docs/REDACTION_AND_IMPORT_BOUNDARIES.md` and
+  `docs/PRODUCT_DEVELOPMENT_FLOW.md` document `capture.review_marked`.
+- `app/ledger.ts` replays valid `capture.review_marked` events for existing
+  non-sensitive uncategorized captures.
+- Reviewed captures record `reviewStatus: "triaged"`, allowed `candidateType`
+  and `reviewedAt`.
+- Replay preserves raw capture quarantine and creates no evidence, blocker,
+  decision, task or next-action entity.
+- Tests cover successful marking, invalid markings, repeated review and
+  blocked-sensitive rejection.
+- Command: `npm run verify`
+- Result: pass with lint, typecheck, build and 66 tests.
+
+Strength: strong for the capture review contract and reducer behavior.
+
+### Claim 28: The capture review command and local API exist
+
+Evidence:
+- `app/ledger-writer.ts` exports `buildCaptureReviewMarkedEvent()` and
+  `appendCaptureReviewMarkedEvent()`.
+- `app/local-command.ts` exports `runCaptureReviewMarkedCommand()`.
+- `app/api/local/capture-review/route.ts` fixes the actor to `person-serj` and
+  delegates to the local command.
+- Command validation rejects agent actors, missing captures,
+  blocked-sensitive captures and already-reviewed captures before durable
+  append.
+- Tests cover writer append/retry, command success, command/API retry, agent
+  rejection, blocked-sensitive rejection and the local POST route.
+- Command: `npm run verify`
+- Result: pass with lint, typecheck, build and 66 tests.
+
+Strength: strong for local capture review write plumbing. It does not prove the
+mobile review UI affordance.
+
+### Claim 29: Capture candidate validation is consistent
+
+Evidence:
+- `validateLedger()` uses the same candidate-only allow-list as replay and
+  command validation.
+- `candidateType: "inbox"` is rejected for reviewed captures.
+- Focused tests cover the snapshot validation gap.
+- Command: `npm run verify`
+- Result: pass with lint, typecheck, build and 66 tests.
+
+Strength: strong for candidate validation consistency across current local
+paths.
 
 ## Files Changed For Honesty Closure
 
@@ -427,29 +525,37 @@ API route, phone form, Telegram action or capture-to-evidence conversion.
 - `docs/PRODUCT_DEVELOPMENT_FLOW.md`: v0.3 wedge contract and capture contract.
 - `docs/REDACTION_AND_IMPORT_BOUNDARIES.md`: raw capture quarantine path.
 - `docs/SECURITY_AND_APPROVALS.md`: warning for external-action helper.
+- `app/CaptureNoteForm.tsx`: first phone-first capture form and uncategorized
+  capture queue placement.
+- `app/api/local/capture-note/route.ts`: local API route into the capture note
+  command layer.
+- `app/api/local/capture-review/route.ts`: local API route into the capture
+  review command layer.
+- `scripts/smoke-capture-note.mjs`: temp-log capture smoke command.
+- `tests/capture-smoke.test.mjs`: smoke non-mutation invariant.
 
 ## Known Gaps
 
-- The app is still mostly read-only.
-- The next-action update form is the only active browser write control. Other
-  visible queues are intentionally rendered as status/review cards until their
-  command models exist.
+- The app still has narrow write coverage.
+- The next-action update form and capture note form are active browser write
+  controls. Capture review has command/API plumbing but no UI affordance yet.
 - State now comes from local JSON ledger files and events load from JSONL. A
-  first pure replay path and append writer exist for one action. A local
-  human-only command plus browser/API path uses that action, but full reducer
-  coverage does not exist yet.
+  pure replay path and append writer exist for `project.next_action_updated`,
+  `capture.note_created` and `capture.review_marked`, but full reducer coverage
+  does not exist yet.
 - Writer has lock and idempotency conflict checks, but no durable
   `approval.rejected` lifecycle event yet.
 - Dependency audit blocks production deployment.
 - No visual screenshot artifact is saved in the repo yet.
-- The baseline has one local commit, but no remote backup has been created.
+- The canonical repo has been pushed to GitHub, but production deployment is
+  still blocked.
 - Event integrity is validated, but the hash function is a deterministic local
   tamper-evidence checksum, not a cryptographic security boundary.
 
 ## Next Evidence To Create
 
 Before the next product feature:
-- commit the current browser-local write checkpoint;
-- make one phone review action create an append-only event;
-- broaden reducer replay beyond project next action;
+- add the first mobile review UI affordance for `capture.review_marked`;
+- prove one uncategorized capture can be marked as a candidate through
+  `/api/local/capture-review`;
 - capture a screenshot or browser QA artifact after the next visible UI change.

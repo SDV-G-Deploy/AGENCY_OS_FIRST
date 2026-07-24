@@ -1,7 +1,7 @@
 # Pre-Development Readiness Audit
 
-Status: first v0.3 reducer branch complete; ready for next supervised branch
-Last updated: 2026-07-23
+Status: capture command/API groundwork complete; ready for next supervised UI branch
+Last updated: 2026-07-24
 
 ## Question
 
@@ -18,7 +18,7 @@ external integrations or hosted users.
 The next branch should now be:
 
 ```text
-capture.note_created writer/command/API slice
+mobile capture review UI affordance for capture.review_marked
 ```
 
 ## Readiness Matrix
@@ -31,12 +31,12 @@ capture.note_created writer/command/API slice
 | Local UI | Dashboard renders and build passes | Ready enough |
 | Local state model | JSON snapshots plus event log | Ready for v0.3 |
 | Event integrity | JSONL envelope, hash chain and validation tests | Ready for local use |
-| Write safety | One guarded writer path exists | Ready for one-command expansion |
+| Write safety | Guarded writer paths exist for next action, capture note and capture review | Ready for narrow UI expansion |
 | Agent autonomy | Start brief, handoff and branch guardrails | Conditional only |
 | Production | `npm run audit:prod` fails | Not ready |
 | Backup/restore | Not implemented | Not ready for daily dependence |
 | Auth | Not implemented | Not ready for remote use |
-| Redaction runtime | Policy exists, capture enforcement not implemented | Must be part of capture work |
+| Redaction runtime | Capture redaction statuses are validated and blocked-sensitive captures are quarantined | Ready for local capture review |
 
 ## Stack Fitness
 
@@ -60,9 +60,10 @@ That is acceptable because those are not v0.3 problems.
 
 The current plan satisfies "easy first" because:
 - the source of truth is still inspectable local files;
-- the next slice is one event type, not a platform rewrite;
-- the first write path is local and human-owned;
-- the UI already exists and can absorb one more real action;
+- the next slice is one UI affordance over an implemented event type, not a
+  platform rewrite;
+- the implemented write paths are local and human-owned;
+- the phone panel already exists and can absorb one more real action;
 - tests are close to the state and command behavior.
 
 The risk is not technical inability. The risk is accidental scope expansion.
@@ -95,19 +96,20 @@ Do not add now:
 Each of these can become useful later, but all of them would delay the first
 real operating loop.
 
-## What We Should Add During The First Branch
+## What We Should Add During The Next Branch
 
-The first branch should include:
-- `CaptureRecord` or equivalent derived capture collection;
-- replay support for `capture.note_created`;
-- validation for actor, project or Inbox, source, body and redaction status;
-- blocked-sensitive quarantine behavior;
-- tests for valid capture, invalid capture and duplicate/idempotent capture;
+The next branch should include:
+- a mobile-friendly control near the existing phone review queue;
+- one-capture review marking through `/api/local/capture-review`;
+- candidate type selection for `evidence_candidate`, `blocker_candidate`,
+  `decision_candidate` or `next_action_candidate`;
+- success/error confirmation and replay-derived triaged state;
+- focused rendered/static tests;
 - handoff update with the next exact slice.
 
 It should not include:
 - full phone UI;
-- capture conversion to evidence/blocker/decision;
+- capture conversion to evidence/blocker/decision/next action;
 - importers;
 - auth;
 - deployment.
@@ -137,8 +139,7 @@ false claim.
 Agency OS is understood enough for the next correct engineering move:
 
 ```text
-Implement capture.note_created writer/command/API as the first local capture
-write path.
+Add the first mobile capture review UI affordance for capture.review_marked.
 ```
 
 Starting that branch now is rational.
