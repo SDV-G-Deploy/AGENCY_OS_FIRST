@@ -10,8 +10,8 @@ start building the next Agency OS slice?
 
 ## Short Answer
 
-Yes, for supervised bounded local development and cautious local daily use
-after the backup/restore branch is reviewed and merged.
+Yes, for supervised bounded local development and cautious local daily use on
+`main` after the backup/restore branch was reviewed, merged and verified.
 
 No, for broad autonomous parallel development, production deployment, real
 external integrations, hosted users or a deploy-ready Launch Candidate label.
@@ -159,7 +159,9 @@ false claim.
 Agency OS is understood enough to continue bounded local MVP work, but the
 2026-07-25 launch-candidate audit says current `main` is not deploy-ready:
 - `git diff --check` passed;
-- `npm run verify` passed with lint, typecheck, build and 66 tests;
+- `npm run verify` passed with lint, typecheck, build and 74 tests;
+- `npm run ledger:backup` and `npm run ledger:restore -- --dry-run` passed;
+- temp-copy restore passed and wrote a safety backup before replacement;
 - `npm run smoke:local-dev-api` passed with a temporary ledger;
 - `npm run audit:prod` failed with 3 high severity advisories through Next
   transitive `postcss` and `sharp` dependencies;

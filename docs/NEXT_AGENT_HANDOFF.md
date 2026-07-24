@@ -6,31 +6,34 @@ Last updated: 2026-07-25
 ## Handoff Freshness
 
 Branch:
-- `feature/local-ledger-backup-restore`
+- `main`
 
 Commit:
-- current branch commit; run `git log -1 --oneline` for the exact hash.
+- current `main` handoff commit after merging
+  `03950db Merge branch 'feature/local-ledger-backup-restore'`; run
+  `git log -1 --oneline` for the exact final hash.
 
 Working tree state after this handoff checkpoint:
-- expected clean after the worker commit.
+- expected clean on canonical `main` after coordinator push.
 
 Last verified command/result:
+- `git diff --check`
+- pass: no whitespace errors.
 - `node --test tests/ledger-backup-restore.test.mjs`
-- pass: 8 focused backup/restore tests.
-- `npm run ledger:backup -- --out tasks/log/2026-07-25-local-ledger-backup-restore/cli-backups`
-- pass: created a timestamped backup artifact with 3 events and SHA-256
+- pass: 8 focused backup/restore tests in the canonical repo.
+- `npm run verify`
+- pass: lint, typecheck, build and 74 tests in the canonical repo.
+- `npm run ledger:backup -- --out backups\ledger`
+- pass: created an ignored local backup artifact with 3 events and SHA-256
   `E4DB925895E9F085112439482882D8E32E1079A0D672B44422D884431F625D10`.
 - `npm run ledger:restore -- <backup-dir> --dry-run`
-- pass: validated the backup without mutating `data/events.jsonl`.
+- pass: validated the canonical backup without mutating `data/events.jsonl`.
 - `npm run ledger:restore -- <backup-dir> --events <temp-events.jsonl> --out <temp-safety-dir>`
-- pass: restored only a temporary event log and wrote a safety backup first.
-- `git diff --check`
-- pass: no whitespace errors; Git printed Windows line-ending warnings only.
-- `npm run verify`
-- pass: lint, typecheck, build and 74 tests.
+- pass: restored only a temporary event log, wrote a safety backup first and
+  matched the canonical ledger hash.
 - `npm run smoke:local-dev-api`
 - pass: standard local dev/API smoke wrote one `capture.note_created` plus one
-  `capture.review_marked` against a temp log.
+  `capture.review_marked` against a temp log in the canonical repo.
 - `npm run audit:prod`
 - fail: production Launch Candidate remains blocked by 3 high severity
   advisories through Next transitive `postcss <=8.5.17` and `sharp <0.35.0`;
@@ -58,7 +61,11 @@ Deploy-readiness launch-candidate audit result:
 - Launch Candidate: no.
 - Local MVP checks pass, but production/deploy readiness is blocked by the
   failing production dependency audit plus unresolved hosted storage/auth and
-  backup/restore choices.
+  off-machine backup/restore choices.
+
+Local Daily-Use Candidate result:
+- yes for cautious single-user local use after the merged backup/restore path;
+- still limited to manual local files and manual off-machine backup discipline.
 
 The local dev API write EPERM blocker is fixed on `main`. Any continuation
 should stay inside the v0.3 phone-first capture path, starting from the
@@ -93,8 +100,8 @@ Local ledger backup/restore checkpoint:
   duplicate sequence.
 - Evidence is under:
   `tasks/log/2026-07-25-local-ledger-backup-restore/`.
-- Local Daily-Use Candidate: yes after coordinator review and merge of this
-  branch.
+- Local Daily-Use Candidate: yes on `main` after coordinator review, merge and
+  canonical verification.
 - Production Launch Candidate: no; the known production dependency audit plus
   hosted storage/auth blockers remain.
 - No deploy, push, UI redesign, hosted storage/auth, product scope expansion or

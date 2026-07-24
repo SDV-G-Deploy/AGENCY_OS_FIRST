@@ -42,7 +42,7 @@ Evidence:
   - ledger rule tests
 
 Observed test result:
-- 66 tests passed.
+- 74 tests passed.
 
 Strength: strong for current static/local code quality.
 
@@ -530,7 +530,7 @@ Decision:
   `next@9.3.3` downgrade with React peer conflicts.
 
 Strength: strong for deploy-readiness status as of 2026-07-25. It does not
-resolve dependency, hosted storage, auth or backup/restore blockers.
+resolve dependency, hosted storage, auth or off-machine backup blockers.
 
 ### Claim 32: The local ledger has a minimal verified backup and restore path
 
@@ -562,8 +562,8 @@ Evidence:
   `E4DB925895E9F085112439482882D8E32E1079A0D672B44422D884431F625D10`.
 
 Decision:
-- Local Daily-Use Candidate: yes after coordinator review and merge of this
-  branch.
+- Local Daily-Use Candidate: yes on `main` after coordinator review, merge and
+  canonical verification.
 - Production Launch Candidate: no; the known production dependency audit,
   hosted storage and auth blockers remain.
 
