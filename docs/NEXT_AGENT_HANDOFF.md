@@ -6,21 +6,18 @@ Last updated: 2026-07-24
 ## Handoff Freshness
 
 Branch:
-- `feature/docs-freshness-pass`
+- `main`
 
 Commit:
-- this handoff is included in the docs freshness slice commit; run
+- this handoff is included in the current main commit; run
   `git log -1 --oneline` after checkout for the exact checkpoint hash.
 
 Working tree state after this handoff checkpoint:
 - expected clean.
 
 Last verified command/result:
-- `git diff --check`
-- pass.
-- `npm run verify` was attempted twice in this isolated worktree and did not
-  reach project checks because worktree-local `node_modules` is absent
-  (`eslint` / imported `eslint` package not found).
+- `npm run verify`
+- pass: lint, typecheck, build and 66 tests.
 
 Conflict rule:
 - if this handoff conflicts with current code/tests, trust code/tests, inspect
@@ -228,8 +225,8 @@ Docs freshness checkpoint:
 - `docs/EVENT_LOG_INTEGRITY.md` lists implemented event write/replay paths for
   `project.next_action_updated`, `capture.note_created` and
   `capture.review_marked`.
-- Verified with `git diff --check`; full `npm run verify` was blocked by the
-  missing dependency install in this separate worktree.
+- Merged to canonical `main` and verified with `npm run verify`: lint,
+  typecheck, build and 66 tests passed.
 
 Changed files in this fix:
 - `app/ledger.ts`
