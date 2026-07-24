@@ -6,24 +6,32 @@ Last updated: 2026-07-24
 ## Handoff Freshness
 
 Branch:
-- `main`
+- `feature/capture-review-interaction-qa`
 
 Commit:
-- this handoff is included in the current main commit; run
-  `git log -1 --oneline` after checkout for the exact checkpoint hash.
+- this handoff is included in the branch commit; run `git log -1 --oneline`
+  after checkout for the exact checkpoint hash.
 
 Working tree state after this handoff checkpoint:
 - expected clean.
 
 Last verified command/result:
-- `npm run verify`
-- pass: lint, typecheck, build and 66 tests.
-- Browser QA against `http://localhost:5176/`
-- pass: mobile `390px` and desktop `1280px` phone-mode panel screenshots show
-  quick capture form, capture review form and uncategorized list without
-  overlap or horizontal overflow.
 - `git diff --check`
 - pass.
+- `npm run verify`
+- pass: lint, typecheck, build and 66 tests.
+- Worktree originally had no `node_modules`, so this QA used an ignored
+  junction to the canonical local install.
+- Coordinator should still run canonical `npm run verify` after merge because
+  this worktree did not have its own installed `node_modules`.
+- Browser interaction QA against temporary worktree event ledger.
+- partial: browser submitted one `capture.review_marked` through
+  `/api/local/capture-review` and replay-derived removal was confirmed after a
+  clean reload; transient success confirmation was not captured before the
+  automatic reload reset the UI.
+- Canonical `C:\Agency_os_first\AGENCY_OS_FIRST\data\events.jsonl`
+  hash stayed unchanged:
+  `E4DB925895E9F085112439482882D8E32E1079A0D672B44422D884431F625D10`.
 
 Conflict rule:
 - if this handoff conflicts with current code/tests, trust code/tests, inspect
@@ -337,7 +345,59 @@ Capture review UI QA checkpoint:
 - Merged to canonical `main` and verified with `npm run verify`: lint,
   typecheck, build and 66 tests passed.
 
-Changed files in this QA slice:
+Capture review interaction QA checkpoint:
+- Safe browser interaction QA was run from worktree
+  `C:\Agency_os_first\worktrees\capture-review-interaction-qa`.
+- The worktree started without `node_modules`; QA used an ignored local
+  `node_modules` junction to the canonical checkout's existing install.
+- The canonical event ledger hash before and after QA was unchanged:
+  `E4DB925895E9F085112439482882D8E32E1079A0D672B44422D884431F625D10`.
+- Standard `npm run dev` served the app at `http://localhost:5177/`, but local
+  API writes failed with `EPERM` while opening `data/events.jsonl.lock` in the
+  Vinext/Cloudflare request runtime.
+- To exercise the browser interaction safely, a temporary Node-backed Vinext QA
+  server was used only inside the disposable worktree against the copied
+  `data/events.jsonl`.
+- One uncategorized capture was seeded in the temporary ledger through
+  `/api/local/capture-note`.
+- Browser interaction submitted one `capture.review_marked` through
+  `/api/local/capture-review`; the temp server logged
+  `POST /api/local/capture-review 200`.
+- The temp ledger appended one reviewed capture event:
+  `event-ui-capture-review-capture-qa-capture-review-interaction-note-2026-07-24-evidence`.
+- After a clean browser reload from the reviewed temp ledger, the review select
+  showed `No captures` and the uncategorized list showed
+  `No uncategorized captures yet.`
+- The success confirmation was not captured as stable browser evidence because
+  the UI's automatic `window.location.reload()` reset the form before the
+  browser bridge could observe the transient message.
+- In the temporary Node-backed Vinext mode, appending `data/events.jsonl`
+  triggered a Vite HMR parse error for the JSONL file without `?raw`; the
+  replay-removal check therefore used a clean server reload from the reviewed
+  temp ledger.
+- No evidence, blocker, decision, next-action entity, importer, auth, storage,
+  dependency, deploy or conversion behavior was changed.
+
+Artifacts from this interaction QA:
+- `tasks/log/2026-07-24-capture-review-interaction-qa/qa-evidence.md`
+- `tasks/log/2026-07-24-capture-review-interaction-qa/capture-review-interaction-qa-report.json`
+- `tasks/log/2026-07-24-capture-review-interaction-qa/before-review-mobile-390w.png`
+- `tasks/log/2026-07-24-capture-review-interaction-qa/post-submit-reload-attempt-mobile-390w.png`
+- `tasks/log/2026-07-24-capture-review-interaction-qa/after-replay-reload-mobile-390w.png`
+- `tasks/log/2026-07-24-capture-review-interaction-qa/vinext-node-qa.out.log`
+- `tasks/log/2026-07-24-capture-review-interaction-qa/vinext-node-qa.err.log`
+
+Changed files in this interaction QA slice:
+- `docs/NEXT_AGENT_HANDOFF.md`
+- `tasks/log/2026-07-24-capture-review-interaction-qa/qa-evidence.md`
+- `tasks/log/2026-07-24-capture-review-interaction-qa/capture-review-interaction-qa-report.json`
+- `tasks/log/2026-07-24-capture-review-interaction-qa/before-review-mobile-390w.png`
+- `tasks/log/2026-07-24-capture-review-interaction-qa/post-submit-reload-attempt-mobile-390w.png`
+- `tasks/log/2026-07-24-capture-review-interaction-qa/after-replay-reload-mobile-390w.png`
+- `tasks/log/2026-07-24-capture-review-interaction-qa/vinext-node-qa.out.log`
+- `tasks/log/2026-07-24-capture-review-interaction-qa/vinext-node-qa.err.log`
+
+Changed files in the previous capture review UI QA slice:
 - `app/CaptureNoteForm.tsx`
 - `app/globals.css`
 - `docs/CURRENT_EVIDENCE.md`
@@ -367,18 +427,17 @@ Process checkpoint:
 
 ## Next Chewable Step
 
-Capture safe browser interaction QA for the capture review success flow using a
-temporary event ledger.
+Coordinator review of capture review interaction QA findings.
 
 Recommended scope:
-- run the app against a copied/temp `data/events.jsonl` or equivalent safe
-  fixture;
-- create or seed one uncategorized capture in the temp ledger;
-- submit one `capture.review_marked` from the browser UI;
-- confirm success confirmation and replay-derived removal from the
-  uncategorized list;
-- save the QA artifact/report path in handoff;
-- do not mutate canonical `data/events.jsonl`.
+- review the interaction QA artifacts under
+  `tasks/log/2026-07-24-capture-review-interaction-qa/`;
+- decide whether the standard Vinext/Cloudflare local API write `EPERM`
+  is a release-blocking runtime issue for v0.3 local-first capture;
+- decide whether the automatic reload should leave a more durable success
+  confirmation or whether current behavior is acceptable;
+- if fixing, use a new branch/worktree and keep changes limited to the smallest
+  runtime/UI behavior slice.
 
 Out of scope:
 - Telegram;

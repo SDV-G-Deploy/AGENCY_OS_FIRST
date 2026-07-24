@@ -1,0 +1,196 @@
+[2m20:55:45[22m [31m[1m[vite][22m[39m [31m[2m(rsc)[22m[39m Internal Server Error
+Parse failure: Parse failed with 1 error:
+Expected a semicolon or an implicit semicolon after a statement, but found none
+1: {"schemaVersion":1,"sequence":1,"id":"event-v0-2-plan-created","timestamp":"2026-07-22T22:35:00Z","actorId":"agent-co...
+                   ^
+2: {"schemaVersion":1,"sequence":2,"id":"event-v0-2-ledger-added","timestamp":"2026-07-22T22:55:00Z","actorId":"agent-co...
+3: {"schemaVersion":1,"sequence":3,"id":"event-v0-2-honesty-closure","timestamp":"2026-07-23T00:00:00Z","actorId":"agent...
+At file: /data/events.jsonl:1:16
+    at error (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/shared/logs-D80CXhvg.mjs:147:24)
+    at normalizeParseError (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:25:9)
+    at wrap (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:5:39)
+    at parseAstAsync (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:54:9)
+    at async ssrTransformScript (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:11109:9)
+    at async loadAndTransform (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:24566:64)
+[2m20:57:05[22m [31m[1m[vite][22m[39m [31m[2m(rsc)[22m[39m Internal Server Error
+Parse failure: Parse failed with 1 error:
+Expected a semicolon or an implicit semicolon after a statement, but found none
+1: {"schemaVersion":1,"sequence":1,"id":"event-v0-2-plan-created","timestamp":"2026-07-22T22:35:00Z","actorId":"agent-co...
+                   ^
+2: {"schemaVersion":1,"sequence":2,"id":"event-v0-2-ledger-added","timestamp":"2026-07-22T22:55:00Z","actorId":"agent-co...
+3: {"schemaVersion":1,"sequence":3,"id":"event-v0-2-honesty-closure","timestamp":"2026-07-23T00:00:00Z","actorId":"agent...
+At file: /data/events.jsonl:1:16
+    at error (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/shared/logs-D80CXhvg.mjs:147:24)
+    at normalizeParseError (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:25:9)
+    at wrap (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:5:39)
+    at parseAstAsync (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:54:9)
+    at async ssrTransformScript (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:11109:9)
+    at async loadAndTransform (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:24566:64)
+    at async MinimalPluginContext.hotUpdate (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/@vitejs/plugin-rsc/dist/plugin-BhzHKRFo.js:850:8)
+    at async handleHMRUpdate (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:26768:29)
+    at async onHMRUpdate (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:26273:35)
+    at async onFileChange (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:26298:3)
+[2m20:57:54[22m [31m[1m[vite][22m[39m [31m[2m(rsc)[22m[39m Internal Server Error
+Parse failure: Parse failed with 1 error:
+Expected a semicolon or an implicit semicolon after a statement, but found none
+1: {"schemaVersion":1,"sequence":1,"id":"event-v0-2-plan-created","timestamp":"2026-07-22T22:35:00Z","actorId":"agent-co...
+                   ^
+2: {"schemaVersion":1,"sequence":2,"id":"event-v0-2-ledger-added","timestamp":"2026-07-22T22:55:00Z","actorId":"agent-co...
+3: {"schemaVersion":1,"sequence":3,"id":"event-v0-2-honesty-closure","timestamp":"2026-07-23T00:00:00Z","actorId":"agent...
+At file: /data/events.jsonl:1:16
+    at error (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/shared/logs-D80CXhvg.mjs:147:24)
+    at normalizeParseError (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:25:9)
+    at wrap (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:5:39)
+    at parseAstAsync (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:54:9)
+    at async ssrTransformScript (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:11109:9)
+    at async loadAndTransform (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:24566:64)
+    at async MinimalPluginContext.hotUpdate (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/@vitejs/plugin-rsc/dist/plugin-BhzHKRFo.js:850:8)
+    at async handleHMRUpdate (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:26768:29)
+    at async onHMRUpdate (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:26273:35)
+    at async onFileChange (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:26298:3)
+[2m20:58:25[22m [31m[1m[vite][22m[39m [31m[2m(rsc)[22m[39m Internal Server Error
+Parse failure: Parse failed with 1 error:
+Expected a semicolon or an implicit semicolon after a statement, but found none
+1: {"schemaVersion":1,"sequence":1,"id":"event-v0-2-plan-created","timestamp":"2026-07-22T22:35:00Z","actorId":"agent-co...
+                   ^
+2: {"schemaVersion":1,"sequence":2,"id":"event-v0-2-ledger-added","timestamp":"2026-07-22T22:55:00Z","actorId":"agent-co...
+3: {"schemaVersion":1,"sequence":3,"id":"event-v0-2-honesty-closure","timestamp":"2026-07-23T00:00:00Z","actorId":"agent...
+At file: /data/events.jsonl:1:16
+    at error (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/shared/logs-D80CXhvg.mjs:147:24)
+    at normalizeParseError (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:25:9)
+    at wrap (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:5:39)
+    at parseAstAsync (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:54:9)
+    at async ssrTransformScript (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:11109:9)
+    at async loadAndTransform (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:24566:64)
+    at async MinimalPluginContext.hotUpdate (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/@vitejs/plugin-rsc/dist/plugin-BhzHKRFo.js:850:8)
+    at async handleHMRUpdate (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:26768:29)
+    at async onHMRUpdate (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:26273:35)
+    at async onFileChange (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:26298:3)
+[2m20:59:15[22m [31m[1m[vite][22m[39m [31m[2m(rsc)[22m[39m Internal Server Error
+Parse failure: Parse failed with 1 error:
+Expected a semicolon or an implicit semicolon after a statement, but found none
+1: {"schemaVersion":1,"sequence":1,"id":"event-v0-2-plan-created","timestamp":"2026-07-22T22:35:00Z","actorId":"agent-co...
+                   ^
+2: {"schemaVersion":1,"sequence":2,"id":"event-v0-2-ledger-added","timestamp":"2026-07-22T22:55:00Z","actorId":"agent-co...
+3: {"schemaVersion":1,"sequence":3,"id":"event-v0-2-honesty-closure","timestamp":"2026-07-23T00:00:00Z","actorId":"agent...
+At file: /data/events.jsonl:1:16
+    at error (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/shared/logs-D80CXhvg.mjs:147:24)
+    at normalizeParseError (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:25:9)
+    at wrap (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:5:39)
+    at parseAstAsync (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:54:9)
+    at async ssrTransformScript (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:11109:9)
+    at async loadAndTransform (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:24566:64)
+    at async MinimalPluginContext.hotUpdate (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/@vitejs/plugin-rsc/dist/plugin-BhzHKRFo.js:850:8)
+    at async handleHMRUpdate (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:26768:29)
+    at async onHMRUpdate (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:26273:35)
+    at async onFileChange (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:26298:3)
+[2m20:59:55[22m [31m[1m[vite][22m[39m [31m[2m(rsc)[22m[39m Internal Server Error
+Parse failure: Parse failed with 1 error:
+Expected a semicolon or an implicit semicolon after a statement, but found none
+1: {"schemaVersion":1,"sequence":1,"id":"event-v0-2-plan-created","timestamp":"2026-07-22T22:35:00Z","actorId":"agent-co...
+                   ^
+2: {"schemaVersion":1,"sequence":2,"id":"event-v0-2-ledger-added","timestamp":"2026-07-22T22:55:00Z","actorId":"agent-co...
+3: {"schemaVersion":1,"sequence":3,"id":"event-v0-2-honesty-closure","timestamp":"2026-07-23T00:00:00Z","actorId":"agent...
+At file: /data/events.jsonl:1:16
+    at error (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/shared/logs-D80CXhvg.mjs:147:24)
+    at normalizeParseError (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:25:9)
+    at wrap (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:5:39)
+    at parseAstAsync (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:54:9)
+    at async ssrTransformScript (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:11109:9)
+    at async loadAndTransform (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:24566:64)
+    at async MinimalPluginContext.hotUpdate (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/@vitejs/plugin-rsc/dist/plugin-BhzHKRFo.js:850:8)
+    at async handleHMRUpdate (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:26768:29)
+    at async onHMRUpdate (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:26273:35)
+    at async onFileChange (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:26298:3)
+[2m21:00:26[22m [31m[1m[vite][22m[39m [31m[2m(rsc)[22m[39m Internal Server Error
+Parse failure: Parse failed with 1 error:
+Expected a semicolon or an implicit semicolon after a statement, but found none
+1: {"schemaVersion":1,"sequence":1,"id":"event-v0-2-plan-created","timestamp":"2026-07-22T22:35:00Z","actorId":"agent-co...
+                   ^
+2: {"schemaVersion":1,"sequence":2,"id":"event-v0-2-ledger-added","timestamp":"2026-07-22T22:55:00Z","actorId":"agent-co...
+3: {"schemaVersion":1,"sequence":3,"id":"event-v0-2-honesty-closure","timestamp":"2026-07-23T00:00:00Z","actorId":"agent...
+At file: /data/events.jsonl:1:16
+    at error (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/shared/logs-D80CXhvg.mjs:147:24)
+    at normalizeParseError (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:25:9)
+    at wrap (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:5:39)
+    at parseAstAsync (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:54:9)
+    at async ssrTransformScript (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:11109:9)
+    at async loadAndTransform (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:24566:64)
+    at async MinimalPluginContext.hotUpdate (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/@vitejs/plugin-rsc/dist/plugin-BhzHKRFo.js:850:8)
+    at async handleHMRUpdate (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:26768:29)
+    at async onHMRUpdate (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:26273:35)
+    at async onFileChange (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:26298:3)
+[2m21:01:29[22m [31m[1m[vite][22m[39m [31m[2m(rsc)[22m[39m Internal Server Error
+Parse failure: Parse failed with 1 error:
+Expected a semicolon or an implicit semicolon after a statement, but found none
+1: {"schemaVersion":1,"sequence":1,"id":"event-v0-2-plan-created","timestamp":"2026-07-22T22:35:00Z","actorId":"agent-co...
+                   ^
+2: {"schemaVersion":1,"sequence":2,"id":"event-v0-2-ledger-added","timestamp":"2026-07-22T22:55:00Z","actorId":"agent-co...
+3: {"schemaVersion":1,"sequence":3,"id":"event-v0-2-honesty-closure","timestamp":"2026-07-23T00:00:00Z","actorId":"agent...
+At file: /data/events.jsonl:1:16
+    at error (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/shared/logs-D80CXhvg.mjs:147:24)
+    at normalizeParseError (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:25:9)
+    at wrap (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:5:39)
+    at parseAstAsync (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:54:9)
+    at async ssrTransformScript (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:11109:9)
+    at async loadAndTransform (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:24566:64)
+    at async MinimalPluginContext.hotUpdate (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/@vitejs/plugin-rsc/dist/plugin-BhzHKRFo.js:850:8)
+    at async handleHMRUpdate (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:26768:29)
+    at async onHMRUpdate (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:26273:35)
+    at async onFileChange (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:26298:3)
+[2m21:02:01[22m [31m[1m[vite][22m[39m [31m[2m(rsc)[22m[39m Internal Server Error
+Parse failure: Parse failed with 1 error:
+Expected a semicolon or an implicit semicolon after a statement, but found none
+1: {"schemaVersion":1,"sequence":1,"id":"event-v0-2-plan-created","timestamp":"2026-07-22T22:35:00Z","actorId":"agent-co...
+                   ^
+2: {"schemaVersion":1,"sequence":2,"id":"event-v0-2-ledger-added","timestamp":"2026-07-22T22:55:00Z","actorId":"agent-co...
+3: {"schemaVersion":1,"sequence":3,"id":"event-v0-2-honesty-closure","timestamp":"2026-07-23T00:00:00Z","actorId":"agent...
+At file: /data/events.jsonl:1:16
+    at error (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/shared/logs-D80CXhvg.mjs:147:24)
+    at normalizeParseError (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:25:9)
+    at wrap (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:5:39)
+    at parseAstAsync (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:54:9)
+    at async ssrTransformScript (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:11109:9)
+    at async loadAndTransform (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:24566:64)
+    at async MinimalPluginContext.hotUpdate (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/@vitejs/plugin-rsc/dist/plugin-BhzHKRFo.js:850:8)
+    at async handleHMRUpdate (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:26768:29)
+    at async onHMRUpdate (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:26273:35)
+    at async onFileChange (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:26298:3)
+[2m21:03:09[22m [31m[1m[vite][22m[39m [31m[2m(rsc)[22m[39m Internal Server Error
+Parse failure: Parse failed with 1 error:
+Expected a semicolon or an implicit semicolon after a statement, but found none
+1: {"schemaVersion":1,"sequence":1,"id":"event-v0-2-plan-created","timestamp":"2026-07-22T22:35:00Z","actorId":"agent-co...
+                   ^
+2: {"schemaVersion":1,"sequence":2,"id":"event-v0-2-ledger-added","timestamp":"2026-07-22T22:55:00Z","actorId":"agent-co...
+3: {"schemaVersion":1,"sequence":3,"id":"event-v0-2-honesty-closure","timestamp":"2026-07-23T00:00:00Z","actorId":"agent...
+At file: /data/events.jsonl:1:16
+    at error (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/shared/logs-D80CXhvg.mjs:147:24)
+    at normalizeParseError (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:25:9)
+    at wrap (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:5:39)
+    at parseAstAsync (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:54:9)
+    at async ssrTransformScript (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:11109:9)
+    at async loadAndTransform (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:24566:64)
+    at async MinimalPluginContext.hotUpdate (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/@vitejs/plugin-rsc/dist/plugin-BhzHKRFo.js:850:8)
+    at async handleHMRUpdate (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:26768:29)
+    at async onHMRUpdate (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:26273:35)
+    at async onFileChange (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:26298:3)
+[2m21:05:17[22m [31m[1m[vite][22m[39m [31m[2m(rsc)[22m[39m Internal Server Error
+Parse failure: Parse failed with 1 error:
+Expected a semicolon or an implicit semicolon after a statement, but found none
+1: {"schemaVersion":1,"sequence":1,"id":"event-v0-2-plan-created","timestamp":"2026-07-22T22:35:00Z","actorId":"agent-co...
+                   ^
+2: {"schemaVersion":1,"sequence":2,"id":"event-v0-2-ledger-added","timestamp":"2026-07-22T22:55:00Z","actorId":"agent-co...
+3: {"schemaVersion":1,"sequence":3,"id":"event-v0-2-honesty-closure","timestamp":"2026-07-23T00:00:00Z","actorId":"agent...
+At file: /data/events.jsonl:1:16
+    at error (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/shared/logs-D80CXhvg.mjs:147:24)
+    at normalizeParseError (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:25:9)
+    at wrap (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:5:39)
+    at parseAstAsync (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/rolldown/dist/parse-ast-index.mjs:54:9)
+    at async ssrTransformScript (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:11109:9)
+    at async loadAndTransform (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:24566:64)
+    at async MinimalPluginContext.hotUpdate (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/@vitejs/plugin-rsc/dist/plugin-BhzHKRFo.js:850:8)
+    at async handleHMRUpdate (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:26768:29)
+    at async onHMRUpdate (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:26273:35)
+    at async onFileChange (file:///C:/Agency_os_first/AGENCY_OS_FIRST/node_modules/vite/dist/node/chunks/node.js:26298:3)
+[2mDefault inspector port 9229 not available, using 9230 instead
+[22m

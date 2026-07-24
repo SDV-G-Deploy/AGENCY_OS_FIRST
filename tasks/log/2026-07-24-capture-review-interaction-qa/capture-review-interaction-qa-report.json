@@ -1,0 +1,55 @@
+{
+  "date": "2026-07-24",
+  "branch": "feature/capture-review-interaction-qa",
+  "worktree": "C:/Agency_os_first/worktrees/capture-review-interaction-qa",
+  "canonicalRepo": "C:/Agency_os_first/AGENCY_OS_FIRST",
+  "tempEventsPath": "C:/Agency_os_first/worktrees/capture-review-interaction-qa/data/events.jsonl",
+  "canonicalEventsPath": "C:/Agency_os_first/AGENCY_OS_FIRST/data/events.jsonl",
+  "browserViewport": {
+    "width": 390,
+    "height": 844
+  },
+  "qaServers": {
+    "standardVinext": "http://localhost:5177/",
+    "nodeQaVinextFinalUi": "http://localhost:5187/",
+    "replayReloadServer": "http://localhost:5188/"
+  },
+  "seededCapture": {
+    "eventId": "event-qa-capture-review-interaction-note-2026-07-24",
+    "captureId": "capture-qa-capture-review-interaction-note-2026-07-24",
+    "action": "capture.note_created",
+    "reviewStatus": "uncategorized",
+    "redactionStatus": "pending_scan",
+    "source": "local_command"
+  },
+  "uiReviewSubmission": {
+    "eventId": "event-ui-capture-review-capture-qa-capture-review-interaction-note-2026-07-24-evidence",
+    "captureId": "capture-qa-capture-review-interaction-note-2026-07-24",
+    "action": "capture.review_marked",
+    "candidateType": "evidence_candidate",
+    "reviewStatus": "triaged",
+    "source": "local_command",
+    "redactionStatus": "not_required",
+    "linkedEvidenceIds": [],
+    "approvalIds": [],
+    "traceId": null
+  },
+  "checks": {
+    "uiPostedCaptureReviewRoute": true,
+    "routeStatusFromServerLog": "POST /api/local/capture-review 200",
+    "replayReloadCaptureSelectText": "No captures",
+    "replayReloadUncategorizedListText": "No uncategorized captures yet.",
+    "successConfirmationCaptured": false,
+    "standardVinextApiWrite": "blocked: EPERM opening data/events.jsonl.lock",
+    "nodeQaReloadAfterAppend": "blocked by Vite HMR parse of data/events.jsonl without ?raw; clean server reload used for replay check"
+  },
+  "artifacts": [
+    "tasks/log/2026-07-24-capture-review-interaction-qa/before-review-mobile-390w.png",
+    "tasks/log/2026-07-24-capture-review-interaction-qa/post-submit-reload-attempt-mobile-390w.png",
+    "tasks/log/2026-07-24-capture-review-interaction-qa/after-replay-reload-mobile-390w.png",
+    "tasks/log/2026-07-24-capture-review-interaction-qa/capture-review-interaction-qa-report.json",
+    "tasks/log/2026-07-24-capture-review-interaction-qa/qa-evidence.md",
+    "tasks/log/2026-07-24-capture-review-interaction-qa/vinext-node-qa.out.log",
+    "tasks/log/2026-07-24-capture-review-interaction-qa/vinext-node-qa.err.log"
+  ]
+}

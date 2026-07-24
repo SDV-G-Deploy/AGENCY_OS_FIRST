@@ -1,0 +1,42 @@
+
+> agency-os-portfolio-staging@0.1.0 dev
+> cross-env WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext dev --host 127.0.0.1 --port 5180
+
+
+  vinext dev  (Vite 8.0.13)
+
+[2m20:55:23[22m [36m[1m[vite][22m[39m [34m[2m(ssr)[22m[39m Re-optimizing dependencies because vite config has changed
+[2m20:55:23[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m Re-optimizing dependencies because vite config has changed
+[2m20:55:23[22m [36m[1m[vite][22m[39m [34m[2m(rsc)[22m[39m Re-optimizing dependencies because vite config has changed
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5180[22m/[39m
+[2m20:55:43[22m [36m[1m[vite][22m[39m [34m[2m(rsc)[22m[39m connected.
+ POST /api/local/capture-note 200 in 1.3s
+[2m20:55:59[22m [36m[1m[vite][22m[39m [34m[2m(ssr)[22m[39m connected.
+ GET / 200 in 533ms (compile: 65ms, render: 465ms)
+ GET / 200 in 51ms (compile: 5ms, render: 43ms)
+[2m20:57:05[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/app/globals.css?direct[22m
+[2m20:57:54[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/app/globals.css?direct[22m
+[2m20:58:25[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/app/globals.css?direct[22m
+[2m20:59:15[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/app/globals.css?direct[22m
+[2m20:59:55[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/app/globals.css?direct[22m
+[2m21:00:26[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/app/globals.css?direct[22m
+[2m21:01:29[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/app/globals.css?direct[22m
+[2m21:02:01[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/app/globals.css?direct[22m
+[2m21:03:09[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/app/globals.css?direct[22m
+[2m21:05:17[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/app/globals.css?direct[22m
+[2m21:05:22[22m [36m[1m[vite][22m[39m [32mvite.config.ts changed, restarting server...[39m
+[2m21:05:23[22m [36m[1m[vite][22m[39m [34m[2m(rsc)[22m[39m Re-optimizing dependencies because vite config has changed
+[2m21:05:23[22m [36m[1m[vite][22m[39m [34m[2m(ssr)[22m[39m Re-optimizing dependencies because vite config has changed
+[2m21:05:25[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m Re-optimizing dependencies because vite config has changed
+[2m21:05:25[22m [36m[1m[vite][22m[39m server restarted.
+[2m21:05:46[22m [36m[1m[vite][22m[39m [32mvite.config.ts changed, restarting server...[39m
+[2m21:05:47[22m [36m[1m[vite][22m[39m server restarted.
+[2m21:06:35[22m [36m[1m[vite][22m[39m [34m[2m(rsc)[22m[39m [32mhmr update [39m[2m/app/globals.css[22m
+[2m21:07:07[22m [36m[1m[vite][22m[39m [34m[2m(rsc)[22m[39m [32mhmr update [39m[2m/app/globals.css[22m
+[2m21:07:24[22m [36m[1m[vite][22m[39m [34m[2m(rsc)[22m[39m [32mhmr update [39m[2m/app/globals.css[22m
+[2m21:07:44[22m [36m[1m[vite][22m[39m [34m[2m(rsc)[22m[39m [32mhmr update [39m[2m/app/globals.css[22m
+[2m21:07:54[22m [36m[1m[vite][22m[39m [34m[2m(rsc)[22m[39m [32mhmr update [39m[2m/app/globals.css[22m
+[2m21:08:00[22m [36m[1m[vite][22m[39m [34m[2m(rsc)[22m[39m [32mhmr update [39m[2m/app/globals.css[22m
+[2m21:08:34[22m [36m[1m[vite][22m[39m [34m[2m(rsc)[22m[39m [32mhmr update [39m[2m/app/globals.css[22m
+[2m21:09:10[22m [36m[1m[vite][22m[39m [34m[2m(rsc)[22m[39m [32mhmr update [39m[2m/app/globals.css[22m
+[2m21:09:10[22m [36m[1m[vite][22m[39m [34m[2m(rsc)[22m[39m [32mhmr update [39m[2m/app/globals.css[22m
