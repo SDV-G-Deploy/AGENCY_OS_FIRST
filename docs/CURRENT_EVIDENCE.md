@@ -1,7 +1,7 @@
 # Current Evidence Log
 
 Status: current evidence
-Last updated: 2026-07-24
+Last updated: 2026-07-25
 
 ## Current Claims
 
@@ -500,6 +500,38 @@ Strength: medium. It proves first local browser/layout QA for the phone-mode
 capture review surface, not full device coverage or interaction mutation
 through the real event log.
 
+### Claim 31: Current main is not a deploy-ready Launch Candidate
+
+Evidence:
+- Branch: `feature/deploy-readiness-launch-candidate-audit`.
+- Audit artifact:
+  `tasks/log/2026-07-25-deploy-readiness-launch-candidate-audit/launch-candidate-audit.md`.
+- Machine-readable report:
+  `tasks/log/2026-07-25-deploy-readiness-launch-candidate-audit/launch-candidate-audit-report.json`.
+- Command: `git diff --check`
+- Result: pass.
+- Command: `npm run verify`
+- Result: pass with lint, typecheck, build and 66 tests.
+- Command: `npm run audit:prod`
+- Result: fail with 3 high severity advisories through Next transitive
+  `postcss <=8.5.17` and `sharp <0.35.0`.
+- Command: `npm run smoke:local-dev-api`
+- Result: pass using a temporary event log.
+- Canonical `data/events.jsonl` hash before and after audit stayed unchanged:
+  `E4DB925895E9F085112439482882D8E32E1079A0D672B44422D884431F625D10`.
+
+Decision:
+- Launch Candidate: no.
+- Current `main` remains appropriate for bounded local MVP development, but not
+  for production deployment.
+- No narrow dependency fix was applied because current `next@16.2.11` is also
+  the npm latest, `npm audit fix --omit=dev --dry-run` leaves the advisories
+  and `npm audit fix --omit=dev --force --dry-run` proposes the breaking
+  `next@9.3.3` downgrade with React peer conflicts.
+
+Strength: strong for deploy-readiness status as of 2026-07-25. It does not
+resolve dependency, hosted storage, auth or backup/restore blockers.
+
 ## Files Changed For Honesty Closure
 
 - `package.json`: added `typecheck`, `audit:prod`, `verify`; moved Next to
@@ -572,7 +604,10 @@ through the real event log.
   does not exist yet.
 - Writer has lock and idempotency conflict checks, but no durable
   `approval.rejected` lifecycle event yet.
-- Dependency audit blocks production deployment.
+- Dependency audit blocks production deployment and prevents calling current
+  `main` a deploy-ready Launch Candidate.
+- Hosted runtime/storage, remote auth/identity and backup/restore decisions are
+  still open before production or dependable daily use.
 - First visual screenshot artifacts exist for the phone-mode capture review UI.
 - The canonical repo has been pushed to GitHub, but production deployment is
   still blocked.

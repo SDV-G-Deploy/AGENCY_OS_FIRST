@@ -6,26 +6,28 @@ Last updated: 2026-07-25
 ## Handoff Freshness
 
 Branch:
-- `main`
+- `feature/deploy-readiness-launch-candidate-audit`
 
 Commit:
-- capture review success browser QA merged at `99e640a`; this coordinator
-  freshness update is included in the current `main` checkpoint. Run
-  `git log -1 --oneline` for the exact local commit hash.
+- deploy-readiness launch-candidate audit committed on this branch. Run
+  `git log -1 --oneline` in the audit worktree for the exact local commit hash.
 
 Working tree state after this handoff checkpoint:
 - expected clean.
 
 Last verified command/result:
-- Canonical `npm run smoke:local-dev-api`
-- pass: standard `npm run dev` served the app and appended one
-  `capture.note_created` plus one `capture.review_marked` through
-  `/api/local/capture-note` and `/api/local/capture-review` against temp log
-  `C:\Users\SERJSE~1\AppData\Local\Temp\agency-os-local-dev-api-fjDfHA\events.jsonl`.
+- `git diff --check`
+- pass: no whitespace errors.
 - `npm run verify`
 - pass: lint, typecheck, build and 66 tests.
-- `git diff --check`
-- pass; PowerShell reported only existing CRLF normalization warnings.
+- `npm run audit:prod`
+- fail: 3 high severity advisories through Next transitive
+  `postcss <=8.5.17` and `sharp <0.35.0`; current `next@16.2.11` is the npm
+  latest and npm's force-fix path proposes a breaking `next@9.3.3` downgrade.
+- `npm run smoke:local-dev-api`
+- pass: standard local dev/API smoke wrote one `capture.note_created` plus one
+  `capture.review_marked` against a temp log
+  `C:\Users\SERJSE~1\AppData\Local\Temp\agency-os-local-dev-api-JOTjJ0\events.jsonl`.
 - Canonical `C:\Agency_os_first\AGENCY_OS_FIRST\data\events.jsonl`
   hash stayed unchanged:
   `E4DB925895E9F085112439482882D8E32E1079A0D672B44422D884431F625D10`.
@@ -43,8 +45,13 @@ Agency OS now has a canonical local repo and GitHub remote:
 Agency OS is on `main`. The capture triage contract, replay support,
 command/API seam, capture candidate validation fix, local dev API write fix,
 capture review success confirmation fix and success-confirmation browser QA
-evidence are merged. The branch is ready for coordinator push after this
-handoff freshness update.
+evidence are merged.
+
+Deploy-readiness launch-candidate audit result:
+- Launch Candidate: no.
+- Local MVP checks pass, but production/deploy readiness is blocked by the
+  failing production dependency audit plus unresolved hosted storage/auth and
+  backup/restore choices.
 
 The local dev API write EPERM blocker is fixed on `main`. Any continuation
 should stay inside the v0.3 phone-first capture path, starting from the
@@ -58,6 +65,47 @@ contracts already written in:
 - `docs/EVENT_LOG_INTEGRITY.md`.
 
 ## Last Completed Work
+
+Deploy-readiness launch-candidate audit checkpoint:
+- Audit worktree:
+  `C:\Agency_os_first\worktrees\deploy-readiness-launch-candidate-audit`.
+- Branch: `feature/deploy-readiness-launch-candidate-audit`.
+- Current `main` was evaluated at base commit
+  `62a8954 docs: update handoff after capture review success browser qa`.
+- Result: current `main` should not be called a deploy-ready Launch Candidate.
+- `git diff --check` passed.
+- `npm run verify` passed with lint, typecheck, build and 66 tests.
+- `npm run audit:prod` failed with 3 high severity advisories through Next
+  transitive `postcss <=8.5.17` and `sharp <0.35.0`.
+- `npm view next version` returned `16.2.11`, matching the repo's current
+  direct `next` dependency.
+- `npm audit fix --omit=dev --dry-run` still left the advisories.
+- `npm audit fix --omit=dev --force --dry-run` proposed `next@9.3.3`, a
+  breaking downgrade with React peer conflicts.
+- `npm run smoke:local-dev-api` passed against a temporary event log.
+- Canonical `data/events.jsonl` hash before and after stayed unchanged:
+  `E4DB925895E9F085112439482882D8E32E1079A0D672B44422D884431F625D10`.
+- No deploy, push, product scope expansion, UI redesign, dependency-file change
+  or canonical ledger mutation was performed.
+
+Artifacts from this audit:
+- `tasks/log/2026-07-25-deploy-readiness-launch-candidate-audit/launch-candidate-audit.md`
+- `tasks/log/2026-07-25-deploy-readiness-launch-candidate-audit/launch-candidate-audit-report.json`
+- `tasks/log/2026-07-25-deploy-readiness-launch-candidate-audit/git-diff-check.final.log`
+- `tasks/log/2026-07-25-deploy-readiness-launch-candidate-audit/npm-run-verify.log`
+- `tasks/log/2026-07-25-deploy-readiness-launch-candidate-audit/npm-run-audit-prod.log`
+- `tasks/log/2026-07-25-deploy-readiness-launch-candidate-audit/npm-run-smoke-local-dev-api.log`
+
+Changed files in this audit slice:
+- `docs/CURRENT_EVIDENCE.md`
+- `docs/PRE_DEVELOPMENT_READINESS_AUDIT.md`
+- `docs/NEXT_AGENT_HANDOFF.md`
+- `tasks/log/2026-07-25-deploy-readiness-launch-candidate-audit/launch-candidate-audit.md`
+- `tasks/log/2026-07-25-deploy-readiness-launch-candidate-audit/launch-candidate-audit-report.json`
+- `tasks/log/2026-07-25-deploy-readiness-launch-candidate-audit/git-diff-check.final.log`
+- `tasks/log/2026-07-25-deploy-readiness-launch-candidate-audit/npm-run-verify.log`
+- `tasks/log/2026-07-25-deploy-readiness-launch-candidate-audit/npm-run-audit-prod.log`
+- `tasks/log/2026-07-25-deploy-readiness-launch-candidate-audit/npm-run-smoke-local-dev-api.log`
 
 Capture review success browser QA checkpoint:
 - Browser QA evidence was captured from worktree
@@ -550,16 +598,16 @@ Process checkpoint:
 
 ## Next Chewable Step
 
-Create a deploy-readiness / launch-candidate audit branch.
+Resolve or explicitly accept deploy blockers before any production launch.
 
 Recommended scope:
-- inspect the current production/deploy blocker notes, especially the
-  `postcss` / `sharp` audit blocker recorded in evidence docs;
-- run the production-facing audit/build checks that are cheap and local;
-- determine whether the current `main` can be called Launch Candidate or list
-  the exact remaining blockers;
-- keep the slice evidence/docs-focused unless a narrow deploy blocker fix is
-  directly proven and small;
+- choose a safe path for the Next transitive `postcss` / `sharp` production
+  audit blocker, or explicitly document risk acceptance;
+- choose hosted storage/runtime direction before any remote deployment because
+  the current writer is local-file-backed;
+- choose remote auth/identity boundaries before exposing local write routes;
+- add backup/export and restore checks before depending on the local ledger as
+  the only memory of real work;
 - do not deploy until coordinator explicitly approves deployment.
 
 ## Minimum Files To Read Next
@@ -575,6 +623,7 @@ Recommended scope:
 - `tasks/log/2026-07-25-capture-review-success-browser-qa/qa-evidence.md`
 - `docs/CURRENT_EVIDENCE.md`
 - `docs/STACK_AND_TOOLING_DECISION.md`
+- `tasks/log/2026-07-25-deploy-readiness-launch-candidate-audit/launch-candidate-audit.md`
 
 ## Usually Skip Unless Needed
 

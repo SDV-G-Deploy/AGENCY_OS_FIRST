@@ -1,0 +1,99 @@
+{
+  "date": "2026-07-25",
+  "branch": "feature/deploy-readiness-launch-candidate-audit",
+  "worktree": "C:\\Agency_os_first\\worktrees\\deploy-readiness-launch-candidate-audit",
+  "baseCommit": "62a8954 docs: update handoff after capture review success browser qa",
+  "launchCandidate": false,
+  "recommendation": "no",
+  "summary": "Current main is healthy for bounded local-first MVP development but is not a deploy-ready Launch Candidate.",
+  "checks": [
+    {
+      "command": "git diff --check",
+      "result": "pass",
+      "log": "tasks/log/2026-07-25-deploy-readiness-launch-candidate-audit/git-diff-check.final.log",
+      "notes": "No whitespace errors."
+    },
+    {
+      "command": "npm run verify",
+      "result": "pass",
+      "log": "tasks/log/2026-07-25-deploy-readiness-launch-candidate-audit/npm-run-verify.log",
+      "notes": "lint, typecheck, build and 66 tests passed."
+    },
+    {
+      "command": "npm run audit:prod",
+      "result": "fail",
+      "log": "tasks/log/2026-07-25-deploy-readiness-launch-candidate-audit/npm-run-audit-prod.log",
+      "notes": "3 high severity vulnerabilities via Next transitive postcss and sharp dependencies."
+    },
+    {
+      "command": "npm run smoke:local-dev-api",
+      "result": "pass",
+      "log": "tasks/log/2026-07-25-deploy-readiness-launch-candidate-audit/npm-run-smoke-local-dev-api.log",
+      "notes": "Standard local dev/API smoke wrote only to a temporary ledger."
+    }
+  ],
+  "dependencyAudit": {
+    "currentNext": "16.2.11",
+    "npmViewNextVersion": "16.2.11",
+    "advisories": [
+      {
+        "package": "postcss",
+        "range": "<=8.5.17",
+        "severity": "high",
+        "via": "next/node_modules/postcss"
+      },
+      {
+        "package": "sharp",
+        "range": "<0.35.0",
+        "severity": "high"
+      }
+    ],
+    "npmAuditFixDryRun": "Still leaves advisories.",
+    "npmAuditFixForceDryRun": "Proposes next@9.3.3, a breaking downgrade with React peer conflicts.",
+    "narrowSafeFixApplied": false
+  },
+  "blockers": [
+    {
+      "id": "prod-dependency-audit",
+      "status": "open",
+      "source": "npm run audit:prod",
+      "description": "Production dependency audit fails on Next transitive postcss and sharp advisories.",
+      "fixDecision": "Not fixed in this slice because npm's available force path is a breaking Next downgrade."
+    },
+    {
+      "id": "hosted-runtime-storage",
+      "status": "open",
+      "source": "docs/STACK_AND_TOOLING_DECISION.md",
+      "description": "File-backed local JSONL writer needs a storage/deployment adapter decision before hosted deployment.",
+      "fixDecision": "Documented only; requires deploy/storage product choice."
+    },
+    {
+      "id": "remote-auth-identity",
+      "status": "open",
+      "source": "docs/STACK_AND_TOOLING_DECISION.md",
+      "description": "Local write routes fix actor to person-serj; remote auth and actor/session binding do not exist.",
+      "fixDecision": "Documented only; requires auth/deploy product choice."
+    },
+    {
+      "id": "backup-restore",
+      "status": "open",
+      "source": "docs/PRE_DEVELOPMENT_READINESS_AUDIT.md",
+      "description": "Backup/export and restore checks are not implemented for dependable local use.",
+      "fixDecision": "Documented only; outside audit slice."
+    }
+  ],
+  "canonicalLedger": {
+    "path": "data/events.jsonl",
+    "sha256Before": "E4DB925895E9F085112439482882D8E32E1079A0D672B44422D884431F625D10",
+    "sha256After": "E4DB925895E9F085112439482882D8E32E1079A0D672B44422D884431F625D10",
+    "unchanged": true
+  },
+  "mutations": {
+    "deployed": false,
+    "pushed": false,
+    "canonicalEventsJsonlMutated": false,
+    "productScopeExpanded": false,
+    "uiRedesigned": false,
+    "dependencyFilesChanged": false
+  }
+}

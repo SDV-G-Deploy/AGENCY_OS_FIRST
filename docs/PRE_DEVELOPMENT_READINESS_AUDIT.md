@@ -1,7 +1,7 @@
 # Pre-Development Readiness Audit
 
-Status: capture command/API groundwork complete; ready for next supervised UI branch
-Last updated: 2026-07-24
+Status: local MVP checks pass; deploy-ready Launch Candidate blocked
+Last updated: 2026-07-25
 
 ## Question
 
@@ -13,12 +13,13 @@ start building the next Agency OS slice?
 Yes, for one supervised bounded local development branch.
 
 No, for broad autonomous parallel development, production deployment, real
-external integrations or hosted users.
+external integrations, hosted users or a deploy-ready Launch Candidate label.
 
 The next branch should now be:
 
 ```text
-mobile capture review UI affordance for capture.review_marked
+fix or explicitly accept deploy blockers before any production launch;
+continue bounded local MVP slices only after coordinator review
 ```
 
 ## Readiness Matrix
@@ -33,7 +34,7 @@ mobile capture review UI affordance for capture.review_marked
 | Event integrity | JSONL envelope, hash chain and validation tests | Ready for local use |
 | Write safety | Guarded writer paths exist for next action, capture note and capture review | Ready for narrow UI expansion |
 | Agent autonomy | Start brief, handoff and branch guardrails | Conditional only |
-| Production | `npm run audit:prod` fails | Not ready |
+| Production | `npm run audit:prod` fails on Next transitive `postcss` and `sharp` advisories | Not ready |
 | Backup/restore | Not implemented | Not ready for daily dependence |
 | Auth | Not implemented | Not ready for remote use |
 | Redaction runtime | Capture redaction statuses are validated and blocked-sensitive captures are quarantined | Ready for local capture review |
@@ -136,10 +137,21 @@ Required if scope drifts:
 Agency OS is not "fully understood" in the grand-product sense. That would be a
 false claim.
 
-Agency OS is understood enough for the next correct engineering move:
+Agency OS is understood enough to continue bounded local MVP work, but the
+2026-07-25 launch-candidate audit says current `main` is not deploy-ready:
+- `git diff --check` passed;
+- `npm run verify` passed with lint, typecheck, build and 66 tests;
+- `npm run smoke:local-dev-api` passed with a temporary ledger;
+- `npm run audit:prod` failed with 3 high severity advisories through Next
+  transitive `postcss` and `sharp` dependencies;
+- canonical `data/events.jsonl` hash stayed unchanged.
+
+Current launch verdict:
 
 ```text
-Add the first mobile capture review UI affordance for capture.review_marked.
+Launch Candidate: no.
 ```
 
-Starting that branch now is rational.
+Starting production deployment is not rational until the dependency audit has a
+safe path or the risk is explicitly accepted, and hosted storage/auth plus
+backup/restore choices are made.
