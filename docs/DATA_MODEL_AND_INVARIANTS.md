@@ -1,7 +1,9 @@
 # Data Model And Invariants
 
-Status: draft v0.2  
-Last updated: 2026-07-23
+Status: current v0.3 local model contract
+Last updated: 2026-07-28
+
+Current-state authority: `docs/CURRENT_STATE.md`.
 
 ## Source Of Truth
 
@@ -27,12 +29,17 @@ Current implementation status:
 - event envelope and hash-chain validation are active;
 - pure replay exists for `project.next_action_updated`;
 - file-backed append writer exists for `project.next_action_updated`;
+- replay and file-backed writers exist for `capture.note_created` and
+  `capture.review_marked`;
 - dashboard-facing state is derived from `data/*.json` snapshots plus replayed
   events;
-- the first browser-local write surface exists for human next-action updates;
+- browser-local write surfaces exist for human next-action, capture and review
+  updates;
 - current entity snapshots still live in `data/*.json`;
 - `capture.note_created` replay creates derived capture records without a
   separate `data/captures.json` snapshot;
+- tracked snapshots are a public staging dataset, not an approved private
+  runtime home;
 - full reducer replay across all entity types is not implemented yet.
 
 ## Identity

@@ -1,7 +1,9 @@
 # Stack And Tooling Decision
 
 Status: v0.3 build decision  
-Last updated: 2026-07-23
+Last updated: 2026-07-28
+
+Current-state authority: `docs/CURRENT_STATE.md`.
 
 ## Decision
 
@@ -17,10 +19,12 @@ Agency OS should continue as:
 
 ```text
 local-first web kit -> phone-first local write loop -> backup/export ->
-manual evidence -> GitHub/Codex/OpenClaw imports -> private hosted alpha
+private runtime boundary -> request-fresh truth -> manual evidence ->
+read-only self-observation import -> private hosted alpha
 ```
 
-Do not replatform before `capture.note_created`.
+Do not replatform to solve a data-location problem. First isolate runtime data
+behind the existing path/command seams.
 
 ## Current Stack
 
@@ -47,6 +51,10 @@ The current stack already gives:
 - fast enough iteration for evening sessions;
 - a future hosted path without committing to SaaS too early;
 - tests around the ledger, reducer and rendered HTML.
+
+Current caution:
+- tracked `data/` is still a public staging dataset and must not be treated as
+  the final private runtime home.
 
 The next product risk is not framework choice. The next product risk is whether
 the system becomes useful in short phone/laptop sessions.
@@ -115,14 +123,14 @@ Before any remote access:
 
 ### Backup and restore
 
-The local ledger is not trustworthy for daily dependence until backup/export
-exists.
+Minimal local event-log backup and restore now exist.
 
 Before using Agency OS as the only memory of real work:
-- add export bundle;
-- add restore check;
-- document manual backup;
-- test corrupted event log behavior.
+- move runtime data outside the public Git worktree;
+- expand backup to a self-contained workspace bundle;
+- make restore atomic and coordinated with the writer lock;
+- add stale-lock recovery;
+- establish an off-machine copy.
 
 ## Alternatives Considered
 
@@ -176,11 +184,11 @@ Agents may work autonomously on bounded branches if they:
   slice.
 
 Good autonomous branches:
-- `capture.note_created` reducer and data type;
-- phone capture form/API;
-- evidence attach design and reducer tests;
-- backup/export design spike with fixtures;
-- mobile rendered/screenshot QA.
+- private data-home contract;
+- runtime path adapter with temporary-fixture tests;
+- request-scoped projection refactor;
+- literal queue-count fix;
+- restore/lock hardening with focused tests.
 
 Not good autonomous branches yet:
 - hosted auth;

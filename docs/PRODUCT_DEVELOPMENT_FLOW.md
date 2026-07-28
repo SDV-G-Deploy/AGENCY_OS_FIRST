@@ -1,7 +1,9 @@
 # Agency OS Product Development Flow
 
 Status: current staged execution plan
-Last updated: 2026-07-24
+Last updated: 2026-07-28
+
+Current-state authority: `docs/CURRENT_STATE.md`.
 
 ## Purpose
 
@@ -24,7 +26,7 @@ Every stage must produce:
 
 ## Current Stage
 
-Stage: v0.3 phone-first capture path.
+Stage: v0.3 supervised local staging and private-runtime hardening.
 
 Already true:
 
@@ -36,19 +38,23 @@ Already true:
 - first browser-local command exists;
 - `capture.note_created` data/reducer, writer, command, API, phone form and
   smoke path exist;
-- `capture.review_marked` contract, replay, writer, command and API exist;
+- `capture.review_marked` contract, replay, writer, command, API, phone UI and
+  browser QA exist;
+- manual local event-ledger backup, dry-run restore and safety backup exist;
 - false UI actions are removed;
 - claim/evidence required-type contract is enforced;
-- `npm run verify` passes with 66 tests;
-- independent critic reached 96/100 for the honesty checkpoint.
+- `npm run verify` passes with 74 tests on the verified baseline;
+- production audit remains red.
 
 Not true yet:
 
-- phone review cards do not yet submit `capture.review_marked`;
 - evidence attach is not implemented;
 - blockers cannot be resolved through UI;
 - no GitHub/Codex/OpenClaw/Telegram importers;
-- no export/backup/restore;
+- private runtime data is not separated from public Git fixtures;
+- dashboard projections are not fully request-scoped;
+- backup/restore is manual and event-log-only, not a complete workspace
+  recovery system;
 - no hosted auth;
 - no production deployment.
 
@@ -331,6 +337,12 @@ Done criteria:
 
 ## Stage 5: Export, Backup And Restore
 
+Current status:
+
+- minimal local event-log backup and restore is implemented and tested;
+- full workspace export, atomic locked restore, scheduled/off-machine backup
+  and snapshot regeneration are not implemented.
+
 Goal:
 - make local-first safe enough to trust.
 
@@ -472,64 +484,72 @@ For each major product block:
 
 ## Next Branch Candidates
 
-### Candidate A: Phone Capture Review
+### Candidate A: Private Runtime Data-Home Contract
 
 Recommended.
 
 Why:
-- highest fit with the user's real work pattern;
-- low risk;
-- turns the existing phone review queue from read-only to useful;
-- uses the implemented `capture.review_marked` command/API.
+- prevents private notes from entering the public Git worktree;
+- creates a safe boundary for later daily use;
+- unblocks truthful backup, migration and hosted decisions.
 
-### Candidate B: Evidence Attach
+### Candidate B: Request-Scoped Ledger View
 
 Strong second.
 
 Why:
-- makes the core evidence promise more real;
-- improves project truth.
+- eliminates mixed-age dashboard state after writes;
+- makes the current screen match the event ledger.
 
 Risk:
-- needs careful type/freshness design.
+- view-model refactor can expose hidden module-cache assumptions.
 
-### Candidate C: Backup/Export
+### Candidate C: Intake And Route Hardening
 
-Responsible infrastructure.
+Required before real personal notes.
 
 Why:
-- protects local-first trust.
+- removes raw body from idempotency;
+- adds size/timestamp/loopback boundaries;
+- turns redaction status into an enforceable boundary.
 
 Risk:
-- less visible wow.
+- security behavior needs explicit fail-closed tests.
 
-### Candidate D: GitHub Importer
+### Candidate D: Phone Loop Convergence
 
-Useful but should wait.
+Useful after truth and privacy gates.
 
 Why:
-- strong evidence source.
+- reduces mobile UI to Capture, Review and Today;
+- directly tests the short-session product promise.
 
 Risk:
-- integration complexity before manual evidence flow is ergonomic.
+- visual work can hide unresolved state problems if started too early.
 
 ## Decisions Needed From Human Soon
 
-1. After the review UI affordance, should the next branch optimize for evidence
-   attach or backup/export?
+1. Confirm the private runtime data-home location and migration policy.
 2. Is Agency OS first a private local tool, a productized solo-builder kit, or a
    service-led offering?
-3. Should external users see it before GitHub import exists?
-4. What is the first non-Serj user profile to interview?
-5. How much production audit risk is acceptable for private staging?
+3. Should raw quarantine remain OS-user-protected local storage or require
+   OS-backed encryption before personal remote access?
+4. What is the first non-Serj user profile to interview after the local loop is
+   safe?
+5. Production audit risk is not accepted for deployment unless explicitly
+   recorded by a person.
 
 ## Default Recommendation
 
 Build next:
 
 ```text
-phone capture review -> evidence attach -> blocker decision -> backup/export -> GitHub importer
+private data boundary
+-> request-fresh truth
+-> intake/recovery hardening
+-> phone loop
+-> read-only self-observation importer
 ```
 
-This sequence keeps the product close to the real pain: short sessions,
-scattered thought, evidence, blocked decisions and durable progress.
+This sequence prevents new integrations from multiplying private or stale
+state before the core truth loop is dependable.

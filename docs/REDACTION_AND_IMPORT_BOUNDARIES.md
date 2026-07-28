@@ -1,7 +1,9 @@
 # Redaction And Import Boundaries
 
-Status: draft v0.1  
-Last updated: 2026-07-23
+Status: current boundary contract; enforcement is incomplete
+Last updated: 2026-07-28
+
+Current-state authority: `docs/CURRENT_STATE.md`.
 
 ## Purpose
 
@@ -107,7 +109,12 @@ Do not import:
 
 ## Raw Capture Quarantine
 
-`capture.note_created` is the first planned raw-text write path.
+`capture.note_created` is the implemented first raw-text write path.
+
+Current limitation:
+- the writer can persist `pending_scan` raw text before a real scanner runs;
+- current Git-tracked data is not an approved private quarantine;
+- this status value is not itself a privacy boundary.
 
 Rules:
 - raw capture text is untrusted data;

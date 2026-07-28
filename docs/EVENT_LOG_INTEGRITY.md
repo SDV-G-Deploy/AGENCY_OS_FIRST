@@ -1,11 +1,14 @@
 # Event Log Integrity
 
 Status: current local integrity contract
-Last updated: 2026-07-24
+Last updated: 2026-07-28
+
+Current-state authority: `docs/CURRENT_STATE.md`.
 
 ## Purpose
 
-`data/events.jsonl` is the durable memory of Agency OS.
+`data/events.jsonl` is the current public staging event source. It is not the
+approved final location for private runtime memory.
 
 Current state files are convenient snapshots. Events are the audit trail that
 explains how the state changed.
@@ -34,13 +37,15 @@ Current implementation status:
 - the first browser-local UI/API path is wired for human
   `project.next_action_updated`;
 - the phone-first capture form/API is wired for human `capture.note_created`;
-- the local command/API path is wired for human `capture.review_marked`, but
-  the mobile review UI affordance is not built yet;
+- the local command/API and mobile review UI are wired for human
+  `capture.review_marked`;
+- browser QA covers review submission and success confirmation;
 - dashboard-facing state derives from replayed events over snapshots;
 - human-only local commands can append `project.next_action_updated`,
   `capture.note_created` and `capture.review_marked` events and confirm
   replay-derived state;
 - it does not regenerate current snapshot files after append.
+- private runtime data has not yet been separated from Git-tracked fixtures.
 
 ## Event Envelope
 

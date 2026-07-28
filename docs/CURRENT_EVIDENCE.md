@@ -1,7 +1,10 @@
 # Current Evidence Log
 
 Status: current evidence
-Last updated: 2026-07-25
+Last updated: 2026-07-28
+
+Current-state authority: `docs/CURRENT_STATE.md`. This file is cumulative
+evidence history; older test counts and limitations remain historical.
 
 ## Current Claims
 
@@ -567,9 +570,45 @@ Decision:
 - Production Launch Candidate: no; the known production dependency audit,
   hosted storage and auth blockers remain.
 
+This was the 2026-07-25 verdict. It is superseded for current personal-memory
+use by Claim 33 because the later synchronization audit identified the public
+Git/runtime-data collision and mixed-age dashboard projections.
+
 Strength: strong for minimal local backup/export/restore behavior. It does not
 prove scheduled backups, cloud/off-machine backup, multi-device sync or
 cryptographic signing.
+
+### Claim 33: The verified current stage is v0.3 Supervised Local Staging
+
+Evidence:
+- `git HEAD` and `origin/main` both resolved to `2c9139d` before the
+  synchronization branch.
+- GitHub Verify passed for `2c9139d`.
+- Fresh `npm run verify` on 2026-07-28 passed lint, typecheck, build and 74
+  tests on the clean `main` baseline.
+- Fresh `npm run verify` on the completed synchronization branch passed lint,
+  typecheck, build and 77 tests, including the new current-state consistency
+  gate.
+- Fresh `npm run audit:prod` failed with three high-severity findings through
+  the current Next dependency chain.
+- Code and browser inspection confirmed working next-action, capture and
+  capture-review surfaces plus backup/restore tooling.
+- Data inspection found `data/projects.json`, work items and the three-event
+  fixture still described the v0.2 honesty closure.
+- `docs/CURRENT_STATE.md` records the synchronized verdict and authority rule.
+- `docs/PAPERCLIPS.md` records the recurrent sources of state drift.
+
+Decision:
+- supervised local development: yes;
+- synthetic/non-sensitive evaluation: yes;
+- private personal-memory daily use: no until private runtime data is outside
+  the public Git worktree;
+- remote access: no;
+- production Launch Candidate: no.
+
+Strength: strong for stage classification, contradiction discovery and local
+branch verification. Coordinator review and merge are still required before
+the synchronized state becomes the canonical `main` baseline.
 
 ## Files Changed For Honesty Closure
 
@@ -638,8 +677,9 @@ cryptographic signing.
 ## Known Gaps
 
 - The app still has narrow write coverage.
-- The next-action update form and capture note form are active browser write
-  controls. Capture review has command/API plumbing but no UI affordance yet.
+- The next-action, capture-note and capture-review forms are active browser
+  write controls. Browser QA exists for capture review and success
+  confirmation.
 - State now comes from local JSON ledger files and events load from JSONL. A
   pure replay path and append writer exist for `project.next_action_updated`,
   `capture.note_created` and `capture.review_marked`, but full reducer coverage
@@ -652,7 +692,10 @@ cryptographic signing.
   before production.
 - Backup/restore is now implemented as a manual local path; scheduled backups,
   off-machine copies and multi-device conflict handling are not implemented.
-- First visual screenshot artifacts exist for the phone-mode capture review UI.
+- Public Git fixtures still double as runtime data; private personal-memory use
+  is not approved until the private data-home boundary exists.
+- Dashboard projections are not fully request-scoped, and phone capture count
+  has a false fallback when the literal count is zero.
 - The canonical repo has been pushed to GitHub, but production deployment is
   still blocked.
 - Event integrity is validated, but the hash function is a deterministic local
@@ -661,7 +704,10 @@ cryptographic signing.
 ## Next Evidence To Create
 
 Before the next product feature:
-- prove one uncategorized capture can be marked as a candidate through
-  `/api/local/capture-review` from a non-mutating QA fixture or a safe temp
-  ledger flow;
-- capture a browser interaction QA artifact for the successful review flow.
+- approve the private runtime data-home contract;
+- prove a capture write does not modify any Git-tracked runtime file;
+- prove every dashboard projection reflects the same post-write replay
+  snapshot;
+- prove zero captures renders a literal zero;
+- retain the current production audit blocker until a safe dependency path
+  exists.

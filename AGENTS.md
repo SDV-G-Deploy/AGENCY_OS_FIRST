@@ -21,6 +21,7 @@ not durable project memory.
 
 Always start by reading:
 
+- `docs/CURRENT_STATE.md`
 - `docs/AGENT_START_BRIEF.md`
 - `docs/NEXT_AGENT_HANDOFF.md`
 - files directly touched by the task
@@ -32,7 +33,17 @@ git status
 git log -1 --oneline
 ```
 
-If docs conflict with code/tests, trust code/tests first, then update the docs.
+If sources conflict, use:
+
+```text
+code/tests/Git
+-> docs/CURRENT_STATE.md
+-> docs/NEXT_AGENT_HANDOFF.md
+-> plans/contracts
+-> historical evidence
+```
+
+Do not choose a next slice from a historical test count or task artifact.
 
 ## Work Protocol
 
@@ -99,20 +110,32 @@ Current package path:
 Local Solo Builder Kit
 ```
 
-Current next slice:
+Current stage:
 
 ```text
-mobile capture review UI affordance for capture.review_marked
+v0.3 Supervised Local Staging
+```
+
+Current milestone:
+
+```text
+State synchronization and private-runtime hardening
+```
+
+Current next bounded slice:
+
+```text
+private runtime data-home contract
 ```
 
 Still out of scope:
 
-- full phone UI;
 - Telegram;
 - GitHub/Codex/OpenClaw importers;
 - hosted auth;
 - production deploy;
 - database migration.
+- moving real data before an approved migration, backup and rollback plan.
 
 ## Exit Handoff
 
@@ -128,3 +151,7 @@ At the end of non-trivial work, update `docs/NEXT_AGENT_HANDOFF.md` with:
 - exact next chewable step;
 - files the next agent should read;
 - files the next agent can skip.
+
+Update `docs/CURRENT_STATE.md` in the same slice only when a current fact,
+stage, gate or next milestone changed. Record recurring friction separately in
+`docs/PAPERCLIPS.md`.

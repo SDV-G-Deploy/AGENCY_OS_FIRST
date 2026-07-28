@@ -1,5 +1,16 @@
 # Agency OS v0.2 Night Build Plan
 
+Status: historical execution log, not current stage authority
+
+Current state:
+- `docs/CURRENT_STATE.md`
+
+Current roadmap:
+- `docs/STRATEGIC_HARDENING_AND_PRODUCT_PLAN.md`
+
+The PLAN FIRST/PLAN UPDATE entries below are preserved as historical evidence.
+Do not select a new slice from their former next-step statements.
+
 ## Working Protocol
 
 Every meaningful block starts with PLAN FIRST and ends with PLAN UPDATE.

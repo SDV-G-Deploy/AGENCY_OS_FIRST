@@ -25,6 +25,17 @@ Future Codex work should start from this canonical local repo.
 
 ## Current local kit scope
 
+Current stage:
+
+```text
+v0.3 Supervised Local Staging
+```
+
+Use [Current State](docs/CURRENT_STATE.md) for the authoritative stage, gates
+and next milestone. The kit is approved for supervised local development and
+non-sensitive evaluation. It is not approved for real private-memory use,
+remote access or production deployment.
+
 - Command Center with the main focus and portfolio health.
 - Four active portfolio lanes: core, revenue, infrastructure and lab.
 - Work queue where every task has a verification method.
@@ -41,19 +52,20 @@ Future Codex work should start from this canonical local repo.
 - Local writer/command/API for `capture.note_created`.
 - Minimal phone-first capture form that writes through the local capture API.
 - Safe local capture smoke command that uses a temporary event log.
+- Phone capture review UI through `capture.review_marked`.
+- Browser QA evidence for capture review and success confirmation.
 - Local ledger backup and restore commands for `data/events.jsonl`.
-- Product DNA and v0.3 phone-first capture plan.
+- Product DNA and strategic hardening roadmap.
 
 ## Next useful layer
 
-1. Propose the first capture triage contract without implementing conversion.
-2. Add approval rejection and expiry UI.
-3. Add runtime schema validation and redaction/import fixtures.
-4. Add GitHub importer fixtures for commits, pull requests, checks and deploy
-   URLs.
-5. Add an OpenClaw event endpoint for `agent_run.created`.
-6. Add a Telegram action surface for approve, block, verify and capture.
-7. Add agent lifecycle and cost-spend warnings.
+1. Define the private runtime data-home contract.
+2. Move runtime reads/writes/backup/restore behind one path adapter.
+3. Make every dashboard projection request-fresh and fix literal queue counts.
+4. Add real redaction/quarantine and loopback route boundaries.
+5. Harden restore, stale-lock recovery and the backup manifest.
+6. Converge phone mode around Capture, Review and Today.
+7. Only then add the first read-only self-observation importer.
 
 ## Run
 
@@ -83,6 +95,9 @@ unchanged.
 
 ## Architecture And Evidence
 
+- [Current State](docs/CURRENT_STATE.md)
+- [Paperclips](docs/PAPERCLIPS.md)
+- [Strategic Hardening And Product Plan](docs/STRATEGIC_HARDENING_AND_PRODUCT_PLAN.md)
 - [Agent Start Brief](docs/AGENT_START_BRIEF.md)
 - [Next Agent Handoff](docs/NEXT_AGENT_HANDOFF.md)
 - [Agent Context Protocol](docs/AGENT_CONTEXT_PROTOCOL.md)
@@ -106,18 +121,22 @@ Durable planning artifacts start in
 `tasks/log/2026-07-23-agency-os-v0-2-honesty-closure/`.
 
 Agents should not read every large document by default. Start from
-`docs/AGENT_START_BRIEF.md` and `docs/NEXT_AGENT_HANDOFF.md`, then escalate
-using `docs/AGENT_CONTEXT_PROTOCOL.md`.
+`docs/CURRENT_STATE.md`, `docs/AGENT_START_BRIEF.md` and
+`docs/NEXT_AGENT_HANDOFF.md`, then escalate using
+`docs/AGENT_CONTEXT_PROTOCOL.md`.
 
 The first local data skeleton lives in `data/` and uses stable IDs. Dashboard
 event history now loads from append-only-oriented `data/events.jsonl`.
 
-Current branch adds the first guarded local write path:
-- `app/ledger-writer.ts` appends one `project.next_action_updated` event type;
-- `app/local-command.ts` exposes a human-only command wrapper;
-- dashboard-facing state is derived by replaying events over snapshots;
-- `app/NextActionForm.tsx` and `app/api/local/next-action/route.ts` connect a
-  browser-local form to the command layer.
+Current guarded local write coverage includes:
+- `project.next_action_updated`;
+- `capture.note_created`;
+- `capture.review_marked`;
+- durable `approval.approved` and `approval.used` lifecycle events.
+
+The current tracked `data/` tree remains a public staging dataset. Do not put
+sensitive or private notes into it. The next milestone separates private
+runtime data from public source and fixtures.
 
 `npm run verify` is the local quality gate. `npm run audit:prod` is kept
 separate because current production dependency audit advisories remain visible

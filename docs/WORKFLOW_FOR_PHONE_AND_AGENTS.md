@@ -101,6 +101,7 @@ Rules:
 ## Agent Startup
 
 Every agent should read:
+- `docs/CURRENT_STATE.md`;
 - `docs/AGENT_START_BRIEF.md`;
 - `docs/NEXT_AGENT_HANDOFF.md`;
 - files directly touched by the task.
@@ -123,13 +124,13 @@ Every non-trivial agent run should leave:
 Next slice:
 
 ```text
-mobile capture review UI affordance for capture.review_marked
+private runtime data-home contract
 ```
 
 Still out of scope:
-- full phone UI;
 - Telegram;
 - GitHub/Codex/OpenClaw importers;
 - hosted auth;
 - production deploy;
 - database migration.
+- migration of real data before the contract, backup and rollback are approved.

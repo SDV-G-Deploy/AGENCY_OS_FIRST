@@ -7,14 +7,14 @@
     "priorityLane": "core",
     "stage": "build",
     "state": "active",
-    "currentMilestone": "v0.2 honesty closure",
-    "nextAction": "Create a local capture ledger with append-only events.",
+    "currentMilestone": "v0.3 state synchronization and private-runtime hardening",
+    "nextAction": "Define the private runtime data-home contract outside the public Git worktree.",
     "mainBlockerId": null,
     "decisionNeededId": null,
     "ownerId": "person-serj",
-    "canonicalRepository": null,
+    "canonicalRepository": "https://github.com/SDV-G-Deploy/AGENCY_OS_FIRST",
     "productionUrl": null,
-    "lastUpdated": "2026-07-23T00:00:00+03:00"
+    "lastUpdated": "2026-07-28T00:00:00+03:00"
   },
   {
     "id": "project-ai1geo",

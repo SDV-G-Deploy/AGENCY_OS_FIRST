@@ -1,5 +1,15 @@
 [
   {
+    "id": "claim-current-state-synchronized",
+    "projectId": "project-agency-os",
+    "subjectType": "project_stage",
+    "subjectId": "project-agency-os",
+    "claim": "Agency OS is a v0.3 supervised local staging candidate with capture, review and backup paths verified, but private-memory, remote-access and production gates remain closed.",
+    "status": "verified",
+    "requiredEvidenceTypes": ["command_output", "git_commit"],
+    "linkedEvidenceIds": ["evidence-current-state-verify", "evidence-current-state-git"]
+  },
+  {
     "id": "claim-v0-2-local-verify",
     "projectId": "project-agency-os",
     "subjectType": "project",

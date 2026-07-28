@@ -1,5 +1,40 @@
 [
   {
+    "id": "evidence-current-state-verify",
+    "claimId": "claim-current-state-synchronized",
+    "projectId": "project-agency-os",
+    "type": "command_output",
+    "source": "local",
+    "urlOrPath": "docs/CURRENT_STATE.md",
+    "createdAt": "2026-07-28T00:00:00+03:00",
+    "submittedBy": "agent-codex",
+    "verifiedBy": "system-local-verifier",
+    "verificationStatus": "verified",
+    "freshnessExpiresAt": "2026-08-04T00:00:00+03:00",
+    "hash": null,
+    "knownGaps": [
+      "private runtime data home is not implemented",
+      "production dependency audit is not clean"
+    ]
+  },
+  {
+    "id": "evidence-current-state-git",
+    "claimId": "claim-current-state-synchronized",
+    "projectId": "project-agency-os",
+    "type": "git_commit",
+    "source": "github",
+    "urlOrPath": "https://github.com/SDV-G-Deploy/AGENCY_OS_FIRST/commit/2c9139d1cd385d41ec17a04432f794838d8a0068",
+    "createdAt": "2026-07-28T00:00:00+03:00",
+    "submittedBy": "agent-codex",
+    "verifiedBy": "system-local-verifier",
+    "verificationStatus": "verified",
+    "freshnessExpiresAt": "2026-08-04T00:00:00+03:00",
+    "hash": "2c9139d1cd385d41ec17a04432f794838d8a0068",
+    "knownGaps": [
+      "synchronization branch is not merged or pushed yet"
+    ]
+  },
+  {
     "id": "evidence-local-v0-2-verify",
     "claimId": "claim-v0-2-local-verify",
     "projectId": "project-agency-os",

@@ -1,7 +1,9 @@
 # Release Gates
 
-Status: draft v0.1  
-Last updated: 2026-07-23
+Status: current gate contract
+Last updated: 2026-07-28
+
+Current-state authority: `docs/CURRENT_STATE.md`.
 
 ## Local Gate
 
@@ -37,6 +39,7 @@ Production deployment is blocked unless:
 
 Current status:
 - blocked by Next transitive `postcss` and `sharp` advisories;
+- blocked by unresolved private runtime storage and hosted auth;
 - do not run `npm audit fix --force` blindly because it suggests a breaking
   dependency path.
 
@@ -64,7 +67,9 @@ Current status:
 - dashboard-facing state derives from replayed events over snapshots;
 - first human-only local command writes through the guarded writer and confirms
   replay-derived state;
-- redaction is documented but not enforced.
+- human-only capture and capture-review routes are implemented;
+- redaction is documented but scan-before-persist is not enforced;
+- agentic writes remain limited to explicitly supported scoped actions.
 
 ## Integration Gate
 
@@ -80,10 +85,15 @@ Before connecting an external system:
 
 Before relying on the dashboard as daily operational memory:
 - local git baseline exists;
-- remote backup or export exists;
+- runtime private data does not live in the public Git worktree;
+- an off-machine backup or export exists;
 - restore procedure is documented;
 - event log can be replayed after restore.
 
 Current status:
 - local git baseline exists;
-- remote backup is not configured.
+- manual local event-log backup and restore exist;
+- safety backup and restore dry-run exist;
+- private runtime data home is not implemented;
+- off-machine backup is not configured;
+- backup is not yet a complete workspace bundle.

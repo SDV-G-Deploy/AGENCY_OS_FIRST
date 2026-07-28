@@ -1,7 +1,15 @@
 # Pre-Development Readiness Audit
 
-Status: local daily-use candidate after backup/restore; deploy-ready Launch Candidate blocked
+Status: historical 2026-07-25 audit snapshot; superseded for current stage
 Last updated: 2026-07-25
+
+Current-state authority: `docs/CURRENT_STATE.md`.
+
+This file preserves the 2026-07-25 readiness decision. The later state
+synchronization found that public Git fixtures still double as runtime data
+and that visible projections can become stale. Therefore its “Local Daily-Use
+Candidate: yes” verdict is historical and must not be used as current approval
+for private personal-memory use.
 
 ## Question
 

@@ -1,7 +1,9 @@
 # Security And Approval Model
 
-Status: draft v0.2  
-Last updated: 2026-07-23
+Status: current security contract; hosted and intake gates remain closed
+Last updated: 2026-07-28
+
+Current-state authority: `docs/CURRENT_STATE.md`.
 
 ## Security Principle
 
@@ -154,6 +156,9 @@ Current status:
 - production audit is blocked by Next/PostCSS/sharp advisories.
 - no production deployment should happen until the blocker is resolved or
   consciously accepted.
+- local routes are approved only for loopback-local supervised use;
+- fixed actor identity is not authentication;
+- private runtime storage and scan-before-persist are not implemented.
 
 ## External Action Helper Warning
 

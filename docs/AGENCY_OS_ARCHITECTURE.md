@@ -1,9 +1,12 @@
 # Agency OS Architecture
 
-Status: draft v0.4 planning baseline  
-Last updated: 2026-07-23
+Status: target architecture; current facts live in `CURRENT_STATE.md`
+Last updated: 2026-07-28
 
 Related product documents:
+- [Current State](CURRENT_STATE.md)
+- [Strategic Hardening And Product Plan](STRATEGIC_HARDENING_AND_PRODUCT_PLAN.md)
+- [Paperclips](PAPERCLIPS.md)
 - [Agent Start Brief](AGENT_START_BRIEF.md)
 - [Next Agent Handoff](NEXT_AGENT_HANDOFF.md)
 - [Agent Context Protocol](AGENT_CONTEXT_PROTOCOL.md)
@@ -59,14 +62,15 @@ The product backbone is intentionally small:
 2. Local State Ledger records in JSON.
 3. Append-only event log in JSONL.
 4. Pure replay reducer for deriving current state.
-5. Guarded writer and command layer for the first human-only state update.
-6. Browser-local form/API for updating one project's next action.
-7. Verification suite that proves build, render, ledger rules, replay, writer,
-   command and API write path.
+5. Guarded writer and command layers for next action, capture and review.
+6. Browser-local forms/APIs for all three human-owned write paths.
+7. Manual local event-ledger backup and restore tooling.
+8. Verification suite that proves build, render, ledger rules, replay, writer,
+   command, API and recovery paths.
 
 The current app is not yet a hosted production system. It is a local staging
-environment that can show the product shape and safely prove one state mutation
-path.
+environment that proves several narrow state mutation paths. Its tracked
+`data/` tree is still public staging data, not an approved private runtime home.
 
 ## System Of Record Ladder
 
