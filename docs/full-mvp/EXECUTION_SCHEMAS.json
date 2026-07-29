@@ -1,0 +1,764 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "agency-os-full-mvp-execution-schemas-v2",
+  "$defs": {
+    "PassFail": {
+      "type": "string",
+      "enum": ["PASS", "FAIL"]
+    },
+    "GitSha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "OwnerAuthorization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "authorizationId",
+        "goalId",
+        "windowId",
+        "planningCommit",
+        "authorizedStartCommit",
+        "canonicalRepo",
+        "startAt",
+        "deadlineAt",
+        "stopDispatchMinutesBeforeDeadline",
+        "diskQuotaBytes",
+        "permissions",
+        "manualGatesRemainOwnerWork",
+        "completionIsNotGuaranteed"
+      ],
+      "properties": {
+        "schemaVersion": { "const": 2 },
+        "authorizationId": { "type": "string", "minLength": 8, "maxLength": 100 },
+        "goalId": { "type": "string", "minLength": 8, "maxLength": 80 },
+        "windowId": { "type": "string", "minLength": 8, "maxLength": 80 },
+        "planningCommit": { "$ref": "#/$defs/GitSha" },
+        "authorizedStartCommit": { "$ref": "#/$defs/GitSha" },
+        "canonicalRepo": { "const": "C:\\Agency_os_first\\AGENCY_OS_FIRST" },
+        "startAt": { "type": "string", "format": "date-time" },
+        "deadlineAt": { "type": "string", "format": "date-time" },
+        "stopDispatchMinutesBeforeDeadline": { "type": "integer", "minimum": 30 },
+        "diskQuotaBytes": { "type": "integer", "minimum": 10737418240 },
+        "permissions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "createControllerAndTaskWorktrees",
+            "deleteOnlyWorktreesCreatedByThisGoal",
+            "localMergeIntoIntegration",
+            "moveOrPushMain",
+            "pushAnyBranch",
+            "deployOrExposePublicly",
+            "migrateRealPrivateData",
+            "installOnlyApprovedExactDependencies"
+          ],
+          "properties": {
+            "createControllerAndTaskWorktrees": { "const": true },
+            "deleteOnlyWorktreesCreatedByThisGoal": { "const": true },
+            "localMergeIntoIntegration": { "const": true },
+            "moveOrPushMain": { "const": false },
+            "pushAnyBranch": { "const": false },
+            "deployOrExposePublicly": { "const": false },
+            "migrateRealPrivateData": { "const": false },
+            "installOnlyApprovedExactDependencies": { "const": true }
+          }
+        },
+        "manualGatesRemainOwnerWork": { "const": true },
+        "completionIsNotGuaranteed": { "const": true }
+      }
+    },
+    "RunTaskState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "contractTaskId",
+        "satisfiedByTaskId",
+        "branch",
+        "worktree",
+        "startingCommit",
+        "workerId",
+        "reviewerIds",
+        "ownedPaths",
+        "repairCount",
+        "processState",
+        "evidencePaths",
+        "invalidatedBy"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "blocked",
+            "ready",
+            "dispatched",
+            "implemented",
+            "verified",
+            "review_rejected",
+            "repairing",
+            "accepted",
+            "merge_pending_verification",
+            "merged",
+            "reverted",
+            "invalidated",
+            "manual_pending",
+            "aborted",
+            "failed"
+          ]
+        },
+        "contractTaskId": { "type": "string", "minLength": 3 },
+        "satisfiedByTaskId": {
+          "anyOf": [
+            { "type": "string", "pattern": "^RPR-[A-Z][0-9]{2}-[1-9][0-9]*$" },
+            { "type": "null" }
+          ]
+        },
+        "branch": { "type": "string" },
+        "worktree": { "type": "string" },
+        "startingCommit": { "$ref": "#/$defs/GitSha" },
+        "implementationCommit": {
+          "anyOf": [{ "$ref": "#/$defs/GitSha" }, { "type": "null" }]
+        },
+        "mergeCommit": {
+          "anyOf": [{ "$ref": "#/$defs/GitSha" }, { "type": "null" }]
+        },
+        "revertCommit": {
+          "anyOf": [{ "$ref": "#/$defs/GitSha" }, { "type": "null" }]
+        },
+        "workerId": { "type": "string" },
+        "reviewerIds": { "type": "array", "items": { "type": "string" } },
+        "ownedPaths": { "type": "array", "items": { "type": "string" } },
+        "repairCount": { "type": "integer", "minimum": 0, "maximum": 2 },
+        "processState": { "type": "string" },
+        "evidencePaths": { "type": "array", "items": { "type": "string" } },
+        "invalidatedBy": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "RunState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "stateRevision",
+        "stateChecksum",
+        "goalId",
+        "activeAuthorizationId",
+        "activeWindowId",
+        "planningCommit",
+        "authorizedStartCommit",
+        "integrationBranch",
+        "integrationWorktree",
+        "startedAt",
+        "deadlineAt",
+        "stopDispatchAt",
+        "diskQuotaBytes",
+        "updatedAt",
+        "currentWave",
+        "activeTaskIds",
+        "taskStates",
+        "authorizationHistory",
+        "reviewScores",
+        "aggregateGate",
+        "manualGates",
+        "stopReason"
+      ],
+      "properties": {
+        "schemaVersion": { "const": 2 },
+        "stateRevision": { "type": "integer", "minimum": 1 },
+        "stateChecksum": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "goalId": { "type": "string" },
+        "activeAuthorizationId": { "type": "string" },
+        "activeWindowId": { "type": "string" },
+        "planningCommit": { "$ref": "#/$defs/GitSha" },
+        "authorizedStartCommit": { "$ref": "#/$defs/GitSha" },
+        "integrationBranch": { "const": "integration/full-mvp-v0.4" },
+        "integrationWorktree": { "type": "string" },
+        "startedAt": { "type": "string", "format": "date-time" },
+        "deadlineAt": { "type": "string", "format": "date-time" },
+        "stopDispatchAt": { "type": "string", "format": "date-time" },
+        "diskQuotaBytes": { "type": "integer", "minimum": 10737418240 },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "currentWave": { "type": "string" },
+        "activeTaskIds": { "type": "array", "items": { "type": "string" } },
+        "taskStates": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/RunTaskState" }
+        },
+        "authorizationHistory": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["authorizationId", "windowId", "authorizationHash", "startAt", "deadlineAt"],
+            "properties": {
+              "authorizationId": { "type": "string" },
+              "windowId": { "type": "string" },
+              "authorizationHash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+              "startAt": { "type": "string", "format": "date-time" },
+              "deadlineAt": { "type": "string", "format": "date-time" }
+            }
+          }
+        },
+        "reviewScores": { "type": "object" },
+        "aggregateGate": { "type": "object" },
+        "manualGates": { "type": "object" },
+        "stopReason": { "type": ["string", "null"] }
+      }
+    },
+    "CommandResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "testedCommit", "exitCode", "startedAt", "endedAt"],
+      "properties": {
+        "command": { "type": "string", "minLength": 1 },
+        "testedCommit": { "$ref": "#/$defs/GitSha" },
+        "exitCode": { "const": 0 },
+        "startedAt": { "type": "string", "format": "date-time" },
+        "endedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "EvidenceCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceTaskId", "level", "engines", "commands", "artifactPaths", "artifactHashes", "metadata", "result"],
+      "properties": {
+        "sourceTaskId": { "type": "string", "minLength": 1 },
+        "level": { "enum": ["domain", "workspace", "api", "browser", "manual"] },
+        "engines": {
+          "type": "array",
+          "items": { "enum": ["node", "chromium", "webkit", "physical_phone", "manual"] }
+        },
+        "commands": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/CommandResult" }
+        },
+        "artifactPaths": { "type": "array", "items": { "type": "string" } },
+        "artifactHashes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          }
+        },
+        "metadata": {
+          "anyOf": [
+            { "$ref": "#/$defs/BrowserEvidenceMetadata" },
+            { "type": "null" }
+          ]
+        },
+        "result": { "const": "PASS" }
+      }
+    },
+    "BrowserEvidenceMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "viewportWidths",
+        "inputModes",
+        "timingMs",
+        "resultOutcome",
+        "focusOutcome",
+        "postReloadProjection",
+        "noHorizontalOverflow",
+        "sensitiveContentAbsent"
+      ],
+      "properties": {
+        "viewportWidths": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1 }
+        },
+        "inputModes": {
+          "type": "array",
+          "items": { "enum": ["keyboard", "pointer", "touch"] }
+        },
+        "timingMs": { "type": "number", "minimum": 0 },
+        "resultOutcome": { "$ref": "#/$defs/PassFail" },
+        "focusOutcome": { "$ref": "#/$defs/PassFail" },
+        "postReloadProjection": { "$ref": "#/$defs/PassFail" },
+        "noHorizontalOverflow": { "$ref": "#/$defs/PassFail" },
+        "sensitiveContentAbsent": { "$ref": "#/$defs/PassFail" }
+      }
+    },
+    "AcceptanceEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "fixtureId",
+        "taskId",
+        "goalId",
+        "testedCommit",
+        "checks",
+        "dependencyEvidenceIds",
+        "result"
+      ],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "fixtureId": { "type": "string", "pattern": "^AT-" },
+        "taskId": { "type": "string" },
+        "goalId": { "type": "string" },
+        "testedCommit": { "$ref": "#/$defs/GitSha" },
+        "checks": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/EvidenceCheck" }
+        },
+        "dependencyEvidenceIds": { "type": "array", "items": { "type": "string" } },
+        "result": { "const": "PASS" }
+      }
+    },
+    "ReviewArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "taskId",
+        "role",
+        "reviewerId",
+        "workerId",
+        "coordinatorId",
+        "reviewedCommit",
+        "reviewedAt",
+        "score",
+        "verdict",
+        "deterministicBlockers"
+      ],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "taskId": { "type": "string" },
+        "role": { "type": "string" },
+        "reviewerId": { "type": "string" },
+        "workerId": { "type": "string" },
+        "coordinatorId": { "type": "string" },
+        "reviewedCommit": { "$ref": "#/$defs/GitSha" },
+        "reviewedAt": { "type": "string", "format": "date-time" },
+        "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "verdict": { "enum": ["ACCEPT", "REJECT"] },
+        "deterministicBlockers": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "ImplementationReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "taskId", "startingCommit", "implementationCommit", "resultTreeHash", "workerId", "coordinatorId", "recordedAt", "focusedCommands", "evidencePaths"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "taskId": { "type": "string" },
+        "startingCommit": { "$ref": "#/$defs/GitSha" },
+        "implementationCommit": { "$ref": "#/$defs/GitSha" },
+        "resultTreeHash": { "$ref": "#/$defs/GitSha" },
+        "workerId": { "type": "string" },
+        "coordinatorId": { "type": "string" },
+        "recordedAt": { "type": "string", "format": "date-time" },
+        "focusedCommands": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/CommandResult" }
+        },
+        "evidencePaths": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "CoordinatorAcceptance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "taskId",
+        "coordinatorId",
+        "implementationCommit",
+        "mergeCommit",
+        "aggregateCommit",
+        "acceptedAt",
+        "aggregateCommands",
+        "reviewPaths",
+        "result"
+      ],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "taskId": { "type": "string" },
+        "coordinatorId": { "type": "string" },
+        "implementationCommit": { "$ref": "#/$defs/GitSha" },
+        "mergeCommit": { "$ref": "#/$defs/GitSha" },
+        "aggregateCommit": { "$ref": "#/$defs/GitSha" },
+        "acceptedAt": { "type": "string", "format": "date-time" },
+        "aggregateCommands": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/CommandResult" }
+        },
+        "reviewPaths": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "result": { "const": "ACCEPT" }
+      }
+    },
+    "CoordinatorRejection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "taskId", "coordinatorId", "attemptedMergeCommit", "revertCommit", "failedCommands", "result"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "taskId": { "type": "string" },
+        "coordinatorId": { "type": "string" },
+        "attemptedMergeCommit": { "$ref": "#/$defs/GitSha" },
+        "revertCommit": { "$ref": "#/$defs/GitSha" },
+        "failedCommands": { "type": "array", "minItems": 1 },
+        "result": { "const": "REVERTED" }
+      }
+    },
+    "ReleaseReviewArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "goalId",
+        "role",
+        "reviewerId",
+        "coordinatorId",
+        "reviewedCommit",
+        "reviewedAt",
+        "score",
+        "verdict",
+        "deterministicBlockers"
+      ],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "goalId": { "type": "string", "minLength": 1 },
+        "role": { "type": "string", "minLength": 1 },
+        "reviewerId": { "type": "string", "minLength": 1 },
+        "coordinatorId": { "type": "string", "minLength": 1 },
+        "reviewedCommit": { "$ref": "#/$defs/GitSha" },
+        "reviewedAt": { "type": "string", "format": "date-time" },
+        "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "verdict": { "enum": ["ACCEPT", "REJECT"] },
+        "deterministicBlockers": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "ReleaseAcceptance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "goalId",
+        "testedCommit",
+        "coordinatorId",
+        "acceptedAt",
+        "summaryPath",
+        "aggregateCommands",
+        "reviewPaths",
+        "result"
+      ],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "goalId": { "type": "string", "minLength": 1 },
+        "testedCommit": { "$ref": "#/$defs/GitSha" },
+        "coordinatorId": { "type": "string", "minLength": 1 },
+        "acceptedAt": { "type": "string", "format": "date-time" },
+        "summaryPath": { "const": "tasks/full-mvp/R00/RELEASE_REVIEW.md" },
+        "aggregateCommands": {
+          "type": "array",
+          "minItems": 3,
+          "items": { "$ref": "#/$defs/CommandResult" }
+        },
+        "reviewPaths": {
+          "type": "array",
+          "minItems": 3,
+          "items": { "type": "string" }
+        },
+        "result": { "const": "ACCEPT" }
+      }
+    },
+    "ManualGateBase": {
+      "type": "object",
+      "required": ["schemaVersion", "goalId", "testedCommit", "testerId", "coordinatorId", "testedAt", "evidencePaths", "evidenceHashes", "reviewerAttestations", "overallResult"],
+      "properties": {
+        "schemaVersion": { "const": 2 },
+        "goalId": { "type": "string" },
+        "testedCommit": { "$ref": "#/$defs/GitSha" },
+        "testerId": { "type": "string", "minLength": 1 },
+        "coordinatorId": { "type": "string", "minLength": 1 },
+        "testedAt": { "type": "string", "format": "date-time" },
+        "evidencePaths": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "evidenceHashes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          }
+        },
+        "reviewerAttestations": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/ManualAttestation" }
+        },
+        "overallResult": { "$ref": "#/$defs/PassFail" }
+      }
+    },
+    "ManualAttestation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "reviewerId", "reviewedAt", "result"],
+      "properties": {
+        "role": { "type": "string", "minLength": 1 },
+        "reviewerId": { "type": "string", "minLength": 1 },
+        "reviewedAt": { "type": "string", "format": "date-time" },
+        "result": { "$ref": "#/$defs/PassFail" }
+      }
+    },
+    "H01PhysicalPhone": {
+      "allOf": [
+        { "$ref": "#/$defs/ManualGateBase" },
+        {
+          "type": "object",
+          "required": ["phone", "laptop", "tailnet", "timingsSeconds", "results"],
+          "properties": {
+            "phone": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["model", "osVersion", "browserVersion", "tailscaleVersion"],
+              "properties": {
+                "model": { "type": "string", "minLength": 1 },
+                "osVersion": { "type": "string", "minLength": 1 },
+                "browserVersion": { "type": "string", "minLength": 1 },
+                "tailscaleVersion": { "type": "string", "minLength": 1 }
+              }
+            },
+            "laptop": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["osVersion", "browserVersion", "tailscaleDaemonVersion"],
+              "properties": {
+                "osVersion": { "type": "string", "minLength": 1 },
+                "browserVersion": { "type": "string", "minLength": 1 },
+                "tailscaleDaemonVersion": { "type": "string", "minLength": 1 }
+              }
+            },
+            "tailnet": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["host", "expectedLoginMasked", "https", "serve", "funnelDisabled", "aclReceipt"],
+              "properties": {
+                "host": { "type": "string", "minLength": 1 },
+                "expectedLoginMasked": { "type": "string", "minLength": 3 },
+                "https": { "$ref": "#/$defs/PassFail" },
+                "serve": { "$ref": "#/$defs/PassFail" },
+                "funnelDisabled": { "$ref": "#/$defs/PassFail" },
+                "aclReceipt": { "type": "string", "minLength": 1 }
+              }
+            },
+            "timingsSeconds": {
+              "type": "object",
+              "required": ["capture", "classify", "typedConversion", "todayOrientation"],
+              "properties": {
+                "capture": { "type": "number", "minimum": 0, "maximum": 30 },
+                "classify": { "type": "number", "minimum": 0, "maximum": 60 },
+                "typedConversion": { "type": "number", "minimum": 0, "maximum": 120 },
+                "todayOrientation": { "type": "number", "minimum": 0, "maximum": 180 }
+              }
+            },
+            "results": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "expectedIdentity",
+                "wrongIdentityDenied",
+                "headerlessDenied",
+                "funnelDenied",
+                "directLanDenied",
+                "secureCookie",
+                "disconnectSameIntentRetry",
+                "logoutBackReloadOfflineNoCache",
+                "noHorizontalOverflow",
+                "durableCaptureAfterReload",
+                "nextReviewItemCorrect",
+                "typedConversionCorrect",
+                "evidenceReviewCorrect",
+                "blockerDecisionCorrect",
+                "agentRunReviewCorrect",
+                "todayDeltaCorrect",
+                "quarantineMaskedAndOwnerAction"
+              ],
+              "properties": {
+                "expectedIdentity": { "$ref": "#/$defs/PassFail" },
+                "wrongIdentityDenied": { "$ref": "#/$defs/PassFail" },
+                "headerlessDenied": { "$ref": "#/$defs/PassFail" },
+                "funnelDenied": { "$ref": "#/$defs/PassFail" },
+                "directLanDenied": { "$ref": "#/$defs/PassFail" },
+                "secureCookie": { "$ref": "#/$defs/PassFail" },
+                "disconnectSameIntentRetry": { "$ref": "#/$defs/PassFail" },
+                "logoutBackReloadOfflineNoCache": { "$ref": "#/$defs/PassFail" },
+                "noHorizontalOverflow": { "$ref": "#/$defs/PassFail" },
+                "durableCaptureAfterReload": { "$ref": "#/$defs/PassFail" },
+                "nextReviewItemCorrect": { "$ref": "#/$defs/PassFail" },
+                "typedConversionCorrect": { "$ref": "#/$defs/PassFail" },
+                "evidenceReviewCorrect": { "$ref": "#/$defs/PassFail" },
+                "blockerDecisionCorrect": { "$ref": "#/$defs/PassFail" },
+                "agentRunReviewCorrect": { "$ref": "#/$defs/PassFail" },
+                "todayDeltaCorrect": { "$ref": "#/$defs/PassFail" },
+                "quarantineMaskedAndOwnerAction": { "$ref": "#/$defs/PassFail" }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "AccessibilitySurface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "desktopScreenReader",
+        "phoneScreenReader",
+        "keyboard",
+        "focusAfterSuccess",
+        "focusAfterError",
+        "liveRegion",
+        "zoom200",
+        "reflow400",
+        "forcedColors",
+        "reducedMotion"
+      ],
+      "properties": {
+        "desktopScreenReader": { "$ref": "#/$defs/PassFail" },
+        "phoneScreenReader": { "$ref": "#/$defs/PassFail" },
+        "keyboard": { "$ref": "#/$defs/PassFail" },
+        "focusAfterSuccess": { "$ref": "#/$defs/PassFail" },
+        "focusAfterError": { "$ref": "#/$defs/PassFail" },
+        "liveRegion": { "$ref": "#/$defs/PassFail" },
+        "zoom200": { "$ref": "#/$defs/PassFail" },
+        "reflow400": { "$ref": "#/$defs/PassFail" },
+        "forcedColors": { "$ref": "#/$defs/PassFail" },
+        "reducedMotion": { "$ref": "#/$defs/PassFail" }
+      }
+    },
+    "H02Accessibility": {
+      "allOf": [
+        { "$ref": "#/$defs/ManualGateBase" },
+        {
+          "type": "object",
+          "required": ["environments", "surfaces"],
+          "properties": {
+            "environments": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["windows", "chrome", "nvda", "phoneOS", "phoneBrowser", "phoneScreenReader"],
+              "properties": {
+                "windows": { "type": "string", "minLength": 1 },
+                "chrome": { "type": "string", "minLength": 1 },
+                "nvda": { "type": "string", "minLength": 1 },
+                "phoneOS": { "type": "string", "minLength": 1 },
+                "phoneBrowser": { "type": "string", "minLength": 1 },
+                "phoneScreenReader": { "type": "string", "minLength": 1 }
+              }
+            },
+            "surfaces": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["runtimeShell", "capture", "review", "quarantine", "today", "desktopTruth", "recovery"],
+              "properties": {
+                "runtimeShell": { "$ref": "#/$defs/AccessibilitySurface" },
+                "capture": { "$ref": "#/$defs/AccessibilitySurface" },
+                "review": { "$ref": "#/$defs/AccessibilitySurface" },
+                "quarantine": { "$ref": "#/$defs/AccessibilitySurface" },
+                "today": { "$ref": "#/$defs/AccessibilitySurface" },
+                "desktopTruth": { "$ref": "#/$defs/AccessibilitySurface" },
+                "recovery": { "$ref": "#/$defs/AccessibilitySurface" }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "H03CleanRecovery": {
+      "allOf": [
+        { "$ref": "#/$defs/ManualGateBase" },
+        {
+          "type": "object",
+          "required": [
+            "machineProfile",
+            "bundleId",
+            "bundleHash",
+            "containsQuarantinePayloads",
+            "encryptionClaim",
+            "externalEvidenceContentIncluded",
+            "expectedStateHash",
+            "actualStateHash",
+            "externalReferenceInventoryChecked",
+            "quarantineHandlingChecked",
+            "cleanupDecision"
+          ],
+          "properties": {
+            "machineProfile": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["osVersion", "nodeVersion", "profileKind"],
+              "properties": {
+                "osVersion": { "type": "string", "minLength": 1 },
+                "nodeVersion": { "type": "string", "minLength": 1 },
+                "profileKind": { "enum": ["clean-machine", "clean-vm", "clean-os-profile"] }
+              }
+            },
+            "bundleId": { "type": "string", "minLength": 1 },
+            "bundleHash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+            "containsQuarantinePayloads": { "const": true },
+            "encryptionClaim": { "const": "none" },
+            "externalEvidenceContentIncluded": { "const": false },
+            "expectedStateHash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+            "actualStateHash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+            "externalReferenceInventoryChecked": { "$ref": "#/$defs/PassFail" },
+            "quarantineHandlingChecked": { "$ref": "#/$defs/PassFail" },
+            "cleanupDecision": { "enum": ["preserved", "deleted"] }
+          }
+        }
+      ]
+    },
+    "GitSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["head", "refSnapshotHash", "indexHash", "porcelainStatus"],
+      "properties": {
+        "head": { "$ref": "#/$defs/GitSha" },
+        "refSnapshotHash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "indexHash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "porcelainStatus": { "type": "string" }
+      }
+    },
+    "H04RealGit": {
+      "allOf": [
+        { "$ref": "#/$defs/ManualGateBase" },
+        {
+          "type": "object",
+          "required": [
+            "repositoryId",
+            "repositoryPathMasked",
+            "allowListConfirmed",
+            "before",
+            "after",
+            "firstScanObservationCount",
+            "secondScanNewObservationCount",
+            "contentReadInstrumentation",
+            "sourceConfiguredThroughUI",
+            "overallResult"
+          ],
+          "properties": {
+            "repositoryId": { "type": "string", "minLength": 1 },
+            "repositoryPathMasked": { "type": "string", "minLength": 3 },
+            "allowListConfirmed": { "$ref": "#/$defs/PassFail" },
+            "before": {
+              "$ref": "#/$defs/GitSnapshot"
+            },
+            "after": {
+              "$ref": "#/$defs/GitSnapshot"
+            },
+            "firstScanObservationCount": { "type": "integer", "minimum": 1 },
+            "secondScanNewObservationCount": { "const": 0 },
+            "contentReadInstrumentation": { "$ref": "#/$defs/PassFail" },
+            "sourceConfiguredThroughUI": { "$ref": "#/$defs/PassFail" }
+          }
+        }
+      ]
+    }
+  }
+}
