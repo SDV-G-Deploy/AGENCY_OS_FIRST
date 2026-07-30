@@ -89,6 +89,40 @@ Stop immediately when:
 - files outside the declared slice change unexpectedly;
 - the next step requires a product decision.
 
+## Owner-Authorized FULL MVP Goal Mode
+
+The normal one-slice rules above remain the default. A FULL MVP multi-window
+goal is active only when all of these are true:
+
+- the owner prompt explicitly names `docs/full-mvp/05_OVERNIGHT_GOAL_PROMPT.md`;
+- it supplies an accepted `planningCommit`, stable `goalId`, current
+  `windowId` and `authorizationId`;
+- the external H00 authorization exists outside Git and passes the trusted
+  execution validator;
+- the coordinator uses the dedicated integration/controller and detached
+  planning-authority worktrees;
+- `main`, GitHub, deployment and real owner data remain outside authority.
+
+In that mode, the accepted `docs/full-mvp/**` package and `TASK_GRAPH.json`
+replace only these default workflow limits:
+
+- “create one branch from `main`” becomes one task branch/worktree from the
+  current authorized integration commit;
+- “one bounded slice then stop” becomes the bounded multi-window DAG and its
+  deadline/resume rules;
+- the coordinator may dispatch at most the graph-authorized non-overlapping
+  workers;
+- storage, local-session, recovery and allow-listed local-Git work explicitly
+  present in the graph is in scope;
+- v0.3 remains the current product state while the integration branch builds
+  the v0.4 Private Local Dogfood candidate.
+
+This mode does not override safety boundaries. Workers still cannot move
+`main`, push, deploy, inspect/migrate real private data, weaken security, invent
+dependencies or expand beyond the accepted graph. If H00 or any identity/commit
+binding is absent, fall back to the normal one-slice workflow and stop the FULL
+MVP launch as `BLOCKED_PRECONDITION`.
+
 ## Do Not Do Unless Explicitly Asked
 
 - Do not deploy.

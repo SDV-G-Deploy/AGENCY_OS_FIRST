@@ -136,6 +136,7 @@ implemented
 verified
 review_rejected
 repairing
+paused
 accepted
 merge_pending_verification
 merged
@@ -152,25 +153,39 @@ state and task artifacts. Conversation memory is not controller state.
 State persistence:
 
 - controller is the sole writer;
+- every mutation takes an exclusive `RUN_STATE.json.lock` and verifies the
+  on-disk predecessor revision before replacement; a concurrent coordinator
+  fails closed and must reload rather than overwrite. A lock whose recorded PID
+  no longer exists is first atomically hard-linked to a token-specific
+  quarantine receipt; only one reclaimer can win. A malformed or already
+  claimed lock is preserved for manual inspection rather than guessed away;
 - `stateChecksum` is SHA-256 over canonical JSON with `stateChecksum` omitted;
-  `RUN_STATE.sha256` repeats that value for recovery before parsing trust;
+  `RUN_STATE.sha256` repeats that value as an independent consistency sidecar;
 - write canonical JSON to `RUN_STATE.json.tmp`, fsync it, preserve the previous
   valid state as `RUN_STATE.json.bak`, replace, then write/fsync
   `RUN_STATE.sha256`;
 - increment `stateRevision` on every write;
 - startup validator reads the primary, sidecar, backup and run log. It returns a
-  machine `RECOVERY_REQUIRED` receipt when only the backup is valid; the
-  coordinator appends that exact receipt to `RUN_LOG.md`, atomically promotes
-  the backup and revalidates before dispatch. `RECOVERY_REQUIRED` exits nonzero
-  and therefore cannot be mistaken for a green gate. It stops if neither copy
-  is valid;
+  machine `RECOVERY_REQUIRED` receipt when primary/sidecar/log consistency is
+  incomplete or only the backup is valid. The coordinator uses the trusted
+  recovery command, which preserves the last valid backup, advances the
+  revision, rewrites the sidecar/log and revalidates before dispatch.
+  `RECOVERY_REQUIRED` exits nonzero and therefore cannot be mistaken for a
+  green gate. It stops if neither primary nor backup has a valid embedded
+  checksum;
 - `RUN_LOG.md` is append-only and one single log line must contain the matching
   revision/goal/window tuple; three unrelated historical lines cannot satisfy
   the check.
 - after every accepted integration merge, the coordinator commits a sanitized
   checkpoint receipt under
   `tasks/full-mvp/controller-checkpoints/<state-revision>.json`; it contains no
-  live authorization secret or machine-private path.
+  live authorization secret or machine-private path. The controller generates
+  it, `ControllerCheckpoint` defines it, and candidate validation requires the
+  latest receipt to match the final RUN_STATE revision and checksum. An exact
+  retry is a no-op; the controller refuses to overwrite the same revision with
+  a different state checksum or integration commit. Generation requires
+  `integrationCommit` to equal candidate-root HEAD and to contain every task
+  recorded as merged; candidate validation rechecks merged-task ancestry.
 
 The executable gate is:
 
@@ -182,6 +197,49 @@ node scripts/validate-full-mvp-execution.mjs --run-state <RUN_STATE.json> \
 When a previous revision is available, also pass
 `--previous-run-state <previous.json>` so illegal status transitions and
 revision gaps fail closed.
+
+The sole supported mutation interface is the authority-pinned controller.
+These are the exact command shapes; paths must resolve under `%LOCALAPPDATA%`:
+
+```text
+node scripts/full-mvp-controller.mjs init --authorization <current-auth.json> --run-state <RUN_STATE.json> --coordinator-id <id>
+node scripts/full-mvp-controller.mjs inspect --authorization <current-auth.json> --run-state <RUN_STATE.json>
+node scripts/full-mvp-controller.mjs transition --authorization <current-auth.json> --run-state <RUN_STATE.json> --task-id <task-id> --to <status> --patch <patch.json> [--run-footprint-bytes <bytes> when status=dispatched]
+node scripts/full-mvp-controller.mjs update-run --authorization <current-auth.json> --run-state <RUN_STATE.json> --patch <run-patch.json>
+node scripts/full-mvp-controller.mjs checkpoint --authorization <current-auth.json> --run-state <RUN_STATE.json> --integration-commit <sha> --candidate-root <candidate-root> --output <candidate-root>\tasks\full-mvp\controller-checkpoints\<revision>.json
+node scripts/full-mvp-controller.mjs create-repair --authorization <current-auth.json> --run-state <RUN_STATE.json> --contract-task-id <task-id> --branch <branch> --worktree <path> --starting-commit <sha> --worker-id <id>
+node scripts/full-mvp-controller.mjs recover --authorization <current-auth.json> --run-state <RUN_STATE.json>
+node scripts/full-mvp-controller.mjs open-window --previous-authorization <expired-auth.json> --authorization <new-auth.json> --run-state <RUN_STATE.json>
+```
+
+H05 may transition to `accepted` only with the normal transition arguments plus
+`--root <candidate-root> --authority-root <authority-root> --manual-artifact
+<candidate-root>\tasks\full-mvp\manual\H05-formative-phone.json
+--artifact-commit <sha> --coordinator-id <id>`. The controller validates the
+committed owner/UX artifact before setting `manualGates.H05` to `PASS`.
+
+`transition ... --to paused` is the safe window boundary for active work. The
+controller records `paused_from:<prior-status>` and permits resume only to that
+same lifecycle phase. Dispatch is refused after `stopDispatchAt`, when the
+static task estimate no longer fits before that cutoff, or when the measured
+goal footprint exceeds 80% of the authorized disk quota. `update-run` is the bounded interface for `currentWave`,
+`reviewScores`, `aggregateGate` and `stopReason`; manual-gate values are derived
+from manual task transitions and cannot be patched independently.
+
+Every command binds the authorization path exactly to
+`%LOCALAPPDATA%\AgencyOS\run-authorizations\<goalId>\<windowId>.json` and the
+state path exactly to
+`%LOCALAPPDATA%\AgencyOS\goal-runs\<goalId>\RUN_STATE.json`. A same-suffix path
+under a repository or another root fails. `open-window` accepts an expired
+previous authorization only for validating immutable history; it requires a
+currently valid new authorization with the same goal, planning commit and
+authorized start commit, and refuses rollover while any task is active.
+`validate-full-mvp-controller.mjs` proves init, legal transitions,
+pause/resume rollover, run-level metadata updates, sanitized checkpoint
+generation, primary/sidecar recovery and expired-window rollover in an
+isolated temporary tree. It also proves that a second controller cannot remove
+or bypass an already-held state lock and that exactly one of two concurrent
+dead-PID reclaimers can proceed.
 
 The controller checks out `integration/full-mvp-v0.4` only in:
 
@@ -217,7 +275,10 @@ One cycle:
    that conflicts with Git/tests.
 4. If an accepted task is unmerged, review its diff and merge it before
    dispatching a dependent task.
-5. Run aggregate verification after every merge.
+5. Run the graph-declared post-merge aggregate commands after every merge.
+   `npm run verify` is the default and remains mandatory at every wave boundary
+   and candidate/release gate; explicitly split first-half tasks may use
+   typecheck plus diff-check until their paired completion task.
 6. Select only dependency-ready tasks whose owned paths do not overlap.
 7. Dispatch at most two workers.
 8. When a worker returns, verify task artifacts, diff and focused tests.
@@ -261,9 +322,11 @@ future commit SHA. After commit, coordinator records implementation SHA in
 `IMPLEMENTATION_RECEIPT.json`; reviewer artifacts and
 `COORDINATOR_ACCEPTANCE.json` are coordinator-owned integration artifacts.
 
-If worktree lacks dependencies, the worker may use the approved shared package
-cache/install protocol from T02. It may not silently skip full verification or
-install unrelated packages.
+Every task worktree is bootstrapped before dispatch with the T00 baseline
+command `npm ci --prefer-offline --no-audit` against the committed lockfile and
+shared npm cache. T02 may extend that protocol only for its exact accepted
+dependency/browser additions. A worker may not silently skip verification,
+reuse another worktree's `node_modules` or install unrelated packages.
 
 ## 7. Reviewer Prompt Contract
 
@@ -274,6 +337,18 @@ Reviewer receives:
 - focused and aggregate test output;
 - relevant product/architecture sections;
 - no worker conversation except its durable artifacts.
+
+Review depth is risk-based and comes only from `TASK_GRAPH.reviewRoles`:
+
+- one independent role for a bounded local contract;
+- two roles where the task crosses product/security, UX/security or
+  recovery/security boundaries;
+- three distinct roles for V03 and release classification.
+
+The coordinator may not add ceremonial role reviews merely to chase a score,
+and may not remove a graph-required role. V03 re-reviews the integrated
+candidate across product DNA, architecture/security and UX/release, so
+task-local review specialization does not become a release blind spot.
 
 Reviewer returns:
 
@@ -359,11 +434,12 @@ Coordinator:
    `COORDINATOR_ACCEPTANCE.json`, then records the task as `merged`.
 
 For V03, the coordinator first commits a sanitized `FINAL_RUN_STATE.json` with
-V03 at `merge_pending_verification`, runs the candidate gate without
-`--include-v03`, and commits V03 acceptance. It then advances external state to
-`merged` and commits a refreshed sanitized snapshot. R00 repeats the candidate
-gate with `--include-v03`. These coordinator-only certification commits may
-change only `certificationOnlyPaths`.
+V03 at `merge_pending_verification` plus the controller checkpoint for that
+exact revision/checksum, runs the candidate gate without `--include-v03`, and
+commits V03 acceptance. It then advances external state to `merged`, generates
+a new matching checkpoint and commits the refreshed sanitized snapshot. R00
+repeats the candidate gate with `--include-v03`. These coordinator-only
+certification commits may change only `certificationOnlyPaths`.
 
 If aggregate gate fails:
 
@@ -402,6 +478,13 @@ If aggregate gate fails:
 - `git diff --check`;
 - secret/path/scope scan.
 
+Task branches do not repeat the full build gate merely for ceremony. They run
+their graph-declared focused tests plus typecheck. After merge, the coordinator
+runs that task's graph-declared post-merge gate. The default is full
+`npm run verify`; W02, D02, A03 and V02 are explicit first halves whose paired
+completion tasks restore the full gate. Every wave boundary and the
+candidate/release gates run full `npm run verify`.
+
 ### Wave aggregate
 
 - `npm run verify`;
@@ -414,7 +497,11 @@ If aggregate gate fails:
 - `node scripts/validate-full-mvp-plan.mjs`;
 - `node scripts/validate-full-mvp-execution.mjs --candidate-evidence ...`;
 - complete `npm run verify`;
-- production audit classified, not hidden;
+- production audit classified by
+  `scripts/classify-production-audit.mjs`, not hidden; only
+  `PRODUCTION_AUDIT_CLEAR` or the exact fail-closed
+  `BLOCKED_KNOWN_UPSTREAM` set may pass candidate classification, and the
+  blocked classification still prohibits production release;
 - Vinext compatibility;
 - Chromium and WebKit Playwright suite;
 - axe suite;
@@ -529,16 +616,19 @@ Limits:
 - every task has an estimate in `TASK_GRAPH.json`; do not dispatch a task whose
   estimate plus safety reserve exceeds the remaining window;
 - H00 records a worktree/browser disk quota; stop dispatch when the measured
-  run footprint reaches 80%;
+  run footprint exceeds 80%;
 - no polling tighter than useful task state changes;
 - no long blocking wait that prevents status updates;
 - stop cleanly before the time window ends if a task cannot be left atomic.
 
 If the window ends:
 
-- finish/abort the current bounded operation safely;
+- finish the current atomic operation or transition active work to `paused`
+  after a durable worktree/commit checkpoint; do not use terminal `aborted` for
+  ordinary continuation;
 - stop new dispatch;
-- update controller artifacts;
+- update run-level metadata, persist controller artifacts and generate the
+  sanitized checkpoint receipt;
 - report merged tasks, unmerged branches and next dependency-ready task.
 
 The full graph is expected to require multiple unattended windows. A later

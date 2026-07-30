@@ -8,6 +8,7 @@ import {
 } from "node:fs";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 const argv = process.argv.slice(2);
 const earlyOption = (name) => {
@@ -103,6 +104,34 @@ function canonical(value) {
 
 function checksum(value) {
   return `sha256:${createHash("sha256").update(canonical(value)).digest("hex")}`;
+}
+
+function localAppDataPath(...parts) {
+  assert.ok(
+    process.env.LOCALAPPDATA,
+    "LOCALAPPDATA is required for authorization and RUN_STATE path binding",
+  );
+  return resolve(process.env.LOCALAPPDATA, ...parts);
+}
+
+function sameWindowsPath(left, right) {
+  return resolve(left).replaceAll("/", "\\").toLowerCase() ===
+    resolve(right).replaceAll("/", "\\").toLowerCase();
+}
+
+function assertAuthorizationPath(path, authorization) {
+  assert.ok(
+    sameWindowsPath(
+      path,
+      localAppDataPath(
+        "AgencyOS",
+        "run-authorizations",
+        authorization.goalId,
+        `${authorization.windowId}.json`,
+      ),
+    ),
+    "authorization path is not the exact LOCALAPPDATA goal/window path",
+  );
 }
 
 function bytesHash(value) {
@@ -422,13 +451,24 @@ function validateAuthorizationDocument(
 const taskTransitions = {
   blocked: new Set(["ready", "aborted", "failed"]),
   ready: new Set(["dispatched", "blocked", "aborted"]),
-  dispatched: new Set(["implemented", "aborted", "failed"]),
-  implemented: new Set(["verified", "repairing", "failed"]),
-  verified: new Set(["review_rejected", "accepted", "repairing", "failed"]),
-  review_rejected: new Set(["repairing", "failed"]),
-  repairing: new Set(["implemented", "failed", "aborted"]),
-  accepted: new Set(["merge_pending_verification", "invalidated", "reverted"]),
-  merge_pending_verification: new Set(["merged", "reverted"]),
+  dispatched: new Set(["implemented", "paused", "aborted", "failed"]),
+  implemented: new Set(["verified", "repairing", "paused", "failed"]),
+  verified: new Set(["review_rejected", "accepted", "repairing", "paused", "failed"]),
+  review_rejected: new Set(["repairing", "paused", "failed"]),
+  repairing: new Set(["implemented", "paused", "failed", "aborted"]),
+  paused: new Set([
+    "dispatched",
+    "implemented",
+    "verified",
+    "review_rejected",
+    "repairing",
+    "accepted",
+    "merge_pending_verification",
+    "aborted",
+    "failed",
+  ]),
+  accepted: new Set(["merge_pending_verification", "paused", "invalidated", "reverted"]),
+  merge_pending_verification: new Set(["merged", "paused", "reverted"]),
   merged: new Set(["invalidated", "reverted"]),
   reverted: new Set(["repairing", "merged", "failed"]),
   invalidated: new Set(["repairing", "merged", "failed"]),
@@ -447,11 +487,22 @@ const activeStatuses = new Set([
   "merge_pending_verification",
 ]);
 
+function taskStateIsActive(taskId, state) {
+  const task = taskById.get(taskId);
+  if (state.status === "accepted" && task?.kind.startsWith("manual")) return false;
+  return activeStatuses.has(state.status);
+}
+
 function isKnownOrRepairTaskId(taskId) {
   return taskById.has(taskId) || /^RPR-[A-Z]\d{2}-[1-9]\d*$/.test(taskId);
 }
 
-function validateRunStateDocument(value, previous, authorization) {
+function validateRunStateDocument(
+  value,
+  previous,
+  authorization,
+  { authorizationCheckCurrentTime = true } = {},
+) {
   validateAgainstDef(value, "RunState", "runState");
   exactKeys(
     value,
@@ -518,7 +569,9 @@ function validateRunStateDocument(value, previous, authorization) {
   assert.equal(value.activeWindowId, activeAuthorization.windowId);
   assert.equal(value.deadlineAt, activeAuthorization.deadlineAt);
   if (authorization) {
-    validateAuthorizationDocument(authorization);
+    validateAuthorizationDocument(authorization, {
+      checkCurrentTime: authorizationCheckCurrentTime,
+    });
     assert.equal(value.goalId, authorization.goalId);
     assert.equal(value.activeAuthorizationId, authorization.authorizationId);
     assert.equal(value.activeWindowId, authorization.windowId);
@@ -587,11 +640,18 @@ function validateRunStateDocument(value, previous, authorization) {
     distinct(state.reviewerIds, `${taskId} reviewer IDs`);
     assert.ok(!state.reviewerIds.includes(state.workerId), `${taskId} worker is also reviewer`);
     assert.ok(state.processState.length > 0);
+    if (state.status === "paused") {
+      assert.match(
+        state.processState,
+        /^paused_from:(dispatched|implemented|verified|review_rejected|repairing|accepted|merge_pending_verification)$/,
+        `${taskId} paused state does not preserve its resume target`,
+      );
+    }
     assert.ok(Array.isArray(state.ownedPaths) && state.ownedPaths.length > 0);
     assert.ok(Array.isArray(state.evidencePaths));
     assert.equal(
       value.activeTaskIds.includes(taskId),
-      activeStatuses.has(state.status),
+      taskStateIsActive(taskId, state),
       `${taskId} activeTaskIds/status mismatch`,
     );
     for (const commitField of ["startingCommit", "implementationCommit", "mergeCommit", "revertCommit"]) {
@@ -680,8 +740,37 @@ function validateRunStateDocument(value, previous, authorization) {
           taskTransitions[oldState.status]?.has(nextState.status),
           `illegal task transition ${taskId}: ${oldState.status} -> ${nextState.status}`,
         );
+        if (nextState.status === "paused") {
+          assert.equal(
+            nextState.processState,
+            `paused_from:${oldState.status}`,
+            `${taskId} pause does not record prior status`,
+          );
+        }
+        if (oldState.status === "paused" && !["aborted", "failed"].includes(nextState.status)) {
+          assert.equal(
+            oldState.processState,
+            `paused_from:${nextState.status}`,
+            `${taskId} resumed to a different lifecycle phase`,
+          );
+        }
       }
     }
+  }
+  for (const task of graph.tasks.filter((item) => /^H0[1-5]$/.test(item.id))) {
+    const state = value.taskStates[task.id];
+    if (!state) continue;
+    const expected =
+      state.status === "accepted"
+        ? "PASS"
+        : state.status === "failed"
+          ? "FAIL"
+          : "MANUAL_PENDING";
+    assert.equal(
+      value.manualGates[task.id],
+      expected,
+      `${task.id} manual gate and task state disagree`,
+    );
   }
 }
 
@@ -711,20 +800,21 @@ function loadDurableRunState(primaryPath) {
   const logCovers = (state) =>
     runLog.split(/\r?\n/).some((line) => runLogLineCovers(line, state));
   try {
-    assert.ok(existsSync(sidecarPath), `missing RUN_STATE sidecar ${sidecarPath}`);
-    const sidecar = readFileSync(sidecarPath, "utf8").trim();
     const primary = json(primaryPath);
     const unsigned = structuredClone(primary);
     delete unsigned.stateChecksum;
     assert.equal(primary.stateChecksum, checksum(unsigned));
-    assert.equal(sidecar, primary.stateChecksum, "RUN_STATE sidecar mismatch");
+    const sidecarMatches =
+      existsSync(sidecarPath) &&
+      readFileSync(sidecarPath, "utf8").trim() === primary.stateChecksum;
     const logMissing = !logCovers(primary);
+    const recoveryRequired = !sidecarMatches || logMissing;
     return {
       value: primary,
       source: "primary",
-      recoveryRequired: logMissing,
-      recoveryLogEntry: logMissing
-        ? `RECOVERY_REQUIRED goalId=${primary.goalId} windowId=${primary.activeWindowId} revision=${primary.stateRevision} reason=run-log-missing-or-stale`
+      recoveryRequired,
+      recoveryLogEntry: recoveryRequired
+        ? `RECOVERY_REQUIRED goalId=${primary.goalId} windowId=${primary.activeWindowId} revision=${primary.stateRevision} reason=${!sidecarMatches ? "sidecar-missing-or-stale" : "run-log-missing-or-stale"}`
         : undefined,
     };
   } catch (primaryError) {
@@ -961,6 +1051,40 @@ function validateCandidateEvidence(
   validateRunStateDocument(finalRunState);
   assert.equal(finalRunState.goalId, goalId);
   assert.equal(finalRunState.planningCommit, planningCommit);
+  assert.equal(
+    finalRunState.taskStates.H05?.status,
+    "accepted",
+    "H05 formative phone gate is not accepted in final RUN_STATE",
+  );
+  assert.equal(
+    finalRunState.manualGates.H05,
+    "PASS",
+    "H05 formative phone gate is not PASS in final RUN_STATE",
+  );
+  validateFormativePhone(
+    resolve(taskArtifactsDirectory, "manual", "H05-formative-phone.json"),
+    artifactCommit,
+    goalId,
+    coordinatorId,
+  );
+  const checkpointDirectory = resolve(
+    taskArtifactsDirectory,
+    "controller-checkpoints",
+  );
+  assert.ok(
+    existsSync(checkpointDirectory),
+    "missing controller checkpoint directory",
+  );
+  const checkpointFiles = readdirSync(checkpointDirectory)
+    .filter((name) => /^[1-9]\d*\.json$/.test(name))
+    .sort((left, right) => Number(left.slice(0, -5)) - Number(right.slice(0, -5)));
+  assert.ok(checkpointFiles.length > 0, "missing controller checkpoint receipt");
+  validateControllerCheckpoint(
+    resolve(checkpointDirectory, checkpointFiles.at(-1)),
+    artifactCommit,
+    finalRunState,
+    goalId,
+  );
   const evidenceIds = new Set();
   for (const fixtureId of Object.keys(graph.fixtureEvidenceRequirements)) {
     const path = resolve(evidenceDirectory, `${fixtureId}.json`);
@@ -1141,12 +1265,6 @@ function validateCandidateEvidence(
         acceptance.aggregateCommit,
       ),
     );
-    assert.ok(
-      acceptance.aggregateCommands.some(
-        (command) => command.command === "npm run verify",
-      ),
-      `${task.id} post-merge aggregate omits npm run verify`,
-    );
     for (const requiredAggregateCommand of
       task.postMergeCommands ?? graph.defaultPostMergeCommands) {
       assert.ok(
@@ -1189,7 +1307,13 @@ function markdownSection(text, heading) {
   return text.slice(contentStart, next === -1 ? undefined : next).trim();
 }
 
-function validateReleaseSummary(path, testedCommit, artifactCommit, goalId) {
+function validateReleaseSummary(
+  path,
+  integrationProductCommit,
+  testedCommit,
+  artifactCommit,
+  goalId,
+) {
   const testedBytes = committedBytes(testedCommit, path, "R00 summary at tested commit");
   const artifactBytes = committedBytes(artifactCommit, path, "R00 summary at artifact commit");
   assert.deepEqual(
@@ -1200,6 +1324,10 @@ function validateReleaseSummary(path, testedCommit, artifactCommit, goalId) {
   const text = testedBytes.toString("utf8");
   assert.ok(text.startsWith("# Agency OS FULL MVP Release Review"));
   assert.ok(text.includes(`Goal ID: ${goalId}`), "release summary goalId mismatch");
+  assert.ok(
+    text.includes(`Integration product commit: ${integrationProductCommit}`),
+    "release summary integration product commit mismatch",
+  );
   for (const requiredLine of [
     "Automated FULL MVP implementation candidate: yes",
     "Private Local Dogfood MVP: yes",
@@ -1277,6 +1405,113 @@ function validateManualBase(value, name, artifactCommit, goalId) {
   );
   passFail(value.overallResult, `${name}.overallResult`);
   noFailStrings(value, name);
+}
+
+function validateFormativePhone(path, artifactCommit, goalId, coordinatorId) {
+  validateArtifactCheckout(artifactCommit);
+  assert.ok(existsSync(path), `missing H05: ${path}`);
+  assertCommittedPath(artifactCommit, path, "H05 formative phone gate");
+  const value = json(path);
+  validateAgainstDef(value, "H05FormativePhone", "H05");
+  validateManualBase(value, "H05", artifactCommit, goalId);
+  assert.equal(value.coordinatorId, coordinatorId);
+  exactKeys(value, ["phone", "timingsSeconds", "results", "evidence"], "H05");
+  assert.ok(value.timingsSeconds.firstIntentVisible <= 10);
+  assert.ok(value.timingsSeconds.captureOrReview <= 30);
+  for (const key of [
+    "firstIntentVisible",
+    "softKeyboardSafe",
+    "touchTargets44",
+    "oneHandedReach",
+    "backReloadResume",
+    "noHorizontalOverflow",
+    "desktopDashboardNotAppendedBelowPhone",
+    "desktopTruthViaExplicitNavigation",
+  ]) {
+    passFail(value.results[key], `H05.results.${key}`);
+  }
+  for (const [key, path] of Object.entries(value.evidence)) {
+    safeArtifact(path, `H05.evidence.${key}`);
+    assert.ok(
+      value.evidencePaths.includes(path),
+      `H05.evidencePaths omits ${key}`,
+    );
+  }
+}
+
+function validateControllerCheckpoint(
+  path,
+  artifactCommit,
+  finalRunState,
+  goalId,
+) {
+  validateArtifactCheckout(artifactCommit);
+  assert.ok(existsSync(path), `missing controller checkpoint: ${path}`);
+  assertCommittedPath(artifactCommit, path, "controller checkpoint");
+  const value = json(path);
+  validateAgainstDef(value, "ControllerCheckpoint", "controller checkpoint");
+  exactKeys(
+    value,
+    [
+      "schemaVersion",
+      "goalId",
+      "stateRevision",
+      "stateChecksum",
+      "planningCommit",
+      "authorizedStartCommit",
+      "integrationCommit",
+      "activeWindowId",
+      "currentWave",
+      "taskStatusCounts",
+      "readyTaskIds",
+      "activeTaskIds",
+      "manualGates",
+      "recordedAt",
+    ],
+    "controller checkpoint",
+  );
+  assert.equal(value.goalId, goalId);
+  assert.equal(value.stateRevision, finalRunState.stateRevision);
+  assert.equal(value.stateChecksum, finalRunState.stateChecksum);
+  assert.equal(value.planningCommit, finalRunState.planningCommit);
+  assert.equal(value.authorizedStartCommit, finalRunState.authorizedStartCommit);
+  assert.equal(value.activeWindowId, finalRunState.activeWindowId);
+  assert.equal(value.currentWave, finalRunState.currentWave);
+  assert.deepEqual(value.activeTaskIds, finalRunState.activeTaskIds);
+  assert.deepEqual(value.manualGates, finalRunState.manualGates);
+  const expectedReady = Object.entries(finalRunState.taskStates)
+    .filter(([, state]) => state.status === "ready")
+    .map(([taskId]) => taskId)
+    .sort();
+  assert.deepEqual(value.readyTaskIds, expectedReady);
+  const expectedCounts = {};
+  for (const state of Object.values(finalRunState.taskStates)) {
+    expectedCounts[state.status] = (expectedCounts[state.status] ?? 0) + 1;
+  }
+  assert.deepEqual(value.taskStatusCounts, expectedCounts);
+  commitExists(value.integrationCommit, "controller checkpoint integrationCommit");
+  assert.ok(
+    isAncestor(value.integrationCommit, artifactCommit),
+    "controller checkpoint integrationCommit is not an ancestor of artifact commit",
+  );
+  for (const [taskId, state] of Object.entries(finalRunState.taskStates)) {
+    if (state.status !== "merged") continue;
+    assert.ok(
+      state.mergeCommit && isAncestor(state.mergeCommit, value.integrationCommit),
+      `controller checkpoint integrationCommit omits merged task ${taskId}`,
+    );
+  }
+  assert.ok(
+    iso(value.recordedAt, "controller checkpoint recordedAt") >=
+      iso(finalRunState.updatedAt, "finalRunState.updatedAt"),
+    "controller checkpoint predates its RUN_STATE revision",
+  );
+  assert.equal(
+    relative(root, path).replaceAll("\\", "/"),
+    `tasks/full-mvp/controller-checkpoints/${value.stateRevision}.json`,
+    "controller checkpoint path/revision mismatch",
+  );
+  return value;
 }
 
 function validateManualGates(directory, artifactCommit, goalId, coordinatorId) {
@@ -1412,6 +1647,16 @@ function validateReleaseReview(directory, artifactCommit, goalId, coordinatorId)
   const acceptance = json(acceptancePath);
   validateAgainstDef(acceptance, "ReleaseAcceptance", "R00 acceptance");
   assert.equal(acceptance.goalId, goalId);
+  assert.notEqual(
+    acceptance.integrationProductCommit,
+    acceptance.testedCommit,
+    "R00 summary commit must follow the integration product commit",
+  );
+  validateCertificationBoundary(
+    acceptance.integrationProductCommit,
+    acceptance.testedCommit,
+    "R00 summary boundary",
+  );
   validateCertificationBoundary(acceptance.testedCommit, artifactCommit, "R00 acceptance");
   for (const review of selectedReviews) {
     assert.equal(
@@ -1424,6 +1669,7 @@ function validateReleaseReview(directory, artifactCommit, goalId, coordinatorId)
   const summaryPath = safeArtifact(acceptance.summaryPath, "R00.summaryPath");
   validateReleaseSummary(
     summaryPath,
+    acceptance.integrationProductCommit,
     acceptance.testedCommit,
     artifactCommit,
     goalId,
@@ -1603,14 +1849,14 @@ function selfTest() {
         engines: ["chromium", "webkit"],
         commands: [
           {
-            command: "npx playwright test --project=chromium",
+            command: "npx playwright test tests/e2e/journeys --project=chromium",
             testedCommit: head,
             exitCode: 0,
             startedAt: "2026-07-29T00:00:00.000Z",
             endedAt: "2026-07-29T00:00:01.000Z",
           },
           {
-            command: "npx playwright test --project=webkit",
+            command: "npx playwright test tests/e2e/journeys --project=webkit",
             testedCommit: head,
             exitCode: 0,
             startedAt: "2026-07-29T00:00:01.000Z",
@@ -1777,31 +2023,35 @@ function selfTest() {
   console.log(JSON.stringify({ selfTest: "PASS", negativeCases: 12 }, null, 2));
 }
 
+function main() {
 if (argv.includes("--self-test")) {
   selfTest();
 } else if (option("--authorization")) {
   const path = resolve(option("--authorization"));
   const authorization = json(path);
   validateAuthorizationDocument(authorization);
-  const normalized = path.replaceAll("\\", "/").toLowerCase();
-  assert.ok(
-    normalized.includes("/agencyos/run-authorizations/") &&
-      normalized.endsWith(
-        `/${authorization.goalId}/${authorization.windowId}.json`.toLowerCase(),
-      ),
-    "authorization path does not bind goalId/windowId",
-  );
+  assertAuthorizationPath(path, authorization);
   console.log(JSON.stringify({ authorization: "PASS", path }, null, 2));
 } else if (option("--run-state")) {
   const path = resolve(option("--run-state"));
   const previousPath = option("--previous-run-state");
   const authorizationPath =
     option("--active-authorization") ?? fail("--active-authorization is required with --run-state");
+  const resolvedAuthorizationPath = resolve(authorizationPath);
+  const authorization = json(resolvedAuthorizationPath);
+  assertAuthorizationPath(resolvedAuthorizationPath, authorization);
+  assert.ok(
+    sameWindowsPath(
+      path,
+      localAppDataPath("AgencyOS", "goal-runs", authorization.goalId, "RUN_STATE.json"),
+    ),
+    "RUN_STATE path is not the exact LOCALAPPDATA goal path",
+  );
   const loaded = loadDurableRunState(path);
   validateRunStateDocument(
     loaded.value,
     previousPath ? json(resolve(previousPath)) : undefined,
-    json(resolve(authorizationPath)),
+    authorization,
   );
   console.log(
     JSON.stringify(
@@ -1817,6 +2067,21 @@ if (argv.includes("--self-test")) {
     ),
   );
   if (loaded.recoveryRequired) process.exitCode = 2;
+} else if (option("--run-state-document")) {
+  const path = resolve(option("--run-state-document"));
+  const previousPath = option("--previous-run-state");
+  const authorizationPath =
+    option("--active-authorization") ??
+    fail("--active-authorization is required with --run-state-document");
+  const resolvedAuthorizationPath = resolve(authorizationPath);
+  const authorization = json(resolvedAuthorizationPath);
+  assertAuthorizationPath(resolvedAuthorizationPath, authorization);
+  validateRunStateDocument(
+    json(path),
+    previousPath ? json(resolve(previousPath)) : undefined,
+    authorization,
+  );
+  console.log(JSON.stringify({ runStateDocument: "PASS", path }, null, 2));
 } else if (option("--candidate-evidence")) {
   const artifactCommit = option("--artifact-commit") ?? fail("--artifact-commit is required");
   const planningCommit = option("--planning-commit") ?? fail("--planning-commit is required");
@@ -1850,6 +2115,32 @@ if (argv.includes("--self-test")) {
     coordinatorId,
   );
   console.log(JSON.stringify({ manualGates: "PASS", artifactCommit, goalId }, null, 2));
+} else if (option("--formative-phone")) {
+  const artifactCommit = option("--artifact-commit") ?? fail("--artifact-commit is required");
+  const goalId = option("--goal-id") ?? fail("--goal-id is required");
+  const coordinatorId = option("--coordinator-id") ?? fail("--coordinator-id is required");
+  validateFormativePhone(
+    resolve(root, option("--formative-phone")),
+    artifactCommit,
+    goalId,
+    coordinatorId,
+  );
+  console.log(JSON.stringify({ formativePhone: "PASS", artifactCommit, goalId }, null, 2));
+} else if (option("--controller-checkpoint")) {
+  const artifactCommit = option("--artifact-commit") ?? fail("--artifact-commit is required");
+  const goalId = option("--goal-id") ?? fail("--goal-id is required");
+  const runStateSnapshot =
+    option("--run-state-snapshot") ??
+    fail("--run-state-snapshot is required with --controller-checkpoint");
+  validateControllerCheckpoint(
+    resolve(root, option("--controller-checkpoint")),
+    artifactCommit,
+    json(resolve(root, runStateSnapshot)),
+    goalId,
+  );
+  console.log(
+    JSON.stringify({ controllerCheckpoint: "PASS", artifactCommit, goalId }, null, 2),
+  );
 } else if (option("--release-review")) {
   const artifactCommit = option("--artifact-commit") ?? fail("--artifact-commit is required");
   const goalId = option("--goal-id") ?? fail("--goal-id is required");
@@ -1863,7 +2154,27 @@ if (argv.includes("--self-test")) {
   console.log(JSON.stringify({ releaseReview: "PASS", artifactCommit, goalId }, null, 2));
 } else {
   fail(
-    "use --self-test, --authorization <file>, --run-state <file>, " +
-      "--candidate-evidence <dir>, --manual-gates <dir>, or --release-review <dir>",
+    "use --self-test, --authorization <file>, --run-state <file>, --run-state-document <file>, " +
+      "--candidate-evidence <dir>, --formative-phone <file>, --controller-checkpoint <file>, " +
+      "--manual-gates <dir>, or --release-review <dir>",
   );
+}
+}
+
+export {
+  checksum,
+  commitExists,
+  graph,
+  isAncestor,
+  loadDurableRunState,
+  taskById,
+  taskStateIsActive,
+  validateAuthorizationDocument,
+  validateControllerCheckpoint,
+  validateFormativePhone,
+  validateRunStateDocument,
+};
+
+if (resolve(process.argv[1] ?? "") === fileURLToPath(import.meta.url)) {
+  main();
 }

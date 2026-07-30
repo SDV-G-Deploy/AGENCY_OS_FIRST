@@ -1,6 +1,6 @@
 # Agency OS FULL MVP Planning Package
 
-Status: accepted implementation plan, not an implemented FULL MVP
+Status: corrective implementation-plan revision; independent re-acceptance pending
 Prepared: 2026-07-29
 
 ## What This Package Is
@@ -13,10 +13,18 @@ Agency OS v0.4 — Private Local Dogfood MVP
 ```
 
 It is deliberately not a promise that one unattended night will finish the
-product. The graph estimates about 55 automated task-hours and a 27.5-hour
-dependency critical path before review/repair variance. One authorized window
-may produce meaningful verified progress; later windows resume the same durable
-goal state.
+product. The graph estimates about 56.6 automated task-hours. Its automated
+dependency path is 32 hours and the end-to-end path through formative H05 is
+32 hours 20 minutes, but neither is the practical duration: with only
+the currently declared safe parallel pairs, automated execution has a
+52.6-hour lower bound before review, merge, verification, repair and owner-gate
+overhead. At 450 productive minutes per authorized window, that is at least
+eight windows. Forty-four reviews add an estimated 660 reviewer-minutes,
+coordination adds about 320 minutes, owner-role gates require 390 minutes, and
+post-automation manual/release work totals 470 minutes. The operational
+planning budget is therefore eleven windows, with
+11-13 a more honest range before repairs. One authorized window may produce
+meaningful verified progress; later windows resume the same durable goal state.
 
 The honest unattended completion boundary is:
 
@@ -32,6 +40,11 @@ FULL private-dogfood acceptance additionally requires H01-H04:
 - clean-machine/profile backup recovery;
 - non-mutating scan of one real allow-listed Git repository.
 
+H05 is a separate formative owner/UX phone checkpoint after the first working
+mobile/desktop/Today surfaces and before final U06 composition. It intentionally
+pauses finishing work when real phone interaction is wrong; it is not a
+substitute for final H01-H04 acceptance.
+
 Production remains closed while the known Next/PostCSS/sharp audit finding is
 unresolved.
 
@@ -41,18 +54,29 @@ unresolved.
    release meaning.
 2. `02_ARCHITECTURE_AND_MODULES.md` — module boundaries, event/evidence model,
    local runtime, security and recovery.
-3. `03_IMPLEMENTATION_DAG.md` — 33-task dependency plan, fixtures, manual gates
+3. `03_IMPLEMENTATION_DAG.md` — 39-task dependency plan, fixtures, manual gates
    and release review.
 4. `04_AGENT_EXECUTION_REGIME.md` — worker/coordinator lifecycle, durable state,
    evidence, repairs and multi-window continuation.
 5. `TASK_GRAPH.json` — machine-readable task/dependency/ownership authority.
 6. `EXECUTION_SCHEMAS.json` — machine-readable receipts, reviews, run state and
-   manual/release artifacts.
+   controller checkpoints plus manual/release artifacts.
 7. `05_OVERNIGHT_GOAL_PROMPT.md` — owner preflight and the launch prompt.
-8. `scripts/validate-full-mvp-plan.mjs` and
+8. `06_GAP_AUDIT_AND_WINDOW_ROADMAP.md` — current product gaps, corrected
+   bottlenecks and realistic multi-window milestones.
+9. `scripts/validate-full-mvp-plan.mjs`,
+   `scripts/full-mvp-controller.mjs`,
+   `scripts/validate-full-mvp-controller.mjs`,
+   `scripts/analyze-full-mvp-schedule.mjs`,
+   `scripts/classify-production-audit.mjs` and
    `scripts/validate-full-mvp-execution.mjs` — executable gates.
 
 If prose and machine authority disagree, the run stops; it does not guess.
+
+The root `AGENTS.md` contains an explicit Owner-Authorized FULL MVP Goal Mode.
+Without valid H00 authorization, its ordinary one-slice/v0.3 rules remain in
+force. With valid H00, only the specifically listed workflow limits are
+replaced by this package; safety prohibitions remain.
 
 ## Product DNA In One Sentence
 
@@ -115,21 +139,30 @@ Run before launch:
 ```text
 node scripts/validate-full-mvp-plan.mjs
 node scripts/validate-full-mvp-execution.mjs --self-test
+node scripts/validate-full-mvp-controller.mjs
+node scripts/analyze-full-mvp-schedule.mjs
+node scripts/classify-production-audit.mjs
 npm run verify
 git diff --check
 ```
+
+`classify-production-audit.mjs` is the trusted fail-closed gate while the
+stable Next release still contains the already documented
+`next -> postcss/sharp` advisory set. It passes only when the audit is clear or
+when the exact known three-package/high-severity set is unchanged. The latter
+classification remains `BLOCKED_KNOWN_UPSTREAM` and continues to prohibit
+production release. Any package, count, path or severity drift fails.
 
 Then use `05_OVERNIGHT_GOAL_PROMPT.md`; do not improvise a shorter autonomous
 prompt that omits authorization, durable state, evidence or stop conditions.
 
 ## Independent Planning Reviews
 
-The final package was accepted by independent no-edit reviewers:
+Earlier 95/94/95/96 reviews apply only to the superseded planning revision.
+This corrective revision changes the graph, execution schemas and controller
+and is therefore **pending independent re-acceptance**. Historical scores are
+not acceptance evidence for the current worktree.
 
-- Product DNA: 95/100;
-- UX/journeys: 94/100;
-- architecture/security: 95/100;
-- execution readiness: 96/100.
-
-Scores are planning evidence only. The executable gates remain authoritative,
-and implementation/release reviewers must independently assess the future code.
+Executable gates remain authoritative, but they do not replace independent
+product, UX, architecture/security and execution-readiness review of the exact
+committed planning revision.

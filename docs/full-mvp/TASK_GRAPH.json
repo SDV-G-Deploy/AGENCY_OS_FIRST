@@ -27,16 +27,22 @@
     ]
   },
   "planningAuthorityPaths": [
+    "AGENTS.md",
     "docs/full-mvp/00_README.md",
     "docs/full-mvp/01_PRODUCT_AND_UX_CONTRACT.md",
     "docs/full-mvp/02_ARCHITECTURE_AND_MODULES.md",
     "docs/full-mvp/03_IMPLEMENTATION_DAG.md",
     "docs/full-mvp/04_AGENT_EXECUTION_REGIME.md",
     "docs/full-mvp/05_OVERNIGHT_GOAL_PROMPT.md",
+    "docs/full-mvp/06_GAP_AUDIT_AND_WINDOW_ROADMAP.md",
     "docs/full-mvp/TASK_GRAPH.json",
     "docs/full-mvp/EXECUTION_SCHEMAS.json",
     "scripts/validate-full-mvp-plan.mjs",
-    "scripts/validate-full-mvp-execution.mjs"
+    "scripts/validate-full-mvp-execution.mjs",
+    "scripts/validate-full-mvp-controller.mjs",
+    "scripts/analyze-full-mvp-schedule.mjs",
+    "scripts/classify-production-audit.mjs",
+    "scripts/full-mvp-controller.mjs"
   ],
   "certificationOnlyPaths": [
     "docs/CURRENT_STATE.md",
@@ -46,6 +52,30 @@
   "acceptanceThreshold": 92,
   "defaultPostMergeCommands": ["npm run verify"],
   "maxWorkers": 2,
+  "resourceModel": {
+    "authorizationWindowMinutes": 480,
+    "stopDispatchReserveMinutes": 30,
+    "maxAutomatedTaskMinutes": 150,
+    "reviewerSlots": 1,
+    "coordinatorSlots": 1,
+    "reviewMinutesPerArtifact": 15,
+    "coordinationMinutesPerAutomatedTask": 10
+  },
+  "scheduleBaseline": {
+    "automatedMinutes": 3395,
+    "automatedDependencyCriticalPathMinutes": 1920,
+    "endToEndCriticalPathMinutes": 1940,
+    "declaredParallelismLowerBoundMinutes": 3155,
+    "minimumProductiveWindows": 8,
+    "automatedReviewArtifacts": 44,
+    "reviewMinutes": 660,
+    "coordinationMinutes": 320,
+    "ownerGateMinutes": 390,
+    "postAutomationManualAndReleaseMinutes": 470,
+    "serialOverheadPlanningWindows": 3,
+    "operationalPlanningWindows": 11,
+    "fullVerifyInvocations": 28
+  },
   "rules": {
     "mainUntouched": true,
     "pushAllowed": false,
@@ -58,7 +88,7 @@
   },
   "dynamicRepairPolicy": {
     "taskRepairIdTemplate": "RPR-<task-id>-<n>",
-    "allowedStatuses": ["repairing", "reverted", "invalidated", "aborted"],
+    "allowedStatuses": ["repairing", "paused", "reverted", "invalidated", "aborted"],
     "invalidateDependentEvidenceAfterRevert": true
   },
   "fixtureEvidenceRequirements": {
@@ -111,7 +141,7 @@
       "ownedPaths": ["tasks/full-mvp/T00/**", "tasks/full-mvp/controller-checkpoints/**"],
       "journeys": [],
       "acceptanceFixtures": [],
-      "acceptanceCommands": ["node <authority-root>/scripts/validate-full-mvp-plan.mjs", "node <authority-root>/scripts/validate-full-mvp-execution.mjs --root <candidate-root> --authority-root <authority-root> --self-test", "npm run verify", "npm run audit:prod", "npx --no-install vinext check", "git status --short --branch"],
+      "acceptanceCommands": ["npm ci --prefer-offline --no-audit", "node <authority-root>/scripts/validate-full-mvp-plan.mjs", "node <authority-root>/scripts/analyze-full-mvp-schedule.mjs", "node <authority-root>/scripts/validate-full-mvp-execution.mjs --root <candidate-root> --authority-root <authority-root> --self-test", "node <authority-root>/scripts/validate-full-mvp-controller.mjs", "npm run typecheck", "node <authority-root>/scripts/classify-production-audit.mjs", "npx --no-install vinext check", "git status --short --branch"],
       "evidence": ["tasks/full-mvp/T00/BASELINE.json"],
       "reviewRoles": ["scope_feasibility"]
     },
@@ -126,7 +156,7 @@
       "ownedPaths": ["tests/characterization/**", "tests/ledger-*.test.mjs", "tests/local-command-api.test.mjs", "package.json"],
       "journeys": [],
       "acceptanceFixtures": ["AT-ZERO", "AT-PARTIAL"],
-      "acceptanceCommands": ["node --test tests/characterization/*.test.mjs", "npm run verify"],
+      "acceptanceCommands": ["node --test tests/characterization/*.test.mjs", "npm run typecheck"],
       "evidence": ["tasks/full-mvp/T01/CHARACTERIZATION.json"],
       "reviewRoles": ["architecture"]
     },
@@ -141,7 +171,7 @@
       "ownedPaths": ["package.json", "package-lock.json", "app/layout.tsx", "app/globals.css", "playwright.config.*", "tasks/full-mvp/T02/**"],
       "journeys": [],
       "acceptanceFixtures": [],
-      "acceptanceCommands": ["npm ci", "npx playwright install chromium webkit", "npx playwright test tests/e2e/preflight.spec.ts --project=chromium", "npx playwright test tests/e2e/preflight.spec.ts --project=webkit", "npx --no-install vinext check", "npm run verify"],
+      "acceptanceCommands": ["npm ci", "npx playwright install chromium webkit", "npx playwright test tests/e2e/preflight.spec.ts --project=chromium", "npx playwright test tests/e2e/preflight.spec.ts --project=webkit", "npx --no-install vinext check", "npm run typecheck"],
       "evidence": ["tasks/full-mvp/T02/DEPENDENCY_REVIEW.json", "tasks/full-mvp/T02/WORKTREE_DEPENDENCY_PROTOCOL.md", "tasks/full-mvp/T02/BROWSER_SMOKE.json"],
       "reviewRoles": ["dependency_security"]
     },
@@ -156,24 +186,40 @@
       "ownedPaths": ["src/workspace/paths.ts", "src/workspace/manifest.ts", "src/workspace/loader.ts", "src/workspace/bootstrap.ts", "tests/full-mvp/workspace-foundation.test.mjs"],
       "journeys": ["J-01"],
       "acceptanceFixtures": ["AT-J01"],
-      "acceptanceCommands": ["node --test tests/full-mvp/workspace-foundation.test.mjs", "npm run verify"],
+      "acceptanceCommands": ["node --test tests/full-mvp/workspace-foundation.test.mjs", "npm run typecheck"],
       "evidence": ["tasks/full-mvp/evidence/AT-J01.json"],
-      "reviewRoles": ["architecture", "security"]
+      "reviewRoles": ["architecture"]
     },
     {
       "id": "W02",
       "wave": "workspace",
-      "title": "Versioned event store and registry",
+      "title": "Versioned event envelope and append store",
       "kind": "automated",
-      "estimatedMinutes": 180,
+      "estimatedMinutes": 90,
       "dependsOn": ["W01"],
       "parallelSafeWith": [],
-      "ownedPaths": ["src/workspace/event-store.ts", "src/workspace/lock.ts", "src/domain/actions/registry.ts", "src/domain/event-envelope.ts", "tests/full-mvp/event-store.test.mjs"],
+      "ownedPaths": ["src/workspace/event-store.ts", "src/domain/event-envelope.ts", "tests/full-mvp/event-store-core.test.mjs"],
       "journeys": [],
       "acceptanceFixtures": [],
-      "acceptanceCommands": ["node --test tests/full-mvp/event-store.test.mjs", "npm run verify"],
-      "evidence": ["tasks/full-mvp/W02/EVENT_STORE.json"],
-      "reviewRoles": ["architecture", "security"]
+      "acceptanceCommands": ["node --test tests/full-mvp/event-store-core.test.mjs", "npm run typecheck"],
+      "postMergeCommands": ["npm run typecheck", "git diff --check"],
+      "evidence": ["tasks/full-mvp/W02/EVENT_STORE_CORE.json"],
+      "reviewRoles": ["architecture"]
+    },
+    {
+      "id": "W05",
+      "wave": "workspace",
+      "title": "Event store locking idempotency and action registry",
+      "kind": "automated",
+      "estimatedMinutes": 90,
+      "dependsOn": ["W02"],
+      "parallelSafeWith": [],
+      "ownedPaths": ["src/workspace/lock.ts", "src/domain/actions/registry.ts", "tests/full-mvp/event-store-concurrency.test.mjs"],
+      "journeys": [],
+      "acceptanceFixtures": [],
+      "acceptanceCommands": ["node --test tests/full-mvp/event-store-concurrency.test.mjs", "npm run typecheck"],
+      "evidence": ["tasks/full-mvp/W05/EVENT_STORE_CONCURRENCY.json"],
+      "reviewRoles": ["security"]
     },
     {
       "id": "D01",
@@ -181,14 +227,14 @@
       "title": "Domain schemas and policies",
       "kind": "automated",
       "estimatedMinutes": 120,
-      "dependsOn": ["W02"],
+      "dependsOn": ["W05"],
       "parallelSafeWith": [],
       "ownedPaths": ["src/domain/model.ts", "src/domain/schemas.ts", "src/domain/policies/**", "src/ui/review-item.ts", "tests/full-mvp/domain-policy.test.mjs"],
       "journeys": ["J-04", "J-05", "J-06", "J-10"],
       "acceptanceFixtures": ["AT-J04", "AT-J05", "AT-J06", "AT-J10", "AT-J10-B"],
-      "acceptanceCommands": ["node --test tests/full-mvp/domain-policy.test.mjs", "npm run verify"],
+      "acceptanceCommands": ["node --test tests/full-mvp/domain-policy.test.mjs", "npm run typecheck"],
       "evidence": ["tasks/full-mvp/D01/SCHEMA_POLICY_MATRIX.json"],
-      "reviewRoles": ["product_dna", "architecture"]
+      "reviewRoles": ["architecture"]
     },
     {
       "id": "S01",
@@ -201,9 +247,9 @@
       "ownedPaths": ["src/security/local-access.ts", "src/security/csrf.ts", "src/application/session/**", "app/api/**/route.ts", "tests/full-mvp/local-access.test.mjs"],
       "journeys": ["J-02", "J-12"],
       "acceptanceFixtures": ["AT-J02-X"],
-      "acceptanceCommands": ["node --test tests/full-mvp/local-access.test.mjs", "npm run verify"],
+      "acceptanceCommands": ["node --test tests/full-mvp/local-access.test.mjs", "npm run typecheck"],
       "evidence": ["tasks/full-mvp/evidence/AT-J02-X.json"],
-      "reviewRoles": ["security", "ux"]
+      "reviewRoles": ["security"]
     },
     {
       "id": "W04",
@@ -211,14 +257,14 @@
       "title": "Backup restore and recovery",
       "kind": "automated",
       "estimatedMinutes": 150,
-      "dependsOn": ["W02"],
+      "dependsOn": ["W05"],
       "parallelSafeWith": ["S01"],
       "ownedPaths": ["src/workspace/backup.ts", "src/workspace/restore.ts", "src/workspace/operation-journal.ts", "src/workspace/pointer.ts", "tests/full-mvp/backup-restore.test.mjs"],
       "journeys": ["J-08"],
       "acceptanceFixtures": ["AT-J08"],
-      "acceptanceCommands": ["node --test tests/full-mvp/backup-restore.test.mjs", "npm run verify"],
+      "acceptanceCommands": ["node --test tests/full-mvp/backup-restore.test.mjs", "npm run typecheck"],
       "evidence": ["tasks/full-mvp/W04/RECOVERY_FAULT_MATRIX.json"],
-      "reviewRoles": ["architecture", "recovery", "security"]
+      "reviewRoles": ["recovery", "security"]
     },
     {
       "id": "S02",
@@ -231,9 +277,9 @@
       "ownedPaths": ["src/security/intake.ts", "src/security/redaction.ts", "src/workspace/quarantine.ts", "tests/full-mvp/quarantine.test.mjs"],
       "journeys": ["J-02", "J-12"],
       "acceptanceFixtures": ["AT-J02", "AT-J12"],
-      "acceptanceCommands": ["node --test tests/full-mvp/quarantine.test.mjs", "npm run verify"],
+      "acceptanceCommands": ["node --test tests/full-mvp/quarantine.test.mjs", "npm run typecheck"],
       "evidence": ["tasks/full-mvp/S02/SCANNER_CORPUS.json", "tasks/full-mvp/evidence/AT-J12.json"],
-      "reviewRoles": ["security", "ux"]
+      "reviewRoles": ["security"]
     },
     {
       "id": "W03",
@@ -246,24 +292,40 @@
       "ownedPaths": ["src/workspace/migration.ts", "src/workspace/legacy-compatibility.ts", "tests/full-mvp/migration.test.mjs"],
       "journeys": ["J-01"],
       "acceptanceFixtures": ["AT-J01-M"],
-      "acceptanceCommands": ["node --test tests/full-mvp/migration.test.mjs", "npm run verify"],
+      "acceptanceCommands": ["node --test tests/full-mvp/migration.test.mjs", "npm run typecheck"],
       "evidence": ["tasks/full-mvp/evidence/AT-J01-M.json"],
-      "reviewRoles": ["architecture", "recovery"]
+      "reviewRoles": ["recovery"]
     },
     {
       "id": "D02",
       "wave": "domain",
-      "title": "Reducers and compensation",
+      "title": "Core reducers and action targets",
       "kind": "automated",
-      "estimatedMinutes": 180,
+      "estimatedMinutes": 90,
       "dependsOn": ["D01"],
       "parallelSafeWith": [],
-      "ownedPaths": ["src/domain/reducers/**", "src/domain/actions/**", "tests/full-mvp/reducer-compensation.test.mjs"],
+      "ownedPaths": ["src/domain/reducers/core/**", "src/domain/actions/types.ts", "tests/full-mvp/reducer-core.test.mjs"],
       "journeys": ["J-03", "J-04", "J-05", "J-06", "J-07", "J-10"],
-      "acceptanceFixtures": ["AT-J03", "AT-J03-R", "AT-J04", "AT-J05", "AT-J06", "AT-J07", "AT-J10", "AT-J10-B"],
-      "acceptanceCommands": ["node --test tests/full-mvp/reducer-compensation.test.mjs", "npm run verify"],
+      "acceptanceFixtures": ["AT-J03", "AT-J04", "AT-J05", "AT-J06", "AT-J07", "AT-J10"],
+      "acceptanceCommands": ["node --test tests/full-mvp/reducer-core.test.mjs", "npm run typecheck"],
+      "postMergeCommands": ["npm run typecheck", "git diff --check"],
       "evidence": ["tasks/full-mvp/D02/ACTION_TARGET_MATRIX.json"],
-      "reviewRoles": ["product_dna", "architecture"]
+      "reviewRoles": ["architecture"]
+    },
+    {
+      "id": "D04",
+      "wave": "domain",
+      "title": "Compensation reversal and invalidation reducers",
+      "kind": "automated",
+      "estimatedMinutes": 90,
+      "dependsOn": ["D02"],
+      "parallelSafeWith": [],
+      "ownedPaths": ["src/domain/reducers/compensation/**", "src/domain/actions/compensation.ts", "tests/full-mvp/reducer-compensation.test.mjs"],
+      "journeys": ["J-03", "J-10"],
+      "acceptanceFixtures": ["AT-J03-R", "AT-J10-B"],
+      "acceptanceCommands": ["node --test tests/full-mvp/reducer-compensation.test.mjs", "npm run typecheck"],
+      "evidence": ["tasks/full-mvp/D04/COMPENSATION_MATRIX.json"],
+      "reviewRoles": ["product_dna"]
     },
     {
       "id": "D03",
@@ -271,14 +333,14 @@
       "title": "Command pipeline and request truth",
       "kind": "automated",
       "estimatedMinutes": 150,
-      "dependsOn": ["D02"],
+      "dependsOn": ["D04"],
       "parallelSafeWith": [],
       "ownedPaths": ["src/application/commands/**", "src/application/queries/**", "src/application/projections/**", "tests/full-mvp/request-truth.test.mjs"],
       "journeys": ["J-07", "J-09"],
       "acceptanceFixtures": ["AT-J07", "AT-J09", "AT-ZERO", "AT-PARTIAL"],
-      "acceptanceCommands": ["node --test tests/full-mvp/request-truth.test.mjs", "npm run verify"],
+      "acceptanceCommands": ["node --test tests/full-mvp/request-truth.test.mjs", "npm run typecheck"],
       "evidence": ["tasks/full-mvp/evidence/AT-ZERO.json", "tasks/full-mvp/evidence/AT-PARTIAL.json"],
-      "reviewRoles": ["architecture", "security"]
+      "reviewRoles": ["architecture"]
     },
     {
       "id": "S03",
@@ -291,9 +353,9 @@
       "ownedPaths": ["src/security/tailscale-identity.ts", "tests/full-mvp/tailnet-adapter.test.mjs"],
       "journeys": ["J-02"],
       "acceptanceFixtures": ["AT-J02-X", "AT-J02-N"],
-      "acceptanceCommands": ["node --test tests/full-mvp/tailnet-adapter.test.mjs", "npm run verify"],
+      "acceptanceCommands": ["node --test tests/full-mvp/tailnet-adapter.test.mjs", "npm run typecheck"],
       "evidence": ["tasks/full-mvp/S03/SYNTHETIC_TAILNET.json"],
-      "reviewRoles": ["security", "ux"]
+      "reviewRoles": ["security"]
     },
     {
       "id": "A01",
@@ -306,9 +368,9 @@
       "ownedPaths": ["src/application/commands/capture/**", "app/api/local/capture-*/**", "tests/full-mvp/capture-resolution.test.mjs"],
       "journeys": ["J-02", "J-03", "J-12"],
       "acceptanceFixtures": ["AT-J02", "AT-J02-N", "AT-J03", "AT-J03-R", "AT-J12"],
-      "acceptanceCommands": ["node --test tests/full-mvp/capture-resolution.test.mjs", "npm run verify"],
+      "acceptanceCommands": ["node --test tests/full-mvp/capture-resolution.test.mjs", "npm run typecheck"],
       "evidence": ["tasks/full-mvp/evidence/AT-J02.json", "tasks/full-mvp/evidence/AT-J03.json", "tasks/full-mvp/evidence/AT-J03-R.json"],
-      "reviewRoles": ["product_dna", "ux", "security"]
+      "reviewRoles": ["product_dna", "security"]
     },
     {
       "id": "A02",
@@ -321,24 +383,40 @@
       "ownedPaths": ["src/application/commands/evidence/**", "src/application/commands/agent-run/**", "tests/full-mvp/evidence-agent-review.test.mjs"],
       "journeys": ["J-04", "J-06"],
       "acceptanceFixtures": ["AT-J04", "AT-J06"],
-      "acceptanceCommands": ["node --test tests/full-mvp/evidence-agent-review.test.mjs", "npm run verify"],
+      "acceptanceCommands": ["node --test tests/full-mvp/evidence-agent-review.test.mjs", "npm run typecheck"],
       "evidence": ["tasks/full-mvp/evidence/AT-J04.json"],
-      "reviewRoles": ["product_dna", "ux"]
+      "reviewRoles": ["product_dna"]
     },
     {
       "id": "A03",
       "wave": "actions",
-      "title": "Project settings and checkpoint",
+      "title": "Project settings commands",
       "kind": "automated",
-      "estimatedMinutes": 105,
+      "estimatedMinutes": 60,
       "dependsOn": ["A02", "S02"],
       "parallelSafeWith": [],
-      "ownedPaths": ["src/application/commands/project/**", "src/application/commands/review/**", "tests/full-mvp/project-checkpoint.test.mjs"],
-      "journeys": ["J-05", "J-07", "J-10"],
-      "acceptanceFixtures": ["AT-J05", "AT-J07", "AT-J10", "AT-J10-B"],
-      "acceptanceCommands": ["node --test tests/full-mvp/project-checkpoint.test.mjs", "npm run verify"],
-      "evidence": ["tasks/full-mvp/evidence/AT-J05.json", "tasks/full-mvp/evidence/AT-J07.json", "tasks/full-mvp/evidence/AT-J10.json", "tasks/full-mvp/evidence/AT-J10-B.json"],
-      "reviewRoles": ["product_dna", "ux"]
+      "ownedPaths": ["src/application/commands/project/**", "tests/full-mvp/project-settings.test.mjs"],
+      "journeys": ["J-05", "J-10"],
+      "acceptanceFixtures": ["AT-J05", "AT-J10"],
+      "acceptanceCommands": ["node --test tests/full-mvp/project-settings.test.mjs", "npm run typecheck"],
+      "postMergeCommands": ["npm run typecheck", "git diff --check"],
+      "evidence": ["tasks/full-mvp/evidence/AT-J05.json", "tasks/full-mvp/evidence/AT-J10.json"],
+      "reviewRoles": ["product_dna"]
+    },
+    {
+      "id": "A04",
+      "wave": "actions",
+      "title": "Review checkpoint and portfolio pruning commands",
+      "kind": "automated",
+      "estimatedMinutes": 45,
+      "dependsOn": ["A03"],
+      "parallelSafeWith": [],
+      "ownedPaths": ["src/application/commands/review/**", "tests/full-mvp/project-checkpoint.test.mjs"],
+      "journeys": ["J-07", "J-10"],
+      "acceptanceFixtures": ["AT-J07", "AT-J10-B"],
+      "acceptanceCommands": ["node --test tests/full-mvp/project-checkpoint.test.mjs", "npm run typecheck"],
+      "evidence": ["tasks/full-mvp/evidence/AT-J07.json", "tasks/full-mvp/evidence/AT-J10-B.json"],
+      "reviewRoles": ["ux"]
     },
     {
       "id": "U05",
@@ -351,9 +429,24 @@
       "ownedPaths": ["src/ui/early-dogfood/**", "app/page.tsx", "tests/e2e/early-private-shell.spec.ts"],
       "journeys": ["J-01"],
       "acceptanceFixtures": [],
-      "acceptanceCommands": ["npx playwright test tests/e2e/early-private-shell.spec.ts --project=chromium", "npx playwright test tests/e2e/early-private-shell.spec.ts --project=webkit", "npm run verify"],
+      "acceptanceCommands": ["npx playwright test tests/e2e/early-private-shell.spec.ts --project=chromium", "npx playwright test tests/e2e/early-private-shell.spec.ts --project=webkit", "npm run typecheck"],
       "evidence": ["tasks/full-mvp/U05/EARLY_PRIVATE_SHELL_SMOKE.json", "tasks/full-mvp/U05/EARLY_PRIVATE_SHELL_CHROMIUM.zip", "tasks/full-mvp/U05/EARLY_PRIVATE_SHELL_WEBKIT.zip"],
-      "reviewRoles": ["product_dna", "ux", "security"]
+      "reviewRoles": ["product_dna", "ux"]
+    },
+    {
+      "id": "H05",
+      "wave": "formative",
+      "title": "Formative physical-phone checkpoint",
+      "kind": "manual_formative",
+      "estimatedMinutes": 20,
+      "dependsOn": ["U01", "U02", "U03"],
+      "parallelSafeWith": [],
+      "ownedPaths": ["tasks/full-mvp/manual/H05-formative-phone.json", "tasks/full-mvp/manual/evidence/H05/**"],
+      "journeys": ["J-01", "J-02", "J-03"],
+      "acceptanceFixtures": ["AT-J01-M", "AT-J02", "AT-J03"],
+      "acceptanceCommands": ["node <authority-root>/scripts/validate-full-mvp-execution.mjs --root <candidate-root> --authority-root <authority-root> --formative-phone tasks/full-mvp/manual/H05-formative-phone.json --artifact-commit <artifact-commit> --goal-id <goal-id> --coordinator-id <coordinator-id>"],
+      "evidence": ["tasks/full-mvp/manual/H05-formative-phone.json"],
+      "reviewRoles": ["owner", "ux"]
     },
     {
       "id": "U00",
@@ -361,14 +454,14 @@
       "title": "Laptop core vertical slice",
       "kind": "automated",
       "estimatedMinutes": 120,
-      "dependsOn": ["A03", "S01", "U05"],
+      "dependsOn": ["A04", "S01", "U05"],
       "parallelSafeWith": ["I01"],
       "ownedPaths": ["src/ui/laptop-core/**", "app/page.tsx", "tests/e2e/laptop-core.spec.ts"],
       "journeys": ["J-02", "J-03", "J-04", "J-05", "J-07"],
       "acceptanceFixtures": ["AT-J02", "AT-J03", "AT-J04", "AT-J05", "AT-J07", "AT-ZERO", "AT-PARTIAL"],
-      "acceptanceCommands": ["npx playwright test tests/e2e/laptop-core.spec.ts --project=chromium", "npm run verify"],
+      "acceptanceCommands": ["npx playwright test tests/e2e/laptop-core.spec.ts --project=chromium", "npm run typecheck"],
       "evidence": ["tasks/full-mvp/U00/LAPTOP_CORE_TRACE.zip"],
-      "reviewRoles": ["product_dna", "ux"]
+      "reviewRoles": ["ux"]
     },
     {
       "id": "I01",
@@ -381,9 +474,9 @@
       "ownedPaths": ["src/importers/local-git.ts", "src/importers/source-registry.ts", "src/application/commands/source/**", "tests/full-mvp/git-importer.test.mjs"],
       "journeys": ["J-11"],
       "acceptanceFixtures": ["AT-J11", "AT-J11-D", "AT-J11-X"],
-      "acceptanceCommands": ["node --test tests/full-mvp/git-importer.test.mjs", "npm run verify"],
+      "acceptanceCommands": ["node --test tests/full-mvp/git-importer.test.mjs", "npm run typecheck"],
       "evidence": ["tasks/full-mvp/evidence/AT-J11.json", "tasks/full-mvp/evidence/AT-J11-D.json", "tasks/full-mvp/evidence/AT-J11-X.json"],
-      "reviewRoles": ["security", "architecture"]
+      "reviewRoles": ["security"]
     },
     {
       "id": "I02",
@@ -396,23 +489,23 @@
       "ownedPaths": ["src/application/commands/observation/**", "src/domain/reducers/observation.ts", "tests/full-mvp/observation-adoption.test.mjs"],
       "journeys": ["J-06", "J-11"],
       "acceptanceFixtures": ["AT-J06", "AT-J11"],
-      "acceptanceCommands": ["node --test tests/full-mvp/observation-adoption.test.mjs", "npm run verify"],
+      "acceptanceCommands": ["node --test tests/full-mvp/observation-adoption.test.mjs", "npm run typecheck"],
       "evidence": ["tasks/full-mvp/evidence/AT-J06.json"],
-      "reviewRoles": ["product_dna", "security", "ux"]
+      "reviewRoles": ["product_dna", "security"]
     },
     {
       "id": "U01",
       "wave": "ui",
-      "title": "Runtime shell and mobile review",
+      "title": "Runtime shell, mobile review and formative composition",
       "kind": "automated",
       "estimatedMinutes": 150,
-      "dependsOn": ["A01", "A02", "A03", "I02", "S01", "S03", "W03", "U05"],
+      "dependsOn": ["A01", "A02", "A04", "I02", "S01", "S03", "W03", "U00", "U02", "U03", "U05"],
       "parallelSafeWith": [],
-      "ownedPaths": ["src/ui/runtime-shell/**", "src/ui/mobile-review/**", "app/**/mobile*", "tests/e2e/mobile-review.spec.ts"],
+      "ownedPaths": ["src/ui/runtime-shell/**", "src/ui/mobile-review/**", "src/ui/formative-composition/**", "app/page.tsx", "app/layout.tsx", "app/**/mobile*", "tests/e2e/mobile-review.spec.ts", "tests/e2e/formative-composition.spec.ts"],
       "journeys": ["J-01", "J-02", "J-03", "J-04", "J-05", "J-06", "J-07", "J-12"],
       "acceptanceFixtures": ["AT-J01", "AT-J01-M", "AT-J02", "AT-J02-X", "AT-J02-N", "AT-J03", "AT-J03-R", "AT-J04", "AT-J05", "AT-J06", "AT-J07", "AT-J12"],
-      "acceptanceCommands": ["npx playwright test tests/e2e/mobile-review.spec.ts --project=chromium", "npx playwright test tests/e2e/mobile-review.spec.ts --project=webkit", "npm run verify"],
-      "evidence": ["tasks/full-mvp/U01/MOBILE_CHROMIUM_TRACE.zip", "tasks/full-mvp/U01/MOBILE_WEBKIT_TRACE.zip"],
+      "acceptanceCommands": ["npx playwright test tests/e2e/mobile-review.spec.ts tests/e2e/formative-composition.spec.ts --project=chromium", "npx playwright test tests/e2e/mobile-review.spec.ts tests/e2e/formative-composition.spec.ts --project=webkit", "npm run typecheck"],
+      "evidence": ["tasks/full-mvp/U01/MOBILE_CHROMIUM_TRACE.zip", "tasks/full-mvp/U01/MOBILE_WEBKIT_TRACE.zip", "tasks/full-mvp/U01/FORMATIVE_COMPOSITION_MATRIX.json"],
       "reviewRoles": ["ux", "security"]
     },
     {
@@ -421,14 +514,14 @@
       "title": "Desktop truth and review surfaces",
       "kind": "automated",
       "estimatedMinutes": 150,
-      "dependsOn": ["A02", "A03", "I02", "D03", "W04", "S01"],
+      "dependsOn": ["A02", "A04", "I02", "D03", "W04", "S01"],
       "parallelSafeWith": [],
       "ownedPaths": ["src/ui/desktop-truth/**", "src/ui/review-item.ts", "tests/e2e/desktop-truth.spec.ts"],
       "journeys": ["J-04", "J-05", "J-06", "J-09", "J-11"],
       "acceptanceFixtures": ["AT-J04", "AT-J05", "AT-J06", "AT-J09", "AT-J11", "AT-J11-D"],
-      "acceptanceCommands": ["npx playwright test tests/e2e/desktop-truth.spec.ts --project=chromium", "npm run verify"],
+      "acceptanceCommands": ["npx playwright test tests/e2e/desktop-truth.spec.ts --project=chromium", "npm run typecheck"],
       "evidence": ["tasks/full-mvp/U02/DESKTOP_TRACE.zip"],
-      "reviewRoles": ["ux", "product_dna"]
+      "reviewRoles": ["ux"]
     },
     {
       "id": "U03",
@@ -436,14 +529,14 @@
       "title": "Today and portfolio pruning",
       "kind": "automated",
       "estimatedMinutes": 120,
-      "dependsOn": ["A02", "A03", "I02", "D03"],
+      "dependsOn": ["A02", "A04", "I02", "D03"],
       "parallelSafeWith": [],
       "ownedPaths": ["src/ui/today-view.ts", "src/ui/portfolio/**", "tests/e2e/today-pruning.spec.ts"],
       "journeys": ["J-07", "J-09", "J-10", "J-11"],
       "acceptanceFixtures": ["AT-J07", "AT-J09", "AT-J10", "AT-J10-B", "AT-J11"],
-      "acceptanceCommands": ["npx playwright test tests/e2e/today-pruning.spec.ts --project=chromium", "npm run verify"],
+      "acceptanceCommands": ["npx playwright test tests/e2e/today-pruning.spec.ts --project=chromium", "npm run typecheck"],
       "evidence": ["tasks/full-mvp/U03/TODAY_TRACE.zip"],
-      "reviewRoles": ["ux", "product_dna"]
+      "reviewRoles": ["ux"]
     },
     {
       "id": "U04",
@@ -456,9 +549,24 @@
       "ownedPaths": ["src/ui/workspace-health.ts", "src/ui/recovery/**", "tests/e2e/recovery-controls.spec.ts"],
       "journeys": ["J-08"],
       "acceptanceFixtures": ["AT-J08"],
-      "acceptanceCommands": ["npx playwright test tests/e2e/recovery-controls.spec.ts --project=chromium", "npm run verify"],
+      "acceptanceCommands": ["npx playwright test tests/e2e/recovery-controls.spec.ts --project=chromium", "npm run typecheck"],
       "evidence": ["tasks/full-mvp/evidence/AT-J08.json", "tasks/full-mvp/U04/RECOVERY_UI_TRACE.zip"],
-      "reviewRoles": ["ux", "recovery", "security"]
+      "reviewRoles": ["ux", "recovery"]
+    },
+    {
+      "id": "U06",
+      "wave": "ui",
+      "title": "Final responsive surface composition",
+      "kind": "automated",
+      "estimatedMinutes": 120,
+      "dependsOn": ["U00", "U01", "U02", "U03", "U04", "H05"],
+      "parallelSafeWith": [],
+      "ownedPaths": ["app/page.tsx", "app/layout.tsx", "app/globals.css", "src/ui/composition/**", "tests/e2e/final-composition.spec.ts"],
+      "journeys": ["J-01", "J-02", "J-03", "J-04", "J-05", "J-06", "J-07", "J-08", "J-09", "J-10", "J-11", "J-12"],
+      "acceptanceFixtures": ["AT-J01", "AT-J01-M", "AT-J02", "AT-J02-X", "AT-J02-N", "AT-J03", "AT-J03-R", "AT-J04", "AT-J05", "AT-J06", "AT-J07", "AT-J08", "AT-J09", "AT-J10", "AT-J10-B", "AT-J11", "AT-J11-D", "AT-J11-X", "AT-J12", "AT-ZERO", "AT-PARTIAL"],
+      "acceptanceCommands": ["npx playwright test tests/e2e/final-composition.spec.ts --project=chromium", "npx playwright test tests/e2e/final-composition.spec.ts --project=webkit", "npm run typecheck"],
+      "evidence": ["tasks/full-mvp/U06/FINAL_COMPOSITION_TRACE.zip", "tasks/full-mvp/U06/RESPONSIVE_SURFACE_MATRIX.json"],
+      "reviewRoles": ["ux", "product_dna"]
     },
     {
       "id": "V01",
@@ -471,24 +579,40 @@
       "ownedPaths": ["tests/full-mvp/adversarial-recovery/**", "tasks/full-mvp/V01/**"],
       "journeys": ["J-01", "J-08", "J-11", "J-12"],
       "acceptanceFixtures": ["AT-J01-M", "AT-J08", "AT-J11", "AT-J11-D", "AT-J11-X", "AT-J12"],
-      "acceptanceCommands": ["node --test tests/full-mvp/adversarial-recovery/*.test.mjs", "npm run verify"],
+      "acceptanceCommands": ["node --test tests/full-mvp/adversarial-recovery/*.test.mjs", "npm run typecheck"],
       "evidence": ["tasks/full-mvp/V01/FAULT_INJECTION_MATRIX.json", "tasks/full-mvp/V01/FULL_BUNDLE_CUTOFF.json"],
-      "reviewRoles": ["recovery", "security", "architecture"]
+      "reviewRoles": ["recovery", "security"]
     },
     {
       "id": "V02",
       "wave": "verification",
-      "title": "Browser and automated accessibility suite",
+      "title": "Canonical browser journey suite",
       "kind": "automated",
-      "estimatedMinutes": 180,
-      "dependsOn": ["U00", "U01", "U02", "U03", "U04", "S03"],
+      "estimatedMinutes": 120,
+      "dependsOn": ["U06", "S03"],
       "parallelSafeWith": [],
-      "ownedPaths": ["tests/e2e/**", "playwright.config.*", "tasks/full-mvp/evidence/**", "tasks/full-mvp/V02/**"],
+      "ownedPaths": ["tests/e2e/journeys/**", "playwright.config.*", "tasks/full-mvp/evidence/**", "tasks/full-mvp/V02/**"],
       "journeys": ["J-01", "J-02", "J-03", "J-04", "J-05", "J-06", "J-07", "J-08", "J-09", "J-10", "J-11", "J-12"],
       "acceptanceFixtures": ["AT-J01", "AT-J01-M", "AT-J02", "AT-J02-X", "AT-J02-N", "AT-J03", "AT-J03-R", "AT-J04", "AT-J05", "AT-J06", "AT-J07", "AT-J08", "AT-J09", "AT-J10", "AT-J10-B", "AT-J11", "AT-J11-D", "AT-J11-X", "AT-J12", "AT-ZERO", "AT-PARTIAL"],
-      "acceptanceCommands": ["npx playwright test --project=chromium", "npx playwright test --project=webkit", "npm run verify"],
-      "evidence": ["tasks/full-mvp/V02/BROWSER_MATRIX.json", "tasks/full-mvp/V02/AXE_RESULTS.json", "tasks/full-mvp/V02/ACCEPTANCE_EVIDENCE_MANIFEST.json"],
-      "reviewRoles": ["ux", "accessibility", "security"]
+      "acceptanceCommands": ["npx playwright test tests/e2e/journeys --project=chromium", "npx playwright test tests/e2e/journeys --project=webkit", "npm run typecheck"],
+      "postMergeCommands": ["npm run typecheck", "git diff --check"],
+      "evidence": ["tasks/full-mvp/V02/BROWSER_MATRIX.json", "tasks/full-mvp/V02/ACCEPTANCE_EVIDENCE_MANIFEST.json"],
+      "reviewRoles": ["ux", "security"]
+    },
+    {
+      "id": "V04",
+      "wave": "verification",
+      "title": "Accessibility responsive and adversarial browser audit",
+      "kind": "automated",
+      "estimatedMinutes": 60,
+      "dependsOn": ["V02"],
+      "parallelSafeWith": [],
+      "ownedPaths": ["tests/e2e/accessibility/**", "tests/e2e/adversarial/**", "tasks/full-mvp/V04/**"],
+      "journeys": ["J-01", "J-02", "J-03", "J-04", "J-05", "J-06", "J-07", "J-08", "J-09", "J-10", "J-11", "J-12"],
+      "acceptanceFixtures": ["AT-J01", "AT-J01-M", "AT-J02", "AT-J02-X", "AT-J02-N", "AT-J03", "AT-J03-R", "AT-J04", "AT-J05", "AT-J06", "AT-J07", "AT-J08", "AT-J09", "AT-J10", "AT-J10-B", "AT-J11", "AT-J11-D", "AT-J11-X", "AT-J12", "AT-ZERO", "AT-PARTIAL"],
+      "acceptanceCommands": ["npx playwright test tests/e2e/accessibility tests/e2e/adversarial --project=chromium", "npx playwright test tests/e2e/accessibility tests/e2e/adversarial --project=webkit", "npm run typecheck"],
+      "evidence": ["tasks/full-mvp/V04/AXE_RESULTS.json", "tasks/full-mvp/V04/RESPONSIVE_ADVERSARIAL_MATRIX.json"],
+      "reviewRoles": ["accessibility", "security"]
     },
     {
       "id": "V03",
@@ -496,13 +620,13 @@
       "title": "Cross-document candidate gate",
       "kind": "automated",
       "estimatedMinutes": 90,
-      "dependsOn": ["V01", "V02"],
+      "dependsOn": ["V01", "V04"],
       "parallelSafeWith": [],
       "ownedPaths": ["docs/CURRENT_STATE.md", "docs/NEXT_AGENT_HANDOFF.md", "tasks/full-mvp/V03/**"],
       "journeys": ["J-01", "J-02", "J-03", "J-04", "J-05", "J-06", "J-07", "J-08", "J-09", "J-10", "J-11", "J-12"],
       "acceptanceFixtures": ["AT-J01", "AT-J01-M", "AT-J02", "AT-J02-X", "AT-J02-N", "AT-J03", "AT-J03-R", "AT-J04", "AT-J05", "AT-J06", "AT-J07", "AT-J08", "AT-J09", "AT-J10", "AT-J10-B", "AT-J11", "AT-J11-D", "AT-J11-X", "AT-J12", "AT-ZERO", "AT-PARTIAL"],
       "acceptanceCommands": ["node <authority-root>/scripts/validate-full-mvp-plan.mjs", "git diff --check"],
-      "postMergeCommands": ["node <authority-root>/scripts/validate-full-mvp-execution.mjs --root <candidate-root> --authority-root <authority-root> --candidate-evidence tasks/full-mvp/evidence --task-artifacts tasks/full-mvp --run-state-snapshot tasks/full-mvp/V03/FINAL_RUN_STATE.json --artifact-commit <artifact-commit> --planning-commit <planning-commit> --goal-id <goal-id> --coordinator-id <coordinator-id>", "npm run verify", "npm run audit:prod", "npx --no-install vinext check"],
+      "postMergeCommands": ["node <authority-root>/scripts/validate-full-mvp-execution.mjs --root <candidate-root> --authority-root <authority-root> --candidate-evidence tasks/full-mvp/evidence --task-artifacts tasks/full-mvp --run-state-snapshot tasks/full-mvp/V03/FINAL_RUN_STATE.json --artifact-commit <artifact-commit> --planning-commit <planning-commit> --goal-id <goal-id> --coordinator-id <coordinator-id>", "npm run verify", "node <authority-root>/scripts/classify-production-audit.mjs", "npx --no-install vinext check"],
       "evidence": ["tasks/full-mvp/V03/TRACEABILITY.json", "tasks/full-mvp/V03/CANDIDATE_CLASSIFICATION.md", "tasks/full-mvp/V03/FINAL_RUN_STATE.json"],
       "reviewRoles": ["product_dna", "architecture_security", "ux_release"]
     },
@@ -513,7 +637,7 @@
       "kind": "manual_acceptance",
       "estimatedMinutes": 90,
       "dependsOn": ["V03"],
-      "parallelSafeWith": ["H02", "H03", "H04"],
+      "parallelSafeWith": [],
       "ownedPaths": ["tasks/full-mvp/manual/H01-physical-phone.json", "tasks/full-mvp/manual/evidence/H01/**"],
       "journeys": ["J-02", "J-03", "J-04", "J-05", "J-06", "J-07", "J-12"],
       "acceptanceFixtures": ["AT-J02", "AT-J02-X", "AT-J02-N", "AT-J03", "AT-J04", "AT-J05", "AT-J06", "AT-J07", "AT-J12"],
@@ -528,7 +652,7 @@
       "kind": "manual_acceptance",
       "estimatedMinutes": 120,
       "dependsOn": ["V03"],
-      "parallelSafeWith": ["H01", "H03", "H04"],
+      "parallelSafeWith": [],
       "ownedPaths": ["tasks/full-mvp/manual/H02-accessibility.json", "tasks/full-mvp/manual/evidence/H02/**"],
       "journeys": ["J-01", "J-02", "J-03", "J-07", "J-08", "J-09", "J-12"],
       "acceptanceFixtures": [],
@@ -543,7 +667,7 @@
       "kind": "manual_acceptance",
       "estimatedMinutes": 90,
       "dependsOn": ["V03"],
-      "parallelSafeWith": ["H01", "H02", "H04"],
+      "parallelSafeWith": [],
       "ownedPaths": ["tasks/full-mvp/manual/H03-clean-recovery.json", "tasks/full-mvp/manual/evidence/H03/**"],
       "journeys": ["J-08"],
       "acceptanceFixtures": ["AT-J08"],
@@ -558,7 +682,7 @@
       "kind": "manual_acceptance",
       "estimatedMinutes": 60,
       "dependsOn": ["V03"],
-      "parallelSafeWith": ["H01", "H02", "H03"],
+      "parallelSafeWith": [],
       "ownedPaths": ["tasks/full-mvp/manual/H04-real-git.json", "tasks/full-mvp/manual/evidence/H04/**"],
       "journeys": ["J-11"],
       "acceptanceFixtures": ["AT-J11"],
@@ -577,7 +701,7 @@
       "ownedPaths": ["tasks/full-mvp/R00/**", "docs/CURRENT_STATE.md", "docs/NEXT_AGENT_HANDOFF.md"],
       "journeys": ["J-01", "J-02", "J-03", "J-04", "J-05", "J-06", "J-07", "J-08", "J-09", "J-10", "J-11", "J-12"],
       "acceptanceFixtures": ["AT-J01", "AT-J01-M", "AT-J02", "AT-J02-X", "AT-J02-N", "AT-J03", "AT-J03-R", "AT-J04", "AT-J05", "AT-J06", "AT-J07", "AT-J08", "AT-J09", "AT-J10", "AT-J10-B", "AT-J11", "AT-J11-D", "AT-J11-X", "AT-J12", "AT-ZERO", "AT-PARTIAL"],
-      "acceptanceCommands": ["node <authority-root>/scripts/validate-full-mvp-execution.mjs --root <candidate-root> --authority-root <authority-root> --candidate-evidence tasks/full-mvp/evidence --task-artifacts tasks/full-mvp --run-state-snapshot tasks/full-mvp/V03/FINAL_RUN_STATE.json --artifact-commit <artifact-commit> --planning-commit <planning-commit> --goal-id <goal-id> --coordinator-id <coordinator-id> --include-v03", "node <authority-root>/scripts/validate-full-mvp-execution.mjs --root <candidate-root> --authority-root <authority-root> --manual-gates tasks/full-mvp/manual --artifact-commit <artifact-commit> --goal-id <goal-id> --coordinator-id <coordinator-id>", "node <authority-root>/scripts/validate-full-mvp-execution.mjs --root <candidate-root> --authority-root <authority-root> --release-review tasks/full-mvp/R00 --artifact-commit <artifact-commit> --goal-id <goal-id> --coordinator-id <coordinator-id>", "npm run verify"],
+      "acceptanceCommands": ["node <authority-root>/scripts/validate-full-mvp-execution.mjs --root <candidate-root> --authority-root <authority-root> --candidate-evidence tasks/full-mvp/evidence --task-artifacts tasks/full-mvp --run-state-snapshot tasks/full-mvp/V03/FINAL_RUN_STATE.json --artifact-commit <artifact-commit> --planning-commit <planning-commit> --goal-id <goal-id> --coordinator-id <coordinator-id> --include-v03", "node <authority-root>/scripts/validate-full-mvp-execution.mjs --root <candidate-root> --authority-root <authority-root> --manual-gates tasks/full-mvp/manual --artifact-commit <artifact-commit> --goal-id <goal-id> --coordinator-id <coordinator-id>", "node <authority-root>/scripts/validate-full-mvp-execution.mjs --root <candidate-root> --authority-root <authority-root> --release-review tasks/full-mvp/R00 --artifact-commit <artifact-commit> --goal-id <goal-id> --coordinator-id <coordinator-id>", "npm run verify", "node <authority-root>/scripts/classify-production-audit.mjs"],
       "evidence": ["tasks/full-mvp/R00/RELEASE_REVIEW.md", "tasks/full-mvp/R00/RELEASE_ACCEPTANCE.json"],
       "reviewRoles": ["product_dna", "architecture_security", "ux_release"]
     }

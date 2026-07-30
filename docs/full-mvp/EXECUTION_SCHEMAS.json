@@ -97,6 +97,7 @@
             "verified",
             "review_rejected",
             "repairing",
+            "paused",
             "accepted",
             "merge_pending_verification",
             "merged",
@@ -203,6 +204,50 @@
         "aggregateGate": { "type": "object" },
         "manualGates": { "type": "object" },
         "stopReason": { "type": ["string", "null"] }
+      }
+    },
+    "ControllerCheckpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "goalId",
+        "stateRevision",
+        "stateChecksum",
+        "planningCommit",
+        "authorizedStartCommit",
+        "integrationCommit",
+        "activeWindowId",
+        "currentWave",
+        "taskStatusCounts",
+        "readyTaskIds",
+        "activeTaskIds",
+        "manualGates",
+        "recordedAt"
+      ],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "goalId": { "type": "string", "minLength": 1 },
+        "stateRevision": { "type": "integer", "minimum": 1 },
+        "stateChecksum": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "planningCommit": { "$ref": "#/$defs/GitSha" },
+        "authorizedStartCommit": { "$ref": "#/$defs/GitSha" },
+        "integrationCommit": { "$ref": "#/$defs/GitSha" },
+        "activeWindowId": { "type": "string", "minLength": 1 },
+        "currentWave": { "type": "string", "minLength": 1 },
+        "taskStatusCounts": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "readyTaskIds": { "type": "array", "items": { "type": "string" } },
+        "activeTaskIds": { "type": "array", "items": { "type": "string" } },
+        "manualGates": {
+          "type": "object",
+          "additionalProperties": {
+            "enum": ["MANUAL_PENDING", "PASS", "FAIL"]
+          }
+        },
+        "recordedAt": { "type": "string", "format": "date-time" }
       }
     },
     "CommandResult": {
@@ -439,6 +484,7 @@
       "required": [
         "schemaVersion",
         "goalId",
+        "integrationProductCommit",
         "testedCommit",
         "coordinatorId",
         "acceptedAt",
@@ -450,6 +496,7 @@
       "properties": {
         "schemaVersion": { "const": 1 },
         "goalId": { "type": "string", "minLength": 1 },
+        "integrationProductCommit": { "$ref": "#/$defs/GitSha" },
         "testedCommit": { "$ref": "#/$defs/GitSha" },
         "coordinatorId": { "type": "string", "minLength": 1 },
         "acceptedAt": { "type": "string", "format": "date-time" },
@@ -507,6 +554,72 @@
         "reviewedAt": { "type": "string", "format": "date-time" },
         "result": { "$ref": "#/$defs/PassFail" }
       }
+    },
+    "H05FormativePhone": {
+      "allOf": [
+        { "$ref": "#/$defs/ManualGateBase" },
+        {
+          "type": "object",
+          "required": ["phone", "timingsSeconds", "results", "evidence"],
+          "properties": {
+            "phone": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["model", "osVersion", "browserVersion"],
+              "properties": {
+                "model": { "type": "string", "minLength": 1 },
+                "osVersion": { "type": "string", "minLength": 1 },
+                "browserVersion": { "type": "string", "minLength": 1 }
+              }
+            },
+            "timingsSeconds": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["firstIntentVisible", "captureOrReview"],
+              "properties": {
+                "firstIntentVisible": { "type": "number", "minimum": 0, "maximum": 10 },
+                "captureOrReview": { "type": "number", "minimum": 0, "maximum": 30 }
+              }
+            },
+            "results": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "firstIntentVisible",
+                "softKeyboardSafe",
+                "touchTargets44",
+                "oneHandedReach",
+                "backReloadResume",
+                "noHorizontalOverflow",
+                "desktopDashboardNotAppendedBelowPhone",
+                "desktopTruthViaExplicitNavigation"
+              ],
+              "properties": {
+                "firstIntentVisible": { "$ref": "#/$defs/PassFail" },
+                "softKeyboardSafe": { "$ref": "#/$defs/PassFail" },
+                "touchTargets44": { "$ref": "#/$defs/PassFail" },
+                "oneHandedReach": { "$ref": "#/$defs/PassFail" },
+                "backReloadResume": { "$ref": "#/$defs/PassFail" },
+                "noHorizontalOverflow": { "$ref": "#/$defs/PassFail" },
+                "desktopDashboardNotAppendedBelowPhone": { "$ref": "#/$defs/PassFail" },
+                "desktopTruthViaExplicitNavigation": { "$ref": "#/$defs/PassFail" }
+              }
+            },
+            "evidence": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "phoneFirstScreenScreenshot",
+                "explicitNavigationScreenshot"
+              ],
+              "properties": {
+                "phoneFirstScreenScreenshot": { "type": "string", "minLength": 1 },
+                "explicitNavigationScreenshot": { "type": "string", "minLength": 1 }
+              }
+            }
+          }
+        }
+      ]
     },
     "H01PhysicalPhone": {
       "allOf": [

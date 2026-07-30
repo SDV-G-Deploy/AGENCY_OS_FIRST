@@ -29,11 +29,18 @@ technology and clean-machine checks. An unattended agent cannot install/sign in
 the owner's phone, judge NVDA/VoiceOver output or approve real-data migration.
 The coordinator must report those gates as `MANUAL_PENDING`, never as passed.
 
-Planning estimates in `TASK_GRAPH.json` total 3,275 automated task-minutes; the
-dependency critical path to V03 is about 1,650 minutes before repair/review
-variance. These are control estimates, not promises. A single eight-hour window
-should be expected to produce accepted baseline/workspace waves, not U00 or the
-entire candidate. U05 may be dispatched in that first window only when at least
+Planning estimates in `TASK_GRAPH.json` total 3,395 automated task-minutes. The
+automated dependency path to V03 is 1,920 minutes; the end-to-end path including
+H05 is 1,940 minutes. The currently
+declared safe-parallelism constraint raises the automated execution lower bound
+to 3,155 minutes (52.6 hours) before review, merge, verification, repair and
+owner-gate overhead. `scripts/analyze-full-mvp-schedule.mjs` validates these
+figures and the corresponding minimum of eight 450-minute productive windows.
+Estimated review and coordination create an eleven-window operating budget;
+11-13 is the practical planning range before repair and owner scheduling.
+These are planning bounds, not promises. A single eight-hour window should be
+expected to produce accepted baseline/workspace waves, not U00 or the entire
+candidate. U05 may be dispatched in that first window only when at least
 ninety minutes plus review/repair reserve remain; it is not a required
 eight-hour outcome. The same stable goal resumes across multiple
 owner-authorized windows; every window gets its own authorization and deadline.
@@ -200,13 +207,14 @@ flowchart TD
     H00["H00 Owner preflight"] --> T00["T00 Freeze baseline"]
     T00 --> T01["T01 Characterization tests"]
     T01 --> T02["T02 Dependency/browser preflight"]
-    T01 --> W01["W01 Private workspace foundation"]
-    T02 --> W01
-    W01 --> W02["W02 Versioned event store + action registry"]
-    W02 --> D01["D01 Domain schemas + policies"]
-    W02 --> W04["W04 Backup/restore/recovery"]
-    D01 --> D02["D02 Reducers + compensation"]
-    D02 --> D03["D03 Command pipeline + request truth"]
+    T02 --> W01["W01 Private workspace foundation"]
+    W01 --> W02["W02 Event envelope + append store"]
+    W02 --> W05["W05 Locking + idempotency + registry"]
+    W05 --> D01["D01 Domain schemas + policies"]
+    W05 --> W04["W04 Backup/restore/recovery"]
+    D01 --> D02["D02 Core reducers + action targets"]
+    D02 --> D04["D04 Compensation + invalidation"]
+    D04 --> D03["D03 Command pipeline + request truth"]
     W01 --> S01["S01 Local session + route guard"]
     S01 --> U05["U05 Early private workspace shell"]
     S01 --> S02["S02 Intake + quarantine"]
@@ -216,29 +224,30 @@ flowchart TD
     D03 --> A01["A01 Capture resolution"]
     S02 --> A01
     A01 --> A02["A02 Evidence + agent review"]
-    A02 --> A03["A03 Project/settings/checkpoint"]
+    A02 --> A03["A03 Project/settings"]
+    A03 --> A04["A04 Review checkpoint + pruning"]
     D03 --> I01["I01 Source configure + Git scan"]
     S02 --> I01
     S01 --> I01
     I01 --> I02["I02 Observation review/adoption"]
     A02 --> I02
-    A03 --> U00["U00 Laptop core vertical slice"]
+    A04 --> U00["U00 Laptop core vertical slice"]
     S01 --> U00
     U05 --> U00
     W03 --> U01["U01 Runtime shell + mobile review"]
     A01 --> U01
     A02 --> U01
-    A03 --> U01
+    A04 --> U01
     I02 --> U01
     S01 --> U01
     S03 --> U01
     U05 --> U01
     A02 --> U02["U02 Desktop truth/review surfaces"]
-    A03 --> U02
+    A04 --> U02
     I02 --> U02
     W04 --> U02
     S01 --> U02
-    A03 --> U03["U03 Today + portfolio pruning"]
+    A04 --> U03["U03 Today + portfolio pruning"]
     A02 --> U03
     I02 --> U03
     D03 --> U03
@@ -249,14 +258,20 @@ flowchart TD
     W04 --> V01
     I01 --> V01
     S02 --> V01
-    U00 --> V02
-    U01 --> V02["V02 Browser/accessibility automated suite"]
-    U02 --> V02
-    U03 --> V02
-    U04 --> V02
+    U01 --> H05["H05 Formative physical-phone checkpoint"]
+    U02 --> H05
+    U03 --> H05
+    U00 --> U06["U06 Final responsive composition"]
+    U01 --> U06
+    U02 --> U06
+    U03 --> U06
+    U04 --> U06
+    H05 --> U06
+    U06 --> V02["V02 Canonical browser journey suite"]
     S03 --> V02
+    V02 --> V04["V04 Accessibility/responsive adversarial audit"]
     V01 --> V03["V03 Cross-doc/release candidate gate"]
-    V02 --> V03
+    V04 --> V03
     V03 --> H01["H01 Physical phone/Tailscale"]
     V03 --> H02["H02 Manual accessibility"]
     V03 --> H03["H03 Clean-machine recovery"]
@@ -274,19 +289,19 @@ This table is its human-readable projection:
 
 | Journey | Acceptance fixtures | Owning tasks | Level / required command family | Required evidence artifact |
 |---|---|---|---|---|
-| J-01 workspace | AT-J01, AT-J01-M | W01, W03, U01, V01, V02 | workspace/API + Playwright onboarding/migration | `tasks/full-mvp/evidence/AT-J01*.json` |
-| J-02 phone capture | AT-J02, AT-J02-X, AT-J02-N | S01, S02, A01, U00, U01, V02, H01 | command/API + Chromium/WebKit + physical phone | `AT-J02*.json`, `manual/H01-physical-phone.json` |
-| J-03 review/conversion | AT-J03, AT-J03-R | A01, U00, U01, V02, H01 | reducer/command + browser + physical timing | `AT-J03*.json`, H01 |
-| J-04 evidence | AT-J04 | A02, U00, U01, U02, V02, H01 | policy/reducer/API + browser + physical phone | `AT-J04.json`, H01 |
-| J-05 blocker/decision | AT-J05 | A03, U00, U01, U02, V02, H01 | atomic reducer/API + browser + physical phone | `AT-J05.json`, H01 |
-| J-06 agent run | AT-J06 | A02, I02, U01, U02, V02, H01 | seeded run review then Git-observation adoption/browser/phone | `AT-J06.json`, H01 |
-| J-07 Today | AT-J07 | A03, U00, U01, U03, V02, H01 | sequence/domain + browser + physical timing | `AT-J07.json`, H01 |
-| J-08 recovery | AT-J08 | W04, U04, V01, V02, H03 | fault/API + browser controls + clean recovery | `AT-J08.json`, `manual/H03-clean-recovery.json` |
-| J-09 desktop return | AT-J09 | D03, U02, U03, V02 | request projection + Chromium navigation | `AT-J09.json` |
-| J-10 pruning | AT-J10, AT-J10-B | A03, U03, V02 | policy/command + browser weekly review | `AT-J10*.json` |
-| J-11 Git continuity | AT-J11, AT-J11-D, AT-J11-X | I01, I02, U02, U03, V01, V02, H04 | hostile fixture/command + browser source health + real allow-listed non-mutation gate | `AT-J11*.json`, H04 |
-| J-12 quarantine | AT-J12 | S02, A01, U01, V02, H01 | security-negative/reducer + browser + physical phone | `AT-J12.json`, H01 |
-| cross-surface | AT-ZERO, AT-PARTIAL | D03, U00, U01, U02, U03, V02 | projection + Chromium/WebKit failure states | `AT-ZERO.json`, `AT-PARTIAL.json` |
+| J-01 workspace | AT-J01, AT-J01-M | W01, W03, H05, U01, U06, V01, V02, V04 | workspace/API + Playwright onboarding/migration | `tasks/full-mvp/evidence/AT-J01*.json` |
+| J-02 phone capture | AT-J02, AT-J02-X, AT-J02-N | S01, S02, A01, H05, U00, U01, U06, V02, V04, H01 | command/API + Chromium/WebKit + physical phone | `AT-J02*.json`, `manual/H01-physical-phone.json` |
+| J-03 review/conversion | AT-J03, AT-J03-R | D02, D04, A01, H05, U00, U01, U06, V02, V04, H01 | reducer/command + browser + physical timing | `AT-J03*.json`, H01 |
+| J-04 evidence | AT-J04 | D02, A02, U00, U01, U02, U06, V02, V04, H01 | policy/reducer/API + browser + physical phone | `AT-J04.json`, H01 |
+| J-05 blocker/decision | AT-J05 | D02, A03, U00, U01, U02, U06, V02, V04, H01 | atomic reducer/API + browser + physical phone | `AT-J05.json`, H01 |
+| J-06 agent run | AT-J06 | D02, A02, I02, U01, U02, U06, V02, V04, H01 | seeded run review then Git-observation adoption/browser/phone | `AT-J06.json`, H01 |
+| J-07 Today | AT-J07 | D02, A04, U00, U01, U03, U06, V02, V04, H01 | sequence/domain + browser + physical timing | `AT-J07.json`, H01 |
+| J-08 recovery | AT-J08 | W04, U04, U06, V01, V02, V04, H03 | fault/API + browser controls + clean recovery | `AT-J08.json`, `manual/H03-clean-recovery.json` |
+| J-09 desktop return | AT-J09 | D03, U02, U03, U06, V02, V04 | request projection + Chromium navigation | `AT-J09.json` |
+| J-10 pruning | AT-J10, AT-J10-B | D02, D04, A03, A04, U03, U06, V02, V04 | policy/command + browser weekly review | `AT-J10*.json` |
+| J-11 Git continuity | AT-J11, AT-J11-D, AT-J11-X | I01, I02, U02, U03, U06, V01, V02, V04, H04 | hostile fixture/command + browser source health + real allow-listed non-mutation gate | `AT-J11*.json`, H04 |
+| J-12 quarantine | AT-J12 | S02, A01, U01, U06, V02, V04, H01 | security-negative/reducer + browser + physical phone | `AT-J12.json`, H01 |
+| cross-surface | AT-ZERO, AT-PARTIAL | D03, U00, U01, U02, U03, U06, V02, V04 | projection + Chromium/WebKit failure states | `AT-ZERO.json`, `AT-PARTIAL.json` |
 
 Required command families become exact paths when their owning task writes
 PLAN FIRST:
@@ -345,7 +360,13 @@ Deliver:
 - Git status/head/origin evidence;
 - Node/npm/dependency inventory;
 - current file/module metrics;
-- `npm run verify`, `npm run audit:prod`, Vinext check results;
+- a baseline worktree bootstrap receipt proving that a freshly created task
+  worktree can run
+  `npm ci --prefer-offline --no-audit` against the committed lockfile and then
+  execute its focused gate; this protocol applies immediately to T01 and does
+  not wait for T02;
+- `npm run verify`, trusted production-audit classification and Vinext check
+  results;
 - public/private-data leak scan;
 - immutable baseline receipt.
 
@@ -386,14 +407,22 @@ Deliver:
 
 Stop if installation needs broad dependency/framework changes.
 
+T02 may extend the T00 baseline protocol only for the exact accepted dependency
+and browser additions. T01 and every earlier worktree use the T00 bootstrap
+receipt; missing `node_modules` is never a reason to skip verification.
+
 Wave gate:
 
 ```text
 npm run verify
-npm run audit:prod  # expected red; exact known finding only
+node <authority-root>/scripts/classify-production-audit.mjs
 npx --no-install vinext check
 Playwright Chromium and WebKit one-page smokes
 ```
+
+`BLOCKED_KNOWN_UPSTREAM` is a passing classification gate only for continuing
+private local development. It is not a security-clear result and still blocks
+production release. Any audit drift is a failing wave gate.
 
 ## 9. Wave 1 — Workspace And Durability
 
@@ -416,14 +445,12 @@ Required tests:
 - no PRIVATE-to-DEMO fallback;
 - clean Git tree after normal write.
 
-### W02 — Versioned event store and registry
+### W02 — Versioned event envelope and append store
 
 Owns:
 
 - event envelope and SHA-256 canonical chain;
 - entity-version rules;
-- action registry;
-- exclusive lock and exact-retry ordering;
 - legacy action/hash adapter;
 - request-safe result classes.
 
@@ -432,6 +459,18 @@ Required tests:
 - legacy FNV replay without rewrite;
 - migration-boundary chain;
 - unknown action rejection;
+- append/crash result classification.
+
+### W05 — Event store locking, idempotency and action registry
+
+Owns:
+
+- action registry;
+- exclusive lock and exact-retry ordering;
+- lock metadata, stale-lock recovery and bounded conflict results.
+
+Required tests:
+
 - concurrent sequence conflict;
 - lock-owner/stale-lock recovery;
 - exact retry succeeds after approval was consumed;
@@ -487,7 +526,7 @@ Owns:
 
 No filesystem, HTTP or React imports.
 
-### D02 — Reducers and compensation
+### D02 — Core reducers and action targets
 
 Owns:
 
@@ -495,10 +534,18 @@ Owns:
 - existing and eleven new actions;
 - entity version updates;
 - atomic capture/observation targets;
+
+Required table tests cover every core action and target kind.
+
+### D04 — Compensation, reversal and invalidation reducers
+
+Owns:
+
 - target-specific reversal handlers;
 - claim/evidence and blocker/decision state machines.
 
-Required property/table tests cover every action, target kind and reversal row.
+Required property/table tests cover every reversal row, invalidation edge and
+replay-after-compensation state.
 
 ### D03 — Command pipeline and request truth
 
@@ -595,7 +642,7 @@ Implements:
 - evidence-request ReviewItems;
 - truthful claim state derivation.
 
-### A03 — Project, settings and checkpoints
+### A03 — Project and settings commands
 
 Implements:
 
@@ -603,6 +650,11 @@ Implements:
 - `project.state_changed`;
 - `workspace.settings_changed`;
 - active-project limit;
+
+### A04 — Review checkpoint and portfolio pruning commands
+
+Implements:
+
 - blocker/decision atomic paths;
 - `review.checkpoint_recorded`;
 - Today delta eligibility/concurrency.
@@ -679,7 +731,7 @@ excludes migration controls, tailnet states, Git adoption and final responsive
 polish. It must prove visible product value before later infrastructure can
 consume the remaining unattended window.
 
-### U01 — Runtime shell and mobile review
+### U01 — Runtime shell, mobile review and formative composition
 
 Implements:
 
@@ -687,7 +739,14 @@ Implements:
 - workspace initialization/migration surfaces;
 - phone capture, Review and Quarantine;
 - offline/unknown-submit/exact-retry states;
-- focus/live-region behavior.
+- focus/live-region behavior;
+- a provisional integrated `app/page.tsx`/layout seam that exposes U02 desktop
+  truth and U03 Today through explicit navigation without appending the full
+  desktop dashboard below the phone surface.
+
+U01 depends on U00, U02 and U03 so H05 always tests one integrated product
+commit, not disconnected laptop/mobile/desktop/Today surfaces. U06 later owns final
+cross-breakpoint polish; it does not create H05's navigation seam retroactively.
 
 ### U02 — Desktop truth and review surfaces
 
@@ -720,6 +779,48 @@ Implements the required J-08 surface:
 - freeze and owner-confirmed unfreeze;
 - orphan/unavailable recovery guidance.
 
+### H05 — Formative physical-phone checkpoint
+
+This is a short owner/UX checkpoint after the first working mobile review,
+desktop truth and Today surfaces (U01-U03), but before final composition U06.
+It is deliberately manual and may pause the multi-window goal.
+
+Required proof on the owner's real phone:
+
+- capture/review intent is visible without hunting below desktop-first panels;
+- soft keyboard does not cover the primary action or success/error feedback;
+- primary touch targets are at least 44 px and usable one-handed;
+- browser back, reload and resume do not lose the in-progress intent;
+- no horizontal overflow;
+- the phone layout does not append the full desktop dashboard below the mobile
+  surface; desktop truth remains reachable through explicit navigation.
+
+The artifact is `tasks/full-mvp/manual/H05-formative-phone.json` with owner and
+independent UX attestations. It records those two desktop/phone assertions
+separately and binds a first-screen screenshot plus an explicit-navigation
+screenshot through `evidencePaths`. A failing result creates a bounded UI
+repair before U06; it may not be waived by an automated reviewer score.
+
+### U06 — Final responsive surface composition
+
+Goal: make the independently built surfaces behave like one Agency OS rather
+than a collection of locally correct panels.
+
+Owns:
+
+- final `app/page.tsx`, layout and global responsive composition;
+- phone-first first-screen priority and desktop information hierarchy;
+- 390/760/1024/1280/1440 reflow; the phone surface never appends the desktop
+  dashboard below-fold, and desktop truth is reached through an explicit
+  navigation affordance;
+- 44 px minimum touch targets, soft-keyboard-safe capture/review, back/resume
+  behavior, stable focus after success/error and no horizontal overflow;
+- zero/partial/error-state composition across all implemented surfaces.
+
+No new domain action or conversion behavior belongs in U06. Done means the
+Chromium and WebKit composition journey passes against the already implemented
+surfaces, with a committed responsive surface matrix and trace.
+
 Wave gate:
 
 - rendered contract tests;
@@ -741,12 +842,17 @@ Wave gate:
 - full bundle includes and restores quarantine plus source registry/cursor state;
 - Git/source observations survive recovery at the exact cutoff.
 
-### V02 — Browser and automated accessibility suite
+### V02 — Canonical browser journey suite
 
 - 390, 760, 1024, 1280 and 1440 widths;
 - desktop Chromium, mobile Chrome emulation and mobile Safari/WebKit;
 - explicit J-02, J-03, J-09 and J-12 browser evidence;
 - AT-ZERO/AT-PARTIAL plus empty/loading/conflict/offline states;
+- canonicalizes the fixture evidence manifest against the exact tested commit.
+
+### V04 — Accessibility, responsive and adversarial browser audit
+
+- replays the canonical journeys through accessibility/adversarial variants;
 - keyboard order and focus outcomes;
 - success/error/live-region outcomes and timing artifacts;
 - 200%/400% automated reflow proxies;
@@ -891,6 +997,7 @@ The release summary is non-empty and uses this executable outline:
 ```text
 # Agency OS FULL MVP Release Review
 Goal ID: <goal-id>
+Integration product commit: <existing pre-summary integration SHA>
 
 Automated FULL MVP implementation candidate: yes
 Private Local Dogfood MVP: yes
@@ -914,6 +1021,11 @@ H04: PASS
 ```
 
 Every section must contain its result; headings alone fail validation.
+`integrationProductCommit` is the last product-bearing integration commit
+before the certification-only summary commit. `testedCommit` is the later,
+already-existing commit containing this summary. The validator requires the
+boundary between them to contain certification paths only, so the report never
+claims its own not-yet-created SHA.
 
 ## 17. Parallelism Rules
 

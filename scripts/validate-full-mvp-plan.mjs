@@ -15,6 +15,11 @@ const executionSchemasPath = resolve(
   "docs/full-mvp/EXECUTION_SCHEMAS.json",
 );
 const promptPath = resolve(root, "docs/full-mvp/05_OVERNIGHT_GOAL_PROMPT.md");
+const gapRoadmapPath = resolve(
+  root,
+  "docs/full-mvp/06_GAP_AUDIT_AND_WINDOW_ROADMAP.md",
+);
+const agentsPath = resolve(root, "AGENTS.md");
 
 const product = readFileSync(productPath, "utf8");
 const readme = readFileSync(readmePath, "utf8");
@@ -22,6 +27,8 @@ const dag = readFileSync(dagPath, "utf8");
 const graph = JSON.parse(readFileSync(graphPath, "utf8"));
 const executionSchemas = JSON.parse(readFileSync(executionSchemasPath, "utf8"));
 const prompt = readFileSync(promptPath, "utf8");
+const gapRoadmap = readFileSync(gapRoadmapPath, "utf8");
+const agents = readFileSync(agentsPath, "utf8");
 
 const unique = (values) => [...new Set(values)];
 const productJourneys = unique(
@@ -40,6 +47,7 @@ assert.equal(graph.schemaVersion, 2, "unexpected task graph schema");
 for (const schemaName of [
   "OwnerAuthorization",
   "RunState",
+  "ControllerCheckpoint",
   "AcceptanceEvidence",
   "ReviewArtifact",
   "ImplementationReceipt",
@@ -47,6 +55,7 @@ for (const schemaName of [
   "ReleaseReviewArtifact",
   "ReleaseAcceptance",
   "ManualAttestation",
+  "H05FormativePhone",
   "H01PhysicalPhone",
   "H02Accessibility",
   "H03CleanRecovery",
@@ -60,11 +69,17 @@ assert.ok(graph.authorizationPathTemplate, "external authorization path required
 assert.ok(graph.controllerStateTemplate, "external controller state path required");
 assert.equal(graph.canonicalEvidenceTaskId, "V02");
 for (const authorityPath of [
+  "AGENTS.md",
   "docs/full-mvp/00_README.md",
   "docs/full-mvp/TASK_GRAPH.json",
+  "docs/full-mvp/06_GAP_AUDIT_AND_WINDOW_ROADMAP.md",
   "docs/full-mvp/EXECUTION_SCHEMAS.json",
   "scripts/validate-full-mvp-plan.mjs",
   "scripts/validate-full-mvp-execution.mjs",
+  "scripts/validate-full-mvp-controller.mjs",
+  "scripts/analyze-full-mvp-schedule.mjs",
+  "scripts/classify-production-audit.mjs",
+  "scripts/full-mvp-controller.mjs",
 ]) {
   assert.ok(
     graph.planningAuthorityPaths.includes(authorityPath),
@@ -79,6 +94,12 @@ assert.equal(graph.rules.pushAllowed, false);
 assert.equal(graph.rules.deployAllowed, false);
 assert.equal(graph.rules.realDataMigrationAllowed, false);
 assert.deepEqual(graph.defaultPostMergeCommands, ["npm run verify"]);
+assert.ok(
+  executionSchemas.$defs.RunTaskState.properties.status.enum.includes("paused"),
+  "RUN_STATE lifecycle omits paused continuation status",
+);
+assert.equal(graph.resourceModel.reviewMinutesPerArtifact, 15);
+assert.equal(graph.resourceModel.coordinationMinutesPerAutomatedTask, 10);
 assert.deepEqual(graph.certificationOnlyPaths, [
   "docs/CURRENT_STATE.md",
   "docs/NEXT_AGENT_HANDOFF.md",
@@ -177,9 +198,42 @@ for (const fixture of productFixtures) {
 }
 
 assert.ok(taskById.has("U05"), "missing early visible product slice U05");
+assert.ok(taskById.has("H05"), "missing formative physical-phone checkpoint H05");
+assert.ok(taskById.has("U06"), "missing final UI composition owner U06");
 assert.ok(taskById.has("H04"), "missing real Git manual gate H04");
+for (const formativeDependency of ["U01", "U02", "U03"]) {
+  assert.ok(
+    taskById.get("H05").dependsOn.includes(formativeDependency),
+    `H05 must follow ${formativeDependency}`,
+  );
+}
+for (const integratedSurface of ["U00", "U02", "U03"]) {
+  assert.ok(
+    taskById.get("U01").dependsOn.includes(integratedSurface),
+    `U01 formative composition must integrate ${integratedSurface}`,
+  );
+}
+assert.ok(taskById.get("U06").dependsOn.includes("H05"), "U06 must wait for H05");
+for (const resultKey of [
+  "desktopDashboardNotAppendedBelowPhone",
+  "desktopTruthViaExplicitNavigation",
+]) {
+  assert.ok(
+    executionSchemas.$defs.H05FormativePhone.allOf[1].properties.results
+      .required.includes(resultKey),
+    `H05 schema omits ${resultKey}`,
+  );
+}
+for (const manualTaskId of ["H01", "H02", "H03", "H04"]) {
+  assert.deepEqual(
+    taskById.get(manualTaskId).parallelSafeWith,
+    [],
+    `${manualTaskId} shares the owner and may not claim parallel execution`,
+  );
+}
 assert.ok(taskById.get("U00").dependsOn.includes("U05"), "U00 must integrate U05");
 assert.ok(taskById.get("U01").dependsOn.includes("U05"), "U01 must integrate U05");
+assert.ok(taskById.get("V02").dependsOn.includes("U06"), "V02 must verify U06 composition");
 assert.ok(taskById.get("R00").dependsOn.includes("H04"), "release omits H04");
 assert.ok(
   !taskById.get("V03").ownedPaths.some((path) => path.startsWith("docs/full-mvp")),
@@ -211,6 +265,8 @@ for (const requiredText of [
   "manual acceptance gates remain",
   "Do not checkout, merge, fast-forward, reset, or push main.",
   "The graph is expected to require multiple authorized windows.",
+  "full-mvp-controller.mjs init",
+  "`paused`",
 ]) {
   assert.ok(prompt.includes(requiredText), `launch prompt omits: ${requiredText}`);
 }
@@ -220,8 +276,31 @@ for (const requiredText of [
   "H01-H04",
   "later windows",
   "05_OVERNIGHT_GOAL_PROMPT.md",
+  "pending independent re-acceptance",
 ]) {
   assert.ok(readme.includes(requiredText), `FULL MVP README omits: ${requiredText}`);
+}
+for (const requiredText of [
+  "Owner-Authorized FULL MVP Goal Mode",
+  "BLOCKED_PRECONDITION",
+  "TASK_GRAPH.json",
+  "main",
+]) {
+  assert.ok(agents.includes(requiredText), `AGENTS.md omits FULL MVP boundary: ${requiredText}`);
+}
+for (const requiredText of [
+  "v0.3 supervised local staging",
+  "minimum productive windows: 8",
+  "operational planning windows: 11",
+  "H05",
+  "U06",
+  "BLOCKED_PRECONDITION",
+  "FULL MVP already built",
+]) {
+  assert.ok(
+    gapRoadmap.includes(requiredText),
+    `gap/window roadmap omits: ${requiredText}`,
+  );
 }
 
 assert.ok(
@@ -242,7 +321,7 @@ function criticalMinutes(taskId) {
   criticalPathMemo.set(taskId, result);
   return result;
 }
-const candidateCriticalPathMinutes = criticalMinutes("V03");
+const candidateEndToEndCriticalPathMinutes = criticalMinutes("V03");
 
 console.log(
   JSON.stringify(
@@ -253,8 +332,9 @@ console.log(
       fixtures: productFixtures,
       acyclic: true,
       estimatedAutomatedMinutes,
-      candidateCriticalPathMinutes,
-      fullCandidateLikelyMultiWindow: candidateCriticalPathMinutes > 8 * 60,
+      candidateEndToEndCriticalPathMinutes,
+      fullCandidateLikelyMultiWindow:
+        candidateEndToEndCriticalPathMinutes > 8 * 60,
     },
     null,
     2,
