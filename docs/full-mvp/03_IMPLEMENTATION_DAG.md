@@ -84,8 +84,9 @@ owner-authorized windows; every window gets its own authorization and deadline.
 
 ## 3. Git And Worktree Model
 
-The coordinator creates, from the externally authorized start commit. The
-accepted planning commit must be an ancestor of that start commit:
+On initial goal initialization, the coordinator creates the integration branch
+exactly from the externally authorized start commit. The accepted planning
+commit must be an ancestor of that start commit:
 
 ```text
 integration/full-mvp-v0.4
@@ -110,6 +111,12 @@ C:\Agency_os_first\worktrees\full-mvp-controller-<goal-id>
 
 The canonical checkout remains clean on its existing branch. Controller state,
 task merges and aggregate verification occur in the controller worktree.
+Later windows reuse that exact controller worktree and validated `RUN_STATE`.
+Its clean integration HEAD may have evolved beyond `authorizedStartCommit`; it
+must descend from that commit and contain every task merge recorded as
+`merged`. It is never required to equal `planningCommit` or reset to
+`authorizedStartCommit`. The authority worktree remains detached, clean and
+exactly pinned to `planningCommit`.
 
 Each task uses:
 
@@ -220,6 +227,7 @@ flowchart TD
     S01 --> S02["S02 Intake + quarantine"]
     D01 --> S02
     S02 --> W03["W03 Legacy migration"]
+    W04 --> W03
     S01 --> S03["S03 Tailnet adapter synthetic gates"]
     D03 --> A01["A01 Capture resolution"]
     S02 --> A01
@@ -478,6 +486,9 @@ Required tests:
 - crash classifications.
 
 ### W03 — Legacy migration
+
+Depends on both S02 intake/quarantine and W04 backup/recovery so the task
+cannot dispatch until the verified pre-migration backup implementation exists.
 
 Owns:
 
@@ -1050,7 +1061,13 @@ when file ownership overlaps.
 Stop the goal when:
 
 - H00 is absent;
-- starting Git state differs from the accepted planning commit;
+- on initial goal initialization, the clean controller/integration starting
+  state differs from `authorizedStartCommit`, or `planningCommit` is not its
+  ancestor;
+- on a later-window resume, the clean controller/integration HEAD does not
+  descend from `authorizedStartCommit`, omits a merge commit recorded as
+  `merged` in the validated `RUN_STATE`, or the detached authority worktree is
+  no longer clean and pinned exactly to `planningCommit`;
 - a dependency needs a framework migration or broad lockfile upgrade;
 - replay/migration cannot preserve legacy truth;
 - a fix requires weakening a security invariant;

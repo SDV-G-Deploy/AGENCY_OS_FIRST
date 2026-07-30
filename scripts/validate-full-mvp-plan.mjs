@@ -201,6 +201,10 @@ assert.ok(taskById.has("U05"), "missing early visible product slice U05");
 assert.ok(taskById.has("H05"), "missing formative physical-phone checkpoint H05");
 assert.ok(taskById.has("U06"), "missing final UI composition owner U06");
 assert.ok(taskById.has("H04"), "missing real Git manual gate H04");
+assert.ok(
+  taskById.get("W03").dependsOn.includes("W04"),
+  "W03 must wait for W04 verified pre-migration backup support",
+);
 for (const formativeDependency of ["U01", "U02", "U03"]) {
   assert.ok(
     taskById.get("H05").dependsOn.includes(formativeDependency),

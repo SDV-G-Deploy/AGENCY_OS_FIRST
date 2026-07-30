@@ -55,6 +55,80 @@ function sameWindowsPath(left, right) {
     resolve(right).replaceAll("/", "\\").toLowerCase();
 }
 
+function gitAt(root, args) {
+  return execFileSync("git", args, {
+    cwd: root,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  }).trim();
+}
+
+function isAncestorAt(root, ancestor, descendant) {
+  try {
+    gitAt(root, ["merge-base", "--is-ancestor", ancestor, descendant]);
+    return true;
+  } catch (error) {
+    if (error.status === 1) return false;
+    throw error;
+  }
+}
+
+function cleanHead(root, label) {
+  assert.equal(gitAt(root, ["status", "--porcelain"]), "", `${label} must be clean`);
+  return gitAt(root, ["rev-parse", "HEAD"]);
+}
+
+function validateAuthorityRoot(authorization) {
+  const root = resolve(required("--authority-root"));
+  assert.equal(
+    cleanHead(root, "authority worktree"),
+    authorization.planningCommit,
+    "authority worktree must remain pinned exactly to planningCommit",
+  );
+  return root;
+}
+
+function validateInitialIntegrationRoot(authorization) {
+  const root = resolve(required("--integration-root"));
+  const head = cleanHead(root, "initial controller/integration worktree");
+  assert.equal(
+    head,
+    authorization.authorizedStartCommit,
+    "initial controller/integration HEAD must equal authorizedStartCommit",
+  );
+  assert.ok(
+    isAncestorAt(
+      root,
+      authorization.planningCommit,
+      authorization.authorizedStartCommit,
+    ),
+    "planningCommit must be an ancestor of the initial authorizedStartCommit",
+  );
+  return { root, head };
+}
+
+function validateResumeIntegrationRoot(authorization, state) {
+  const root = resolve(required("--integration-root"));
+  assert.ok(
+    sameWindowsPath(root, state.integrationWorktree),
+    "later window must reuse the controller/integration worktree recorded in RUN_STATE",
+  );
+  const head = cleanHead(root, "resumed controller/integration worktree");
+  assert.ok(
+    isAncestorAt(root, authorization.authorizedStartCommit, head),
+    "resumed integration HEAD must descend from authorizedStartCommit",
+  );
+  for (const [taskId, taskStateValue] of Object.entries(state.taskStates)) {
+    if (taskStateValue.status !== "merged") continue;
+    assert.ok(
+      taskStateValue.mergeCommit &&
+        isAncestorAt(root, taskStateValue.mergeCommit, head),
+      `resumed integration HEAD omits merged task ${taskId}`,
+    );
+  }
+  return { root, head };
+}
+
 function authorizationFrom(name, { checkCurrentTime = true } = {}) {
   const path = resolve(required(name));
   const authorization = readJson(path);
@@ -283,11 +357,7 @@ function activeTaskIds(state) {
     .sort();
 }
 
-function initialState(authorization, coordinatorId) {
-  const integrationWorktree = graph.controllerWorktreeTemplate.replace(
-    "<goal-id>",
-    authorization.goalId,
-  );
+function initialState(authorization, coordinatorId, integrationWorktree) {
   const taskStates = Object.fromEntries(
     graph.tasks.map((task) => [
       task.id,
@@ -373,7 +443,14 @@ function init() {
   const { authorization } = authorizationFrom("--authorization");
   const path = statePathFor(authorization.goalId);
   assert.equal(existsSync(path), false, "RUN_STATE already exists");
-  const state = initialState(authorization, required("--coordinator-id"));
+  validateAuthorityRoot(authorization);
+  const { root: integrationWorktree } =
+    validateInitialIntegrationRoot(authorization);
+  const state = initialState(
+    authorization,
+    required("--coordinator-id"),
+    integrationWorktree,
+  );
   validateRunStateDocument(state, undefined, authorization);
   persistState(path, state, "INIT", { initializing: true });
   console.log(
@@ -776,6 +853,8 @@ function openWindow() {
   validateRunStateDocument(previous, undefined, previousAuthorization, {
     authorizationCheckCurrentTime: false,
   });
+  validateAuthorityRoot(authorization);
+  validateResumeIntegrationRoot(authorization, previous);
   assert.deepEqual(
     previous.activeTaskIds,
     [],

@@ -287,7 +287,7 @@
       "title": "Legacy migration",
       "kind": "automated",
       "estimatedMinutes": 120,
-      "dependsOn": ["S02"],
+      "dependsOn": ["S02", "W04"],
       "parallelSafeWith": [],
       "ownedPaths": ["src/workspace/migration.ts", "src/workspace/legacy-compatibility.ts", "tests/full-mvp/migration.test.mjs"],
       "journeys": ["J-01"],

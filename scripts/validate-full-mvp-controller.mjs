@@ -26,6 +26,52 @@ function git(...args) {
   return result.stdout.trim();
 }
 
+function gitAt(root, ...args) {
+  const result = spawnSync("git", args, {
+    cwd: root,
+    encoding: "utf8",
+    shell: false,
+  });
+  assert.equal(result.status, 0, result.stderr);
+  return result.stdout.trim();
+}
+
+function cloneRepo(target) {
+  const result = spawnSync(
+    "git",
+    ["clone", "--quiet", "--no-hardlinks", repoRoot, target],
+    {
+      cwd: tempRoot,
+      encoding: "utf8",
+      shell: false,
+    },
+  );
+  assert.equal(result.status, 0, result.stderr);
+}
+
+function syntheticDescendant(root, parent, message) {
+  const result = spawnSync(
+    "git",
+    ["commit-tree", `${parent}^{tree}`, "-p", parent, "-m", message],
+    {
+      cwd: root,
+      encoding: "utf8",
+      shell: false,
+      env: {
+        ...process.env,
+        GIT_AUTHOR_NAME: "Agency OS Controller Self Test",
+        GIT_AUTHOR_EMAIL: "controller-self-test@example.invalid",
+        GIT_AUTHOR_DATE: "2026-07-29T00:00:00.000Z",
+        GIT_COMMITTER_NAME: "Agency OS Controller Self Test",
+        GIT_COMMITTER_EMAIL: "controller-self-test@example.invalid",
+        GIT_COMMITTER_DATE: "2026-07-29T00:00:00.000Z",
+      },
+    },
+  );
+  assert.equal(result.status, 0, result.stderr);
+  return result.stdout.trim();
+}
+
 function runController(args, expectedStatus = 0) {
   const result = spawnSync(process.execPath, [controllerPath, ...args], {
     cwd: repoRoot,
@@ -108,7 +154,34 @@ async function main() {
 try {
   const goalId = "goal-controller-self-test";
   const planningCommit = git("rev-parse", "HEAD");
-  const authorizedStartCommit = planningCommit;
+  const authorizedStartCommit = syntheticDescendant(
+    repoRoot,
+    planningCommit,
+    "test: authorized clean descendant",
+  );
+  const expectedEvolvedIntegrationHead = syntheticDescendant(
+    repoRoot,
+    authorizedStartCommit,
+    "test: evolved integration state",
+  );
+  assert.equal(
+    git("merge-base", "--is-ancestor", planningCommit, authorizedStartCommit),
+    "",
+    "self-test requires authorizedStartCommit to descend from planningCommit",
+  );
+  const authorityRoot = resolve(tempRoot, "authority-repo");
+  const integrationRoot = resolve(tempRoot, `integration-repo-${goalId}`);
+  cloneRepo(authorityRoot);
+  cloneRepo(integrationRoot);
+  assert.equal(
+    syntheticDescendant(
+      integrationRoot,
+      planningCommit,
+      "test: authorized clean descendant",
+    ),
+    authorizedStartCommit,
+  );
+  gitAt(authorityRoot, "checkout", "--quiet", "--detach", planningCommit);
   const now = Date.now();
   const firstAuthorization = authorization({
     authorizationId: "authorization-window-001",
@@ -151,6 +224,10 @@ try {
     runStatePath,
     "--coordinator-id",
     "coordinator-self-test",
+    "--authority-root",
+    authorityRoot,
+    "--integration-root",
+    integrationRoot,
   ], 1);
   runController([
     "init",
@@ -160,6 +237,10 @@ try {
     resolve(tempRoot, "wrong-root", "AgencyOS", "goal-runs", goalId, "RUN_STATE.json"),
     "--coordinator-id",
     "coordinator-self-test",
+    "--authority-root",
+    authorityRoot,
+    "--integration-root",
+    integrationRoot,
   ], 1);
 
   const common = [
@@ -168,11 +249,45 @@ try {
     "--run-state",
     runStatePath,
   ];
+  gitAt(authorityRoot, "checkout", "--quiet", "--detach", `${planningCommit}^`);
   runController([
     "init",
     ...common,
     "--coordinator-id",
     "coordinator-self-test",
+    "--authority-root",
+    authorityRoot,
+    "--integration-root",
+    integrationRoot,
+  ], 1);
+  gitAt(authorityRoot, "checkout", "--quiet", "--detach", planningCommit);
+  gitAt(integrationRoot, "checkout", "--quiet", "--detach", planningCommit);
+  runController([
+    "init",
+    ...common,
+    "--coordinator-id",
+    "coordinator-self-test",
+    "--authority-root",
+    authorityRoot,
+    "--integration-root",
+    integrationRoot,
+  ], 1);
+  gitAt(
+    integrationRoot,
+    "checkout",
+    "--quiet",
+    "--detach",
+    authorizedStartCommit,
+  );
+  runController([
+    "init",
+    ...common,
+    "--coordinator-id",
+    "coordinator-self-test",
+    "--authority-root",
+    authorityRoot,
+    "--integration-root",
+    integrationRoot,
   ]);
   const initialized = JSON.parse(readFileSync(runStatePath, "utf8"));
   assert.equal(initialized.taskStates.H00.status, "accepted");
@@ -180,6 +295,8 @@ try {
   assert.equal(initialized.taskStates.H05.status, "manual_pending");
   assert.equal(initialized.taskStates.H01.status, "manual_pending");
   assert.deepEqual(initialized.activeTaskIds, []);
+  assert.equal(initialized.authorizedStartCommit, authorizedStartCommit);
+  assert.equal(initialized.integrationWorktree, integrationRoot);
 
   const patchPath = resolve(tempRoot, "transition-patch.json");
   writeJson(patchPath, {
@@ -427,6 +544,30 @@ try {
     `${secondAuthorization.windowId}.json`,
   );
   writeJson(secondAuthorizationPath, secondAuthorization);
+  const evolvedIntegrationHead = syntheticDescendant(
+    integrationRoot,
+    authorizedStartCommit,
+    "test: evolved integration state",
+  );
+  assert.equal(evolvedIntegrationHead, expectedEvolvedIntegrationHead);
+  gitAt(
+    integrationRoot,
+    "checkout",
+    "--quiet",
+    "--detach",
+    evolvedIntegrationHead,
+  );
+  assert.notEqual(evolvedIntegrationHead, authorizedStartCommit);
+  assert.equal(
+    gitAt(
+      integrationRoot,
+      "merge-base",
+      "--is-ancestor",
+      authorizedStartCommit,
+      evolvedIntegrationHead,
+    ),
+    "",
+  );
   runController([
     "open-window",
     "--previous-authorization",
@@ -435,6 +576,10 @@ try {
     secondAuthorizationPath,
     "--run-state",
     runStatePath,
+    "--authority-root",
+    authorityRoot,
+    "--integration-root",
+    integrationRoot,
   ]);
 
   const secondCommon = [
@@ -492,6 +637,29 @@ try {
     },
   );
   assert.equal(clone.status, 0, clone.stderr);
+  assert.equal(
+    syntheticDescendant(
+      candidateRoot,
+      planningCommit,
+      "test: authorized clean descendant",
+    ),
+    authorizedStartCommit,
+  );
+  assert.equal(
+    syntheticDescendant(
+      candidateRoot,
+      authorizedStartCommit,
+      "test: evolved integration state",
+    ),
+    evolvedIntegrationHead,
+  );
+  gitAt(
+    candidateRoot,
+    "checkout",
+    "--quiet",
+    "--detach",
+    evolvedIntegrationHead,
+  );
   const checkpointPath = resolve(
     candidateRoot,
     "tasks",
@@ -503,7 +671,7 @@ try {
     "checkpoint",
     ...secondCommon,
     "--integration-commit",
-    planningCommit,
+    evolvedIntegrationHead,
     "--candidate-root",
     candidateRoot,
     "--output",
@@ -514,7 +682,7 @@ try {
     "checkpoint",
     ...secondCommon,
     "--integration-commit",
-    planningCommit,
+    evolvedIntegrationHead,
     "--candidate-root",
     candidateRoot,
     "--output",
@@ -549,6 +717,10 @@ try {
           "update-run",
           "checkpoint",
           "checkpoint-idempotency",
+          "authorized-descendant-initialization",
+          "initial-start-commit-mismatch-rejection",
+          "later-window-evolved-integration-resume",
+          "authority-worktree-exact-pin",
           "exact-localappdata-binding",
           "dispatch-disk-budget",
           "exclusive-state-lock",

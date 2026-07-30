@@ -46,7 +46,9 @@ with this completed JSON:
 `authorizedStartCommit` must equal the planning commit or be an explicitly
 approved clean descendant. Because this file is outside Git, it does not create
 a dirty/self-referential launch commit. Replace every placeholder with a real
-value.
+value. Later-window authorizations repeat the same `planningCommit` and initial
+`authorizedStartCommit`; the evolved integration HEAD remains in the reused
+controller worktree and validated `RUN_STATE`, not in either immutable field.
 
 ## 2. Prompt To Send
 
@@ -113,24 +115,35 @@ Before implementation:
    sanitized authorization hash receipt into the integration task tree. This is
    explicit local owner authorization, not a cryptographic-signature claim.
 2. Confirm planning commit is an ancestor of authorized start commit and
-   canonical Git state is clean.
+   canonical Git state is clean. On the first goal window, require the clean
+   controller/integration starting HEAD to equal authorized start commit. On a
+   later window, do not reset the evolved integration HEAD: validate the
+   existing `RUN_STATE`, require the reused worktree HEAD to descend from
+   authorized start commit and require it to contain every merge recorded as
+   `merged`.
 3. Run baseline verify/audit/Vinext checks.
 4. Validate TASK_GRAPH.json and DAG dependencies.
 5. Create a detached, clean authority worktree at the exact planning commit in
    C:\Agency_os_first\worktrees\full-mvp-authority-<GOAL_ID>. Never edit it.
    Invoke validators from this authority worktree with `--root` and
    `--authority-root`.
-6. Create integration/full-mvp-v0.4 from the authorized start commit in
-   C:\Agency_os_first\worktrees\full-mvp-controller-<GOAL_ID>. Reuse that exact
-   controller worktree for later windows of the same goal.
+6. On the first goal window, create integration/full-mvp-v0.4 exactly from the
+   authorized start commit in
+   C:\Agency_os_first\worktrees\full-mvp-controller-<GOAL_ID>. On later
+   windows, reuse that exact controller worktree and its validated evolved
+   integration HEAD; do not require it to equal planning commit or authorized
+   start commit.
 7. If this is the first goal window, create checksum-protected RUN_STATE with:
    `node <authority-root>\scripts\full-mvp-controller.mjs init
    --authorization %LOCALAPPDATA%\AgencyOS\run-authorizations\<GOAL_ID>\<WINDOW_ID>.json
    --run-state %LOCALAPPDATA%\AgencyOS\goal-runs\<GOAL_ID>\RUN_STATE.json
-   --coordinator-id <COORDINATOR_ID>`.
+   --coordinator-id <COORDINATOR_ID>
+   --authority-root C:\Agency_os_first\worktrees\full-mvp-authority-<GOAL_ID>
+   --integration-root C:\Agency_os_first\worktrees\full-mvp-controller-<GOAL_ID>`.
    Otherwise inspect the existing state with the same authorization/run-state
    arguments, or use the documented `open-window` command with both previous
-   and new authorizations. Then validate with
+   and new authorizations plus the same authority/integration roots. Then
+   validate with
    `validate-full-mvp-execution.mjs --run-state ... --active-authorization ...`.
    Keep backup, checksum and RUN_LOG under the same exact `%LOCALAPPDATA%`
    goal directory. Generate sanitized controller checkpoint receipts only

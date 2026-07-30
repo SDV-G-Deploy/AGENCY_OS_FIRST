@@ -50,6 +50,8 @@ The coordinator may implement only when:
 - canonical repository path resolves exactly;
 - accepted planning commit exists and is an ancestor of the externally
   authorized starting SHA;
+- on initial goal initialization, the clean controller/integration worktree
+  HEAD equals `authorizedStartCommit`;
 - canonical worktree has no unexpected changes;
 - `main` is not checked out in an agent-created worktree;
 - `npm run verify` baseline result is recorded;
@@ -58,6 +60,13 @@ The coordinator may implement only when:
 - no push/deploy authority is assumed.
 - a clean detached authority worktree is pinned to `planningCommit`; trusted
   validators are executed from it, never from candidate-modifiable scripts.
+
+The initial goal window establishes this two-SHA contract. A later window does
+not reset the evolved integration branch to either SHA: it reuses the
+controller/integration worktree recorded in validated `RUN_STATE`, proves its
+clean HEAD descends from `authorizedStartCommit`, and proves it contains every
+task merge commit recorded as `merged`. The detached authority worktree remains
+clean and exactly pinned to `planningCommit` in every window.
 
 If any item is absent, status is:
 
@@ -202,14 +211,14 @@ The sole supported mutation interface is the authority-pinned controller.
 These are the exact command shapes; paths must resolve under `%LOCALAPPDATA%`:
 
 ```text
-node scripts/full-mvp-controller.mjs init --authorization <current-auth.json> --run-state <RUN_STATE.json> --coordinator-id <id>
+node scripts/full-mvp-controller.mjs init --authorization <current-auth.json> --run-state <RUN_STATE.json> --coordinator-id <id> --authority-root <authority-root> --integration-root <integration-root>
 node scripts/full-mvp-controller.mjs inspect --authorization <current-auth.json> --run-state <RUN_STATE.json>
 node scripts/full-mvp-controller.mjs transition --authorization <current-auth.json> --run-state <RUN_STATE.json> --task-id <task-id> --to <status> --patch <patch.json> [--run-footprint-bytes <bytes> when status=dispatched]
 node scripts/full-mvp-controller.mjs update-run --authorization <current-auth.json> --run-state <RUN_STATE.json> --patch <run-patch.json>
 node scripts/full-mvp-controller.mjs checkpoint --authorization <current-auth.json> --run-state <RUN_STATE.json> --integration-commit <sha> --candidate-root <candidate-root> --output <candidate-root>\tasks\full-mvp\controller-checkpoints\<revision>.json
 node scripts/full-mvp-controller.mjs create-repair --authorization <current-auth.json> --run-state <RUN_STATE.json> --contract-task-id <task-id> --branch <branch> --worktree <path> --starting-commit <sha> --worker-id <id>
 node scripts/full-mvp-controller.mjs recover --authorization <current-auth.json> --run-state <RUN_STATE.json>
-node scripts/full-mvp-controller.mjs open-window --previous-authorization <expired-auth.json> --authorization <new-auth.json> --run-state <RUN_STATE.json>
+node scripts/full-mvp-controller.mjs open-window --previous-authorization <expired-auth.json> --authorization <new-auth.json> --run-state <RUN_STATE.json> --authority-root <authority-root> --integration-root <integration-root>
 ```
 
 H05 may transition to `accepted` only with the normal transition arguments plus
@@ -233,9 +242,14 @@ state path exactly to
 under a repository or another root fails. `open-window` accepts an expired
 previous authorization only for validating immutable history; it requires a
 currently valid new authorization with the same goal, planning commit and
-authorized start commit, and refuses rollover while any task is active.
-`validate-full-mvp-controller.mjs` proves init, legal transitions,
-pause/resume rollover, run-level metadata updates, sanitized checkpoint
+authorized start commit, refuses rollover while any task is active, keeps the
+authority worktree pinned exactly to the planning commit, and accepts the
+evolved integration HEAD only when it is clean, descends from the stable
+authorized start commit and contains every merge recorded in `RUN_STATE`.
+`validate-full-mvp-controller.mjs` proves init, legal transitions, an
+authorized clean descendant start, wrong-start rejection, exact authority
+pinning, evolved-integration pause/resume rollover, run-level metadata updates,
+sanitized checkpoint
 generation, primary/sidecar recovery and expired-window rollover in an
 isolated temporary tree. It also proves that a second controller cannot remove
 or bypass an already-held state lock and that exactly one of two concurrent
@@ -634,9 +648,11 @@ If the window ends:
 The full graph is expected to require multiple unattended windows. A later
 window uses the same `goalId`, a new `windowId` and new external H00
 authorization, then resumes the same integration branch and validated
-RUN_STATE; it does not restart accepted work. The authorization validator
-requires the planning commit to be an ancestor of every authorized start
-commit.
+RUN_STATE; it does not restart accepted work. The later authorization repeats
+the goal's immutable `planningCommit` and initial `authorizedStartCommit`; it
+does not replace either field with the evolved integration HEAD. Resume
+validation instead proves that HEAD descends from `authorizedStartCommit` and
+contains every task merge recorded as `merged`.
 
 ## 15. External/Manual Gate Handling
 
